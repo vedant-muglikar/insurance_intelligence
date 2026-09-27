@@ -1,0 +1,28 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root { color-scheme: dark; --background: #080d14; --foreground: #e2e8f0; --card: #111923; --card-foreground: #e2e8f0; --popover: #111923; --popover-foreground: #e2e8f0; --primary: #34d399; --primary-foreground: #06281c; --secondary: #17212e; --secondary-foreground: #e2e8f0; --muted: #17212e; --muted-foreground: #94a3b8; --accent: #1a2931; --accent-foreground: #e2e8f0; --destructive: #f87171; --border: #243142; --input: #243142; --ring: #34d399; --radius: .65rem; }
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); }
+* { box-sizing: border-box; border-color: var(--border); }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+.panel { border: 1px solid #1e2b3a; border-radius: 12px; background: #111923; }
+.brand-mark { display: flex; height: 30px; width: 30px; align-items: center; justify-content: center; border-radius: 9px; background: linear-gradient(135deg,#35d69c,#148a79); color: #061d18; box-shadow: 0 0 20px #22c79b1c; }
+.brand-mark.small { height: 25px; width: 25px; border-radius: 7px; }
+.avatar { display: flex; height: 29px; width: 29px; align-items: center; justify-content: center; border-radius: 50%; background: #203638; color: #8be7c5; font-size: 10px; font-weight: 700; }
+.nav-item { display: flex; width: 100%; align-items: center; gap: 10px; border-radius: 8px; padding: 9px 10px; color: #7c8da1; font-size: 12px; text-align: left; transition: .15s; }
+.nav-item:hover, .nav-active { background: #17242b; color: #d7e6e3; }
+.nav-active { box-shadow: inset 2px 0 #34d399; }
+.icon-box { display: flex; height: 32px; width: 32px; align-items: center; justify-content: center; border-radius: 8px; }
+.tone-green { background: #34d39915; color: #4ade80; }.tone-blue { background:#60a5fa15;color:#60a5fa }.tone-purple { background:#a78bfa15;color:#a78bfa }.tone-amber { background:#fbbf2415;color:#fbbf24 }
+.policy-icon { display:flex;height:34px;width:34px;align-items:center;justify-content:center;border-radius:9px;font-size:10px;font-weight:700 }.policy-icon.mint{background:#164e43;color:#6ee7b7}.policy-icon.blue{background:#172f50;color:#93c5fd}.policy-icon.amber{background:#4a3517;color:#fcd34d}
+.button-primary,.button-secondary { display:inline-flex; align-items:center; justify-content:center; gap:7px; border-radius:7px; padding:9px 13px; font-size:12px; font-weight:600; transition:.15s }.button-primary{background:#35c894;color:#05271d;box-shadow:0 4px 16px #35c89416}.button-primary:hover{background:#51dfaa}.button-secondary{border:1px solid #2a394a;background:#121c27;color:#a9b8c9}.button-secondary:hover{border-color:#3a4d61;background:#172331;color:#e2e8f0}
+.search-field { display:flex;align-items:center;gap:8px;border:1px solid #253446;border-radius:7px;background:#0d151f;padding:8px 10px;color:#66788b }.search-field input{width:100%;border:0;outline:0;background:transparent;color:#dbe5ee;font-size:11px}.search-field input::placeholder{color:#536275}
+.tab-button{white-space:nowrap;border-bottom:2px solid transparent;padding:0 10px 12px;color:#657589;font-size:11px;font-weight:500}.tab-button:hover{color:#b9c7d4}.tab-active{border-color:#34d399;color:#76e7bc}.source-link{display:inline-flex;align-items:center;gap:5px;color:#72dcb2;font-size:11px}.source-link:hover{color:#a1f3d0}.upload-zone{border:1px dashed #3b5265;border-radius:12px;padding:36px 20px;text-align:center;transition:.15s}.upload-zone:hover{border-color:#34d399;background:#34d39908}
+@media (max-width: 1023px){ .panel{border-radius:10px} }
+@media (max-width: 640px){ main{overflow:hidden}.panel{border-radius:10px}.button-primary,.button-secondary{padding:8px 10px}.tab-button{padding-left:7px;padding-right:7px} }
+@layer base { * { @apply outline-ring/50; } }
