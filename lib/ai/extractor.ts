@@ -145,7 +145,7 @@ let cachedGeminiModel: string | null = null
 
 let modelBlacklist = new Set<string>()
 
-async function getBestGeminiModel(apiKey: string): Promise<string> {
+export async function getBestGeminiModel(apiKey: string): Promise<string> {
   if (cachedGeminiModel && !modelBlacklist.has(cachedGeminiModel)) {
     return cachedGeminiModel
   }

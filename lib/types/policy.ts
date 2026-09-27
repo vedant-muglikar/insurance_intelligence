@@ -80,3 +80,30 @@ export interface AnalyzeResponse {
   data?: PolicyAnalysisResult
   error?: string
 }
+
+// ─── Q&A Types ─────────────────────────────────────────────────────────────
+
+export interface Citation {
+  page_number: number
+  section_name: string
+  evidence_text: string
+}
+
+export interface AskResponseData {
+  answer: string
+  status: PolicyStatus
+  citations: Citation[]
+  confidence: 'high' | 'medium' | 'low'
+}
+
+export interface AskRequest {
+  question: string
+  pages: ExtractedPage[]
+}
+
+export interface AskResponse {
+  success: boolean
+  data?: AskResponseData
+  error?: string
+}
+
