@@ -1,94 +1,97 @@
 'use client'
 
-import { useState } from 'react'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  BarChart3,
-  Bell,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  CircleHelp,
-  ClipboardCheck,
-  Clock3,
-  CloudUpload,
-  Copy,
-  FileCheck2,
-  FileSearch,
-  Files,
-  Filter,
-  FolderOpen,
-  Gauge,
-  Info,
-  LayoutDashboard,
-  Menu,
-  MoreHorizontal,
-  PanelLeftClose,
-  Plus,
-  Search,
-  Settings,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-  UserRound,
-  X,
-} from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { UploadScreen } from './policy/UploadScreen'
+import { ProcessingTimeline } from './policy/ProcessingTimeline'
+import { PolicyResults } from './policy/PolicyResults'
+import type { PolicyAnalysisResult } from '@/lib/types/policy'
+import { AlertTriangle } from 'lucide-react'
 
-type Tab = 'Overview' | 'Coverage' | 'Waiting Periods' | 'Exclusions' | 'Limits' | 'Eligibility' | 'Claim Requirements' | 'Sources'
+type AppState = 'upload' | 'processing' | 'results' | 'error'
 
-const policies = [
-  { name: 'Health Secure Plus', insurer: 'ABC Health Insurance', plan: 'Individual Health Insurance', date: 'Sep 27, 2026', pages: 46, status: 'Ready', rules: 37, initials: 'HS', color: 'mint' },
-  { name: 'Care Advantage', insurer: 'Northstar Assurance', plan: 'Family Floater Plan', date: 'Sep 24, 2026', pages: 62, status: 'Processing', rules: 0, initials: 'CA', color: 'blue' },
-  { name: 'Family Health Protect', insurer: 'Summit General', plan: 'Family Health Insurance', date: 'Sep 18, 2026', pages: 38, status: 'Needs Review', rules: 29, initials: 'FH', color: 'amber' },
-]
+export default function PolicyLens() {
+  const [state, setState] = useState<AppState>('upload')
+  const [fileName, setFileName] = useState('')
+  const [result, setResult] = useState<PolicyAnalysisResult | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-const stats = [
-  { label: 'Policies analyzed', value: '24', delta: '+4 this month', icon: FileCheck2, tone: 'green' },
-  { label: 'Documents processing', value: '2', delta: 'Usually under 2 min', icon: Clock3, tone: 'blue' },
-  { label: 'Coverage rules extracted', value: '486', delta: '+68 this month', icon: ShieldCheck, tone: 'purple' },
-  { label: 'Exclusions detected', value: '143', delta: 'Across all policies', icon: AlertTriangle, tone: 'amber' },
-]
+  const handleAnalyze = useCallback(async (file: File) => {
+    setFileName(file.name)
+    setState('processing')
+    setErrorMsg(null)
 
-const coverage = [
-  { title: 'Hospitalization', status: 'Covered', description: 'In-patient hospitalization expenses are covered for medically necessary treatment.', condition: 'Minimum 24-hour hospitalization unless listed as daycare.', limit: 'Up to Sum Insured', page: '12', section: 'Hospitalization Benefits' },
-  { title: 'Daycare Procedures', status: 'Covered', description: 'Recognized daycare procedures listed in the policy schedule are covered.', condition: 'As per the current daycare procedure list.', limit: 'As per policy schedule', page: '18', section: 'Daycare Treatment' },
-  { title: 'Cataract Treatment', status: 'Conditional', description: 'Cataract surgery is covered subject to the applicable treatment sub-limit.', condition: 'Waiting period and sub-limit apply.', limit: '₹40,000 per eye', page: '17', section: 'Cataract Treatment' },
-]
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
 
-const tabItems: Tab[] = ['Overview', 'Coverage', 'Waiting Periods', 'Exclusions', 'Limits', 'Eligibility', 'Claim Requirements', 'Sources']
+      const res = await fetch('/api/policy/analyze', {
+        method: 'POST',
+        body: formData,
+      })
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = { Ready: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/20', Processing: 'bg-blue-400/10 text-blue-300 border-blue-400/20', 'Needs Review': 'bg-amber-400/10 text-amber-300 border-amber-400/20', Covered: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/20', Conditional: 'bg-amber-400/10 text-amber-300 border-amber-400/20', Applicable: 'bg-slate-400/10 text-slate-300 border-slate-400/20' }
-  return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${styles[status] || styles['Needs Review']}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{status}</span>
+      const json = await res.json()
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || `Server error: ${res.status}`)
+      }
+
+      setResult(json.data)
+      setState('results')
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unexpected error during analysis.')
+      setState('error')
+    }
+  }, [])
+
+  const reset = () => {
+    setState('upload')
+    setResult(null)
+    setErrorMsg(null)
+    setFileName('')
+  }
+
+  if (state === 'upload') {
+    return <UploadScreen onAnalyze={handleAnalyze} />
+  }
+
+  if (state === 'processing') {
+    return <ProcessingTimeline fileName={fileName} />
+  }
+
+  if (state === 'error') {
+    return (
+      <div className="upload-screen-wrapper">
+        <div className="upload-screen-inner">
+          <div className="error-card">
+            <AlertTriangle size={28} className="text-red-400" />
+            <h2 className="error-title">Analysis failed</h2>
+            <p className="error-msg">{errorMsg}</p>
+            <div className="error-hints">
+              <p>Possible fixes:</p>
+              <ul>
+                <li>
+                  Make sure <code>OPENAI_API_KEY</code> or{' '}
+                  <code>GOOGLE_GENERATIVE_AI_API_KEY</code> is set in{' '}
+                  <code>.env.local</code>
+                </li>
+                <li>Check that the PDF is not password-protected</li>
+                <li>Try a smaller PDF (under 100 MB)</li>
+              </ul>
+            </div>
+            <button className="button-primary mt-6" onClick={reset}>
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'results' && result) {
+    return (
+      <PolicyResults result={result} fileName={fileName} onReset={reset} />
+    )
+  }
+
+  return null
 }
-
-function StatCard({ stat }: { stat: typeof stats[number] }) {
-  const Icon = stat.icon
-  return <div className="panel group p-4 transition-colors hover:border-slate-700"><div className="flex items-start justify-between"><div className={`icon-box tone-${stat.tone}`}><Icon size={17} /></div><MoreHorizontal size={16} className="text-slate-600" /></div><div className="mt-4 text-2xl font-semibold tracking-tight text-white">{stat.value}</div><div className="mt-1 text-xs font-medium text-slate-300">{stat.label}</div><div className="mt-3 text-[11px] text-slate-500">{stat.delta}</div></div>
-}
-
-function Sidebar({ active, setActive }: { active: string; setActive: (x: string) => void }) {
-  return <aside className="hidden w-[236px] shrink-0 border-r border-slate-800/70 bg-[#0b1018] px-4 py-5 lg:block"><div className="flex items-center gap-2.5 px-2"><div className="brand-mark"><Sparkles size={16} /></div><div><div className="text-[15px] font-semibold tracking-tight text-white">Policy<span className="text-emerald-400">Lens</span></div><div className="text-[9px] uppercase tracking-[0.16em] text-slate-500">Policy intelligence</div></div></div><div className="mt-9 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Workspace</div><nav className="mt-3 space-y-1">{[[LayoutDashboard, 'Dashboard'], [Files, 'Policies'], [BarChart3, 'Insights']].map(([Icon, label]) => <button key={label as string} onClick={() => setActive(label as string)} className={`nav-item ${active === label ? 'nav-active' : ''}`}><Icon size={16} />{label as string}{label === 'Policies' && <span className="ml-auto rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">24</span>}</button>)}</nav><div className="mt-8 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Manage</div><nav className="mt-3 space-y-1"><button className="nav-item"><Settings size={16} />Settings</button><button className="nav-item"><CircleHelp size={16} />Help center</button></nav><div className="mt-auto pt-44"><div className="rounded-xl border border-slate-800 bg-[#111925] p-3"><div className="flex items-center gap-2 text-xs font-medium text-white"><Gauge size={14} className="text-emerald-400" />Workspace usage</div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full w-[68%] rounded-full bg-emerald-400" /></div><div className="mt-2 text-[10px] text-slate-500">68% of monthly extraction limit</div></div><div className="mt-4 flex items-center gap-2 border-t border-slate-800/70 pt-4"><div className="avatar">AM</div><div className="min-w-0 flex-1"><div className="truncate text-xs font-medium text-slate-200">Alex Morgan</div><div className="truncate text-[10px] text-slate-500">Personal workspace</div></div><ChevronDown size={14} className="text-slate-500" /></div></div></aside>
-}
-
-function Header({ onUpload }: { onUpload: () => void }) { return <header className="flex items-center justify-between border-b border-slate-800/70 px-5 py-3.5 lg:px-8"><div className="flex items-center gap-3"><button className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 lg:hidden"><Menu size={19} /></button><div className="hidden items-center gap-2 lg:flex"><span className="text-xs text-slate-500">Workspace</span><ChevronRight size={13} className="text-slate-700" /><span className="text-xs text-slate-300">Dashboard</span></div><div className="flex items-center gap-2 lg:hidden"><div className="brand-mark small"><Sparkles size={13} /></div><span className="text-sm font-semibold text-white">Policy<span className="text-emerald-400">Lens</span></span></div></div><div className="flex items-center gap-3"><button className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800"><Bell size={17} /><span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400" /></button><div className="avatar">AM</div></div></header> }
-
-function PolicyRow({ policy, onOpen }: { policy: typeof policies[number]; onOpen: () => void }) { return <div className="group grid grid-cols-[minmax(220px,1.5fr)_1.2fr_120px_80px_120px_76px] items-center gap-4 border-b border-slate-800/70 px-5 py-4 transition-colors hover:bg-slate-900/60"><div className="flex min-w-0 items-center gap-3"><div className={`policy-icon ${policy.color}`}>{policy.initials}</div><div className="min-w-0"><div className="truncate text-sm font-medium text-slate-100">{policy.name}</div><div className="mt-0.5 truncate text-[11px] text-slate-500">{policy.insurer}</div></div></div><div className="min-w-0 text-xs text-slate-400"><div className="truncate">{policy.plan}</div><div className="mt-0.5 text-[11px] text-slate-600">Uploaded {policy.date}</div></div><div className="text-xs text-slate-400">{policy.pages} pages</div><div className="text-xs text-slate-400">{policy.rules || '—'} rules</div><StatusBadge status={policy.status} /><button onClick={onOpen} className="flex items-center gap-1 text-xs font-medium text-emerald-400 opacity-70 transition-opacity hover:text-emerald-300 group-hover:opacity-100">Open <ArrowRight size={13} /></button></div> }
-
-function UploadModal({ onClose, onAnalyze }: { onClose: () => void; onAnalyze: () => void }) { const [file, setFile] = useState(false); return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"><div className="w-full max-w-xl rounded-2xl border border-slate-700 bg-[#111923] shadow-2xl"><div className="flex items-center justify-between border-b border-slate-800 px-6 py-5"><div><h2 className="text-lg font-semibold text-white">Upload your insurance policy</h2><p className="mt-1 text-xs text-slate-500">PDF documents up to 100 MB · Scanned documents supported with OCR</p></div><button onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-800 hover:text-white"><X size={18} /></button></div><div className="p-6"><button onClick={() => setFile(true)} className={`upload-zone w-full ${file ? 'border-emerald-400/50 bg-emerald-400/[0.04]' : ''}`}><div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-xl ${file ? 'bg-emerald-400/10 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>{file ? <FileCheck2 size={22} /> : <CloudUpload size={22} />}</div>{file ? <><div className="mt-4 text-sm font-medium text-white">Health_Secure_Plus.pdf</div><div className="mt-1 text-xs text-slate-500">46 pages · 8.4 MB · Ready to analyze</div></> : <><div className="mt-4 text-sm font-medium text-slate-200">Drag and drop your PDF here</div><div className="mt-1 text-xs text-slate-500">or click to browse files</div></>}</button>{file && <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-800 bg-[#0c131d] px-3 py-2.5"><div className="flex items-center gap-2"><FileSearch size={15} className="text-emerald-400" /><span className="text-xs text-slate-300">Health_Secure_Plus.pdf</span></div><button onClick={() => setFile(false)} className="text-slate-500 hover:text-white"><X size={14} /></button></div>}<div className="mt-6 flex items-center justify-end gap-3"><button onClick={onClose} className="button-secondary">Cancel</button><button onClick={onAnalyze} disabled={!file} className="button-primary disabled:cursor-not-allowed disabled:opacity-40"><Sparkles size={15} />Analyze policy</button></div></div></div></div> }
-
-function EvidencePanel({ onClose }: { onClose: () => void }) { return <aside className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col border-l border-slate-700 bg-[#101822] shadow-2xl"><div className="flex items-center justify-between border-b border-slate-800 px-5 py-4"><div><div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-400">Policy evidence</div><h3 className="mt-1 text-base font-semibold text-white">Cataract Treatment</h3></div><button onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-800 hover:text-white"><X size={18} /></button></div><div className="flex-1 overflow-y-auto p-5"><div className="flex items-center justify-between rounded-lg border border-slate-800 bg-[#0b1119] px-3 py-2.5"><div className="flex items-center gap-2"><FileSearch size={15} className="text-emerald-400" /><span className="text-xs text-slate-300">Page 17</span></div><span className="text-[11px] text-slate-500">Cataract Treatment</span></div><div className="mt-5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4"><div className="flex items-center gap-2 text-[11px] font-medium text-emerald-300"><Info size={14} />Supporting passage</div><p className="mt-3 text-sm leading-7 text-slate-200">“The Company shall indemnify the Insured Person for medically necessary cataract treatment subject to the applicable sub-limit and waiting period specified in the Schedule of Benefits.”</p></div><div className="mt-6"><div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Extracted rule</div><div className="mt-3 space-y-3 rounded-xl border border-slate-800 bg-[#0c131d] p-4"><div className="flex justify-between text-xs"><span className="text-slate-500">Treatment</span><span className="text-slate-200">Cataract</span></div><div className="flex justify-between text-xs"><span className="text-slate-500">Coverage</span><StatusBadge status="Conditional" /></div><div className="flex justify-between text-xs"><span className="text-slate-500">Sub-limit</span><span className="text-slate-200">₹40,000 / eye</span></div><div className="flex justify-between text-xs"><span className="text-slate-500">Waiting period</span><span className="text-slate-200">24 months</span></div></div></div><div className="mt-6 rounded-xl border border-amber-400/20 bg-amber-400/[0.04] p-4"><div className="flex items-center gap-2 text-xs font-medium text-amber-300"><AlertTriangle size={14} />Verification note</div><p className="mt-2 text-xs leading-5 text-slate-400">AI extraction is an interpretation. Verify this rule against the original policy wording before relying on it.</p></div></div><div className="flex gap-2 border-t border-slate-800 p-5"><button className="button-secondary flex-1"><Copy size={14} />Copy evidence</button><button className="button-primary flex-1"><FileSearch size={14} />Open PDF page</button></div></aside> }
-
-function CoverageCard({ item, onEvidence }: { item: typeof coverage[number]; onEvidence: () => void }) { return <div className="panel p-5 transition-colors hover:border-slate-700"><div className="flex items-start justify-between gap-4"><div><h3 className="text-sm font-semibold text-white">{item.title}</h3><p className="mt-2 max-w-2xl text-xs leading-5 text-slate-400">{item.description}</p></div><StatusBadge status={item.status} /></div><div className="mt-5 grid gap-4 border-t border-slate-800/80 pt-4 sm:grid-cols-2"><div><div className="text-[10px] uppercase tracking-wider text-slate-600">Conditions</div><div className="mt-1 text-xs text-slate-300">{item.condition}</div></div><div><div className="text-[10px] uppercase tracking-wider text-slate-600">Limit</div><div className="mt-1 text-xs text-slate-300">{item.limit}</div></div></div><button onClick={onEvidence} className="source-link mt-5"><FileSearch size={13} />Page {item.page} · {item.section}<ArrowRight size={12} /></button></div> }
-
-function OverviewTab({ setTab, onEvidence }: { setTab: (tab: Tab) => void; onEvidence: () => void }) { return <><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[['Coverage', 'Hospitalization, Daycare, Pre & Post Hospitalization'], ['Sum insured', '₹5,00,000'], ['Co-payment', '20%'], ['Deductible', '₹10,000'], ['Room rent limit', '₹5,000 / day'], ['Waiting period', '36 months']].map(([label, value]) => <div key={label} className="panel p-4"><div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</div><div className="mt-3 text-sm font-medium leading-5 text-slate-100">{value}</div></div>)}</div><div className="mt-7 grid gap-5 xl:grid-cols-[1.4fr_1fr]"><div className="panel overflow-hidden"><div className="flex items-center justify-between border-b border-slate-800 px-5 py-4"><div><h2 className="text-sm font-semibold text-white">Coverage highlights</h2><p className="mt-1 text-xs text-slate-500">Key rules extracted from your policy</p></div><button onClick={() => setTab('Coverage')} className="text-xs font-medium text-emerald-400">View all <ArrowRight size={13} className="ml-1 inline" /></button></div><div className="divide-y divide-slate-800/70">{coverage.slice(0, 2).map(item => <div key={item.title} className="p-5"><div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-200">{item.title}</span><StatusBadge status={item.status} /></div><p className="mt-2 text-xs leading-5 text-slate-500">{item.description}</p><button onClick={onEvidence} className="source-link mt-3"><FileSearch size={13} />Page {item.page} · {item.section}</button></div>)}</div></div><ExtractionSummary /></div><div className="mt-5 panel flex items-start gap-3 border-amber-400/15 bg-amber-400/[0.03] p-4"><AlertTriangle size={17} className="mt-0.5 shrink-0 text-amber-400" /><div><div className="text-xs font-medium text-amber-200">One item needs your review</div><p className="mt-1 text-xs leading-5 text-slate-500">“Ambiguous room-rent condition” may affect how eligible limits are interpreted.</p></div><button onClick={onEvidence} className="ml-auto shrink-0 text-xs font-medium text-amber-300 hover:text-amber-200">Review source</button></div></> }
-
-function ExtractionSummary() { return <div className="panel p-5"><div className="flex items-center gap-2"><div className="icon-box tone-purple"><Sparkles size={16} /></div><div><h2 className="text-sm font-semibold text-white">AI extraction summary</h2><p className="mt-1 text-xs text-slate-500">Structured from 46 pages</p></div></div><div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4">{[['Coverage rules found', '37'], ['Exclusions', '12'], ['Waiting periods', '8'], ['Deductibles', '2'], ['Co-payment rules', '3'], ['Sub-limits', '6'], ['Eligibility conditions', '9']].map(([label, value]) => <div key={label}><div className="text-lg font-semibold text-white">{value}</div><div className="mt-0.5 text-[10px] text-slate-500">{label}</div></div>)}</div><div className="mt-5 border-t border-slate-800 pt-4 text-[11px] leading-5 text-slate-500">Extracted information should be verified against the original policy wording.</div></div> }
-
-function DataTab({ tab, onEvidence }: { tab: Tab; onEvidence: () => void }) { const rows = tab === 'Waiting Periods' ? [['Pre-existing diseases', '36 months', 'Applicable', 'Page 30'], ['Specific diseases', '24 months', 'Applicable', 'Page 31'], ['Maternity', '24 months', 'Applicable', 'Page 33']] : tab === 'Exclusions' ? [['Cosmetic surgery', 'Treatment', 'Not covered', 'Page 35'], ['Experimental treatment', 'Treatment', 'Not covered', 'Page 36'], ['Non-medical expenses', 'Expenses', 'Not covered', 'Page 37'], ['Self-inflicted injury', 'General', 'Not covered', 'Page 38']] : [['Room rent limit', '₹5,000 / day', 'Standard room category', 'Page 14'], ['ICU limit', '2% of sum insured', 'Maximum ₹10,000 / day', 'Page 15'], ['Ambulance limit', '₹3,000 per admission', 'Road ambulance only', 'Page 21'], ['Annual deductible', '₹10,000', 'Applies per policy year', 'Page 9']]; return <div className="panel overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-5 py-4"><div><h2 className="text-sm font-semibold text-white">{tab}</h2><p className="mt-1 text-xs text-slate-500">Every result includes a source citation.</p></div><div className="flex gap-2"><div className="search-field w-44"><Search size={14} /><input placeholder="Search..." /></div><button className="button-secondary px-3"><Filter size={14} />Filter</button></div></div><div className="hidden grid-cols-[1.3fr_1fr_1fr_110px] gap-4 border-b border-slate-800/70 px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:grid"><span>{tab === 'Exclusions' ? 'Exclusion' : 'Rule'}</span><span>{tab === 'Waiting Periods' ? 'Waiting period' : tab === 'Exclusions' ? 'Category' : 'Value'}</span><span>{tab === 'Exclusions' ? 'Status' : 'Conditions'}</span><span>Source</span></div>{rows.map(row => <div key={row[0]} className="grid gap-2 border-b border-slate-800/70 px-5 py-4 sm:grid-cols-[1.3fr_1fr_1fr_110px] sm:items-center sm:gap-4"><div className="text-xs font-medium text-slate-200">{row[0]}</div><div className="text-xs text-slate-400">{row[1]}</div><div>{tab === 'Exclusions' ? <StatusBadge status="Needs Review" /> : <span className="text-xs text-slate-400">{row[2]}</span>}</div><button onClick={onEvidence} className="source-link text-left"><FileSearch size={12} />{row[3]}</button></div>)}</div> }
-
-export default function PolicyLens() { const [active, setActive] = useState('Dashboard'); const [tab, setTab] = useState<Tab>('Overview'); const [upload, setUpload] = useState(false); const [evidence, setEvidence] = useState(false); const [processing, setProcessing] = useState(false); const openPolicy = () => { setActive('Policies'); setTab('Overview') }; const analyze = () => { setUpload(false); setProcessing(true); setTimeout(() => setProcessing(false), 1800) }; return <div className="min-h-screen bg-[#080d14] text-slate-200"><div className="flex min-h-screen"><Sidebar active={active} setActive={setActive} /><div className="min-w-0 flex-1"><Header onUpload={() => setUpload(true)} /><main className="mx-auto max-w-[1440px] px-5 py-7 lg:px-8 lg:py-9"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><div className="mb-3 flex items-center gap-2 text-[11px] text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Workspace overview</div><h1 className="text-2xl font-semibold tracking-tight text-white lg:text-[29px]">Insurance Policy Intelligence</h1><p className="mt-2 text-sm text-slate-500">Upload a policy document and let AI organize the important coverage information.</p></div><button onClick={() => setUpload(true)} className="button-primary w-fit"><Plus size={16} />Upload policy</button></div><div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(stat => <StatCard key={stat.label} stat={stat} />)}</div><div className="mt-9 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h2 className="text-base font-semibold text-white">Recent policies</h2><p className="mt-1 text-xs text-slate-500">Your latest document analysis activity</p></div><div className="search-field w-full sm:w-64"><Search size={15} /><input placeholder="Search policies..." /></div></div><div className="panel mt-4 overflow-hidden"><div className="hidden grid-cols-[minmax(220px,1.5fr)_1.2fr_120px_80px_120px_76px] gap-4 border-b border-slate-800 px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-600 lg:grid"><span>Policy</span><span>Plan & insurer</span><span>Document</span><span>Rules</span><span>Status</span><span /></div>{policies.map(policy => <PolicyRow key={policy.name} policy={policy} onOpen={openPolicy} />)}</div><section className="mt-10"><div className="flex flex-col gap-4 border-b border-slate-800 pb-4 lg:flex-row lg:items-center lg:justify-between"><div><div className="flex items-center gap-2"><h2 className="text-base font-semibold text-white">{policies[0].name}</h2><StatusBadge status="Ready" /></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500"><span>Insurer: ABC Health Insurance</span><span>Individual Health Insurance</span><span>46 pages</span><span>Last analyzed: Sep 27, 2026</span></div></div><div className="flex gap-2"><button className="button-secondary"><ArrowRight size={14} className="rotate-180" />Re-analyze</button><button className="button-secondary hidden sm:flex"><FileSearch size={14} />View PDF</button></div></div><div className="mt-6 flex gap-1 overflow-x-auto border-b border-slate-800/80">{tabItems.map(item => <button key={item} onClick={() => setTab(item)} className={`tab-button ${tab === item ? 'tab-active' : ''}`}>{item}</button>)}</div><div className="mt-6">{processing ? <Processing /> : tab === 'Overview' ? <OverviewTab setTab={setTab} onEvidence={() => setEvidence(true)} /> : tab === 'Coverage' ? <div className="space-y-3">{coverage.map(item => <CoverageCard key={item.title} item={item} onEvidence={() => setEvidence(true)} />)}</div> : <DataTab tab={tab} onEvidence={() => setEvidence(true)} />}</div></section></main></div></div>{upload && <UploadModal onClose={() => setUpload(false)} onAnalyze={analyze} />}{evidence && <><div onClick={() => setEvidence(false)} className="fixed inset-0 z-30 bg-black/40" /><EvidencePanel onClose={() => setEvidence(false)} /></>}</div> }
-
-function Processing() { return <div className="panel mx-auto max-w-2xl p-7"><div className="flex items-center gap-3"><div className="icon-box tone-green"><Sparkles size={17} /></div><div><h2 className="text-base font-semibold text-white">Analyzing your policy</h2><p className="mt-1 text-xs text-slate-500">Health_Secure_Plus.pdf · 46 pages</p></div></div><div className="mt-7 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full w-[70%] rounded-full bg-emerald-400" /></div><div className="mt-2 text-right text-[11px] text-emerald-400">70% complete</div><div className="mt-8 space-y-4">{['Document uploaded', 'Text extracted', 'Pages analyzed', 'Sections identified', 'Extracting policy rules', 'Validating extracted information', 'Analysis complete'].map((step, index) => <div key={step} className="flex items-center gap-3 text-xs"><span className={`flex h-5 w-5 items-center justify-center rounded-full border ${index < 4 ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-400' : index === 4 ? 'border-blue-400/40 bg-blue-400/10 text-blue-300' : 'border-slate-700 text-slate-600'}`}>{index < 4 ? <Check size={12} /> : index === 4 ? <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-300" /> : <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />}</span><span className={index < 4 ? 'text-slate-300' : index === 4 ? 'text-blue-200' : 'text-slate-600'}>{step}</span></div>)}</div><div className="mt-8 grid grid-cols-3 gap-3 border-t border-slate-800 pt-5 sm:grid-cols-6">{[['46', 'Pages'], ['138', 'Sections'], ['37', 'Rules'], ['12', 'Exclusions'], ['8', 'Waiting'], ['6', 'Sub-limits']].map(([value, label]) => <div key={label}><div className="text-sm font-semibold text-white">{value}</div><div className="mt-1 text-[10px] text-slate-500">{label}</div></div>)}</div><p className="mt-6 text-center text-[11px] text-slate-600">Processing may take a few moments depending on document length.</p></div>}
