@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
 import { PolicyQA } from './PolicyQA'
+import { EstimateForm } from './EstimateForm'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ type Tab =
   | 'Eligibility'
   | 'Claim Requirements'
   | 'Ask Policy'
+  | 'Estimate Cost'
 
 const TABS: Tab[] = [
   'Overview',
@@ -37,6 +39,7 @@ const TABS: Tab[] = [
   'Limits',
   'Eligibility',
   'Claim Requirements',
+  'Estimate Cost',
   'Ask Policy',
 ]
 
@@ -49,6 +52,7 @@ const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Eligibility: ['eligibility'],
   'Claim Requirements': ['claim_requirement'],
   'Ask Policy': [],
+  'Estimate Cost': [],
 }
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
@@ -304,7 +308,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
         <div className="tabs-scroll">
           {TABS.map((t) => {
             const count =
-              t === 'Overview' || t === 'Ask Policy' ? null : getRulesForTab(t).length
+              t === 'Overview' || t === 'Ask Policy' || t === 'Estimate Cost' ? null : getRulesForTab(t).length
             return (
               <button
                 key={t}
@@ -331,6 +335,8 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           />
         ) : tab === 'Ask Policy' ? (
           <PolicyQA pages={result.pages} />
+        ) : tab === 'Estimate Cost' ? (
+          <EstimateForm policyResult={result} />
         ) : (
           <RulesTab
             rules={getRulesForTab(tab)}
