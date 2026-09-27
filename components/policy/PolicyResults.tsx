@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
+import { PolicyQA } from './PolicyQA'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ type Tab =
   | 'Limits'
   | 'Eligibility'
   | 'Claim Requirements'
+  | 'Ask Policy'
 
 const TABS: Tab[] = [
   'Overview',
@@ -35,6 +37,7 @@ const TABS: Tab[] = [
   'Limits',
   'Eligibility',
   'Claim Requirements',
+  'Ask Policy',
 ]
 
 const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
@@ -45,6 +48,7 @@ const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Limits: ['room_rent', 'icu_limit', 'sub_limit', 'deductible', 'co_payment'],
   Eligibility: ['eligibility'],
   'Claim Requirements': ['claim_requirement'],
+  'Ask Policy': [],
 }
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
@@ -300,14 +304,14 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
         <div className="tabs-scroll">
           {TABS.map((t) => {
             const count =
-              t === 'Overview' ? null : getRulesForTab(t).length
+              t === 'Overview' || t === 'Ask Policy' ? null : getRulesForTab(t).length
             return (
               <button
                 key={t}
-                className={`tab-button ${tab === t ? 'tab-active' : ''}`}
+                className={`tab-button ${tab === t ? 'tab-active' : ''} ${t === 'Ask Policy' ? 'tab-ask' : ''}`}
                 onClick={() => setTab(t)}
               >
-                {t}
+                {t === 'Ask Policy' ? '💬 Ask Policy' : t}
                 {count !== null && (
                   <span className="tab-count">{count}</span>
                 )}
@@ -325,6 +329,8 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
             setTab={setTab}
             onEvidence={setActiveRule}
           />
+        ) : tab === 'Ask Policy' ? (
+          <PolicyQA pages={result.pages} />
         ) : (
           <RulesTab
             rules={getRulesForTab(tab)}
