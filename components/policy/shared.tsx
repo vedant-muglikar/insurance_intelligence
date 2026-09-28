@@ -234,6 +234,40 @@ export function EvidenceViewer({
   )
 }
 
+export function UsabilityBadge({
+  usability,
+}: {
+  usability?: 'executable' | 'explanatory_only' | 'needs_human_review'
+}) {
+  if (!usability || usability === 'explanatory_only') {
+    return (
+      <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-slate-700 bg-slate-800/60 text-slate-400">
+        Explanatory Clause
+      </span>
+    )
+  }
+  if (usability === 'executable') {
+    return (
+      <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-950/40 text-cyan-300">
+        ⚡ Executable Rule
+      </span>
+    )
+  }
+  return (
+    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-amber-500/40 bg-amber-950/40 text-amber-300">
+      ⚠ Needs Human Review
+    </span>
+  )
+}
+
+export function UsedInEstimateBadge() {
+  return (
+    <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-950/50 text-emerald-300">
+      🎯 Applied in Preflight
+    </span>
+  )
+}
+
 // ─── Rule card ────────────────────────────────────────────────────────────────
 
 export function RuleCard({
@@ -247,7 +281,11 @@ export function RuleCard({
     <div className="rule-card">
       <div className="rule-card-top">
         <div className="rule-card-info">
-          <h3 className="rule-card-name">{rule.rule_name}</h3>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="rule-card-name">{rule.rule_name}</h3>
+            {rule.usability && <UsabilityBadge usability={rule.usability} />}
+            {rule.used_in_estimate && <UsedInEstimateBadge />}
+          </div>
           <p className="rule-card-desc">{rule.description}</p>
         </div>
         <StatusBadge status={rule.status} />
@@ -273,8 +311,10 @@ export function RuleCard({
 
       <div className="rule-card-footer">
         <ConfidenceBadge confidence={rule.confidence} />
-        {!rule.evidence_validated && rule.page_number !== null && (
+        {!rule.evidence_validated && rule.page_number !== null ? (
           <span className="unverified-tag">⚠ evidence unverified</span>
+        ) : (
+          <span className="text-[11px] text-emerald-400/80 font-medium">✓ verified evidence</span>
         )}
         <button
           className="source-link ml-auto"

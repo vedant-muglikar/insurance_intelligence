@@ -22,7 +22,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const resultData = await askPolicyQuestion(body.question, body.pages)
+    const resultData = await askPolicyQuestion(
+      body.question,
+      body.pages,
+      body.history,
+      body.scenarioContext
+    )
 
     const response: AskResponse = {
       success: true,

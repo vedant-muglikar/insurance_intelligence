@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractPdfPages, detectScannedPdf } from '@/lib/pdf/extractor'
 import { extractPolicyWithAI, validateAndEnrichRules } from '@/lib/ai/extractor'
+import { compilePolicyRules } from '@/lib/policy/compiler'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
 
 export const maxDuration = 120 // seconds — allow long AI calls
@@ -77,12 +78,16 @@ export async function POST(request: NextRequest) {
       validated_count: rules.filter((r) => r.evidence_validated).length,
     }
 
+    // ── 5. Deterministically compile into executable rules (Blueprint F2) ───
+    const compiled_rules = compilePolicyRules(rules, pages)
+
     const result: PolicyAnalysisResult = {
       overview: {
         ...aiResult.overview,
         total_pages: totalPages,
       },
       rules,
+      compiled_rules,
       pages,
       total_pages: totalPages,
       scanned_pdf_warning: scannedPdfWarning,
