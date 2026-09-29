@@ -120,7 +120,7 @@ button { cursor: pointer; }
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #dcf0eb 0%, var(--bg) 70%);
+  background: transparent;
 }
 .upload-screen-inner {
   width: 100%; max-width: 560px;
@@ -211,7 +211,7 @@ button { cursor: pointer; }
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
-  background: radial-gradient(ellipse 70% 50% at 50% 0%, #0d2a1e 0%, var(--bg) 65%);
+  background: transparent;
 }
 .processing-card {
   width: 100%; max-width: 520px;
@@ -402,7 +402,7 @@ button { cursor: pointer; }
 /* ─────────────────────────────────────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────────────────────────────────────── */
-.results-wrapper { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+.results-wrapper { min-height: 100vh; display: flex; flex-direction: column; background: transparent; }
 
 .results-topbar {
   display: flex; align-items: center; gap: 16px;
