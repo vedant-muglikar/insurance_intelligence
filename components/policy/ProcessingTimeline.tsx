@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Sparkles, FileText, Cpu, ShieldCheck } from 'lucide-react'
+import { Check, Cpu } from 'lucide-react'
+import Loader from '../ui/loader-4'
+import OnboardCard from '../ui/onboard-card'
 
 interface ProcessingTimelineProps {
   fileName: string
@@ -23,6 +25,16 @@ const SIMULATED_CLAUSES = [
   'Checking: Section 4.3 (Permanent Cosmetic Exclusions)',
   'Verifying: Citation Page 11 quote overlap > 85%',
   'Finalizing: Clause-to-Rupee audit ledger initialized',
+]
+
+// Map step index to OnboardCard labels
+const ONBOARD_STEPS: { step1: string; step2: string; step3: string }[] = [
+  { step1: 'Ready', step2: 'Uploading document...', step3: 'Extracting text' },
+  { step1: 'Uploaded', step2: 'Extracting text...', step3: 'Identifying sections' },
+  { step1: 'Text extracted', step2: 'Identifying sections...', step3: 'AI analysis' },
+  { step1: 'Sections found', step2: 'AI policy analysis...', step3: 'Validating evidence' },
+  { step1: 'Rules extracted', step2: 'Validating evidence...', step3: 'Finalizing' },
+  { step1: 'Evidence matched', step2: 'Finalizing results...', step3: 'Almost done' },
 ]
 
 export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
@@ -47,6 +59,7 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
   }, [])
 
   const progressPct = Math.round(((currentStep + 1) / STEPS.length) * 100)
+  const onboard = ONBOARD_STEPS[Math.min(currentStep, ONBOARD_STEPS.length - 1)]
 
   return (
     <div className="processing-wrapper relative overflow-hidden flex items-center justify-center min-h-[85vh] p-4">
@@ -60,17 +73,13 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
           <div className="w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-40 animate-[scanline_3s_ease-in-out_infinite]" />
         </div>
 
-        {/* Header with Orbital Ring */}
+        {/* Header with Loader & Brand */}
         <div className="flex items-center gap-4">
-          <div className="relative flex items-center justify-center shrink-0">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-950 animate-pulse">
-              <Cpu size={24} />
-            </div>
-            {/* Spinning orbital border ring */}
-            <div className="absolute -inset-1 rounded-xl border border-emerald-400/40 animate-spin opacity-50" style={{ animationDuration: '8s' }} />
+          <div className="shrink-0">
+            <Loader />
           </div>
 
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-white tracking-tight">ClaimLens Policy Engine</h2>
               <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
@@ -81,6 +90,17 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
               {fileName}
             </p>
           </div>
+        </div>
+
+        {/* OnboardCard Animation */}
+        <div className="flex justify-center my-2">
+          <OnboardCard
+            key={currentStep}
+            duration={4000}
+            step1={onboard.step1}
+            step2={onboard.step2}
+            step3={onboard.step3}
+          />
         </div>
 
         {/* Progress Bar & Percentage */}
@@ -156,3 +176,5 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
     </div>
   )
 }
+
+

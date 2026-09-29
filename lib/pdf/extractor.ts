@@ -22,13 +22,11 @@ export async function extractPdfPages(buffer: ArrayBuffer): Promise<ExtractedPag
         text += item.str + ' '
       }
       const cleanText = text.replace(/\s+/g, ' ').trim()
-      
       pages.push({
         page_number: pageData.pageIndex + 1,
         text: cleanText,
         char_count: cleanText.length,
       })
-
       return cleanText
     })
   }

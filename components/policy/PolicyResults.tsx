@@ -17,6 +17,7 @@ import {
 import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
 import { PolicyQA } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
+import GooeyNav from '../ui/GooeyNav'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -192,8 +193,8 @@ function OverviewTab({
           </button>
         </div>
         <div className="rules-list">
-          {topRules.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} />
+          {topRules.map((rule, i) => (
+            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
           ))}
         </div>
       </div>
@@ -281,8 +282,8 @@ function RulesTab({
         </div>
       ) : (
         <div className="rules-list">
-          {filtered.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} />
+          {filtered.map((rule, i) => (
+            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
           ))}
         </div>
       )}
@@ -308,6 +309,13 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     return result.rules.filter((r) => cats.includes(r.category))
   }
 
+  const gooeyItems = TABS.map(t => {
+    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' ? null : getRulesForTab(t).length
+    return {
+      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask' : t === 'Preflight Estimator' ? '⚡ Preflight' : t)
+    }
+  })
+
   return (
     <div className="results-wrapper">
       {/* Top bar */}
@@ -330,24 +338,13 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
       </div>
 
       {/* Tabs */}
-      <div className="results-tabs-bar">
-        <div className="tabs-scroll">
-          {TABS.map((t) => {
-            const count =
-              t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' ? null : getRulesForTab(t).length
-            return (
-              <button
-                key={t}
-                className={`tab-button ${tab === t ? 'tab-active' : ''} ${t === 'Ask Policy' ? 'tab-ask' : ''} ${t === 'Preflight Estimator' ? 'text-emerald-400 font-semibold' : ''}`}
-                onClick={() => setTab(t)}
-              >
-                {t === 'Ask Policy' ? '💬 Ask Policy' : t === 'Preflight Estimator' ? '⚡ Preflight Estimator' : t}
-                {count !== null && (
-                  <span className="tab-count">{count}</span>
-                )}
-              </button>
-            )
-          })}
+      <div className="results-tabs-bar" style={{ padding: '10px 24px' }}>
+        <div className="tabs-scroll" style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
+          <GooeyNav
+            items={gooeyItems}
+            initialActiveIndex={Math.max(0, TABS.indexOf(tab))}
+            onChange={(idx) => setTab(TABS[idx])}
+          />
         </div>
       </div>
 

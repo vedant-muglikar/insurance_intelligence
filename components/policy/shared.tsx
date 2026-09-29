@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -107,15 +108,26 @@ export function EvidenceViewer({
   }
 
   return (
-    <>
+    <AnimatePresence>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-30 bg-black/50 backdrop-blur-[2px]"
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px]"
         onClick={onClose}
       />
 
       {/* Panel */}
-      <aside className="evidence-panel">
+      <motion.aside 
+        key="panel"
+        initial={{ x: '100%', opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="evidence-panel"
+      >
         {/* Header */}
         <div className="evidence-header">
           <div>
@@ -229,8 +241,8 @@ export function EvidenceViewer({
             {copied ? 'Copied!' : 'Copy evidence'}
           </button>
         </div>
-      </aside>
-    </>
+      </motion.aside>
+    </AnimatePresence>
   )
 }
 
@@ -273,12 +285,21 @@ export function UsedInEstimateBadge() {
 export function RuleCard({
   rule,
   onEvidence,
+  index = 0,
 }: {
   rule: PolicyRule
   onEvidence: (rule: PolicyRule) => void
+  index?: number
 }) {
   return (
-    <div className="rule-card">
+    <motion.div 
+      className="rule-card cursor-pointer"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "0px 0px -20px 0px" }}
+      transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+      whileHover={{ y: -2, boxShadow: "0 10px 30px -10px rgba(18, 159, 140, 0.15)", borderColor: "var(--emerald)" }}
+    >
       <div className="rule-card-top">
         <div className="rule-card-info">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -294,7 +315,7 @@ export function RuleCard({
       <div className="rule-card-meta">
         <div className="rule-meta-item">
           <span className="rule-meta-label">Value</span>
-          <span className="rule-meta-val font-medium text-white">
+          <span className="rule-meta-val font-medium">
             {rule.value}
           </span>
         </div>
@@ -326,6 +347,6 @@ export function RuleCard({
           <ArrowRight size={11} />
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }

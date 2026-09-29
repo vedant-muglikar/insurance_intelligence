@@ -136,7 +136,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
               <MessageCircle className="w-8 h-8 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Ask about your policy</h3>
+              <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Ask about your policy</h3>
               <p className="text-sm text-slate-500 max-w-sm">
                 Get instant, AI-powered answers backed by direct citations from your uploaded policy document.
               </p>
@@ -170,7 +170,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
                     ? 'bg-emerald-600 text-white rounded-br-sm'
                     : msg.isError
                       ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm'
-                      : 'bg-[var(--card)] border border-[var(--border)] text-slate-200 rounded-bl-sm'
+                      : 'bg-[var(--card)] border border-[var(--border)] text-[var(--text)] rounded-bl-sm'
                 }`}>
                   {/* Status + confidence badges for assistant */}
                   {msg.role === 'assistant' && !msg.isError && (
@@ -239,7 +239,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask anything about your policy..."
             disabled={isLoading}
-            className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 disabled:opacity-50 transition-colors"
+            className="flex-1 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 disabled:opacity-50 transition-colors"
           />
           <button
             type="submit"
@@ -262,7 +262,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-              <h3 className="font-semibold text-white flex items-center gap-2">
+              <h3 className="font-semibold text-[var(--text)] flex items-center gap-2">
                 <FileText className="w-4 h-4 text-emerald-400" />
                 Evidence Source
               </h3>
@@ -284,7 +284,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
                 )}
               </div>
               <div className="border-l-2 border-emerald-500/40 pl-3">
-                <p className="text-sm text-slate-300 leading-relaxed italic">
+                <p className="text-sm text-[var(--muted)] leading-relaxed italic">
                   &ldquo;{selectedCitation.evidence_text}&rdquo;
                 </p>
               </div>
