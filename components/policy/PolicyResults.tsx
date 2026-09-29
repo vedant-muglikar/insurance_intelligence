@@ -166,8 +166,8 @@ function OverviewTab({
           </button>
         </div>
         <div className="rules-list">
-          {topRules.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} />
+          {topRules.map((rule, i) => (
+            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
           ))}
         </div>
       </div>
@@ -255,8 +255,8 @@ function RulesTab({
         </div>
       ) : (
         <div className="rules-list">
-          {filtered.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} />
+          {filtered.map((rule, i) => (
+            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
           ))}
         </div>
       )}
