@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
+import Loader from '../ui/loader-4'
+import OnboardCard from '../ui/onboard-card'
 
 interface ProcessingTimelineProps {
   fileName: string
@@ -16,13 +18,22 @@ const STEPS = [
   { label: 'Finalizing results', detail: 'Building structured output' },
 ]
 
+// Map step index to OnboardCard labels
+const ONBOARD_STEPS: { step1: string; step2: string; step3: string }[] = [
+  { step1: 'Ready', step2: 'Uploading document...', step3: 'Extracting text' },
+  { step1: 'Uploaded', step2: 'Extracting text...', step3: 'Identifying sections' },
+  { step1: 'Text extracted', step2: 'Identifying sections...', step3: 'AI analysis' },
+  { step1: 'Sections found', step2: 'AI policy analysis...', step3: 'Validating evidence' },
+  { step1: 'Rules extracted', step2: 'Validating evidence...', step3: 'Finalizing' },
+  { step1: 'Evidence matched', step2: 'Finalizing results...', step3: 'Almost done' },
+]
+
 export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
   const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStep((s) => {
-        // Advance only up to STEPS.length - 1; the last step stays until done
         if (s < STEPS.length - 1) return s + 1
         return s
       })
@@ -30,18 +41,31 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
     return () => clearInterval(interval)
   }, [])
 
+  const onboard = ONBOARD_STEPS[currentStep]
+
   return (
     <div className="processing-wrapper">
-      <div className="processing-card">
+      <div className="processing-card" style={{ maxWidth: '580px' }}>
         {/* Header */}
         <div className="processing-header">
-          <div className="icon-box tone-green pulse-ring">
-            <Sparkles size={18} />
+          <div className="mr-3">
+            <Loader />
           </div>
           <div>
             <h2 className="processing-title">Analyzing your policy</h2>
             <p className="processing-subtitle">{fileName}</p>
           </div>
+        </div>
+
+        {/* OnboardCard animation */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+          <OnboardCard
+            key={currentStep}
+            duration={4000}
+            step1={onboard.step1}
+            step2={onboard.step2}
+            step3={onboard.step3}
+          />
         </div>
 
         {/* Progress bar */}
@@ -57,39 +81,6 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
           {Math.round(((currentStep + 1) / STEPS.length) * 100)}% complete
         </div>
 
-        {/* Steps */}
-        <div className="processing-steps">
-          {STEPS.map((step, idx) => {
-            const done = idx < currentStep
-            const active = idx === currentStep
-            return (
-              <div key={step.label} className="processing-step">
-                <span
-                  className={`processing-step-icon ${done ? 'done' : active ? 'active' : 'pending'}`}
-                >
-                  {done ? (
-                    <Check size={11} />
-                  ) : active ? (
-                    <span className="step-pulse" />
-                  ) : (
-                    <span className="step-dot" />
-                  )}
-                </span>
-                <div>
-                  <span
-                    className={`processing-step-label ${done ? 'done' : active ? 'active' : 'pending'}`}
-                  >
-                    {step.label}
-                  </span>
-                  {active && (
-                    <div className="processing-step-detail">{step.detail}</div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
         <p className="processing-note">
           Processing time depends on document length. Please don't close this tab.
         </p>
@@ -97,3 +88,4 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
     </div>
   )
 }
+
