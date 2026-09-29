@@ -272,6 +272,8 @@ interface PolicyResultsProps {
   onReset: () => void
 }
 
+import GooeyNav from '../ui/GooeyNav'
+
 export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps) {
   const [tab, setTab] = useState<Tab>('Overview')
   const [activeRule, setActiveRule] = useState<PolicyRule | null>(null)
@@ -281,6 +283,13 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     if (!cats || cats.length === 0) return result.rules
     return result.rules.filter((r) => cats.includes(r.category))
   }
+
+  const gooeyItems = TABS.map(t => {
+    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Estimate Cost' ? null : getRulesForTab(t).length
+    return {
+      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask Policy' : t)
+    }
+  })
 
   return (
     <div className="results-wrapper">
@@ -304,24 +313,13 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
       </div>
 
       {/* Tabs */}
-      <div className="results-tabs-bar">
-        <div className="tabs-scroll">
-          {TABS.map((t) => {
-            const count =
-              t === 'Overview' || t === 'Ask Policy' || t === 'Estimate Cost' ? null : getRulesForTab(t).length
-            return (
-              <button
-                key={t}
-                className={`tab-button ${tab === t ? 'tab-active' : ''} ${t === 'Ask Policy' ? 'tab-ask' : ''}`}
-                onClick={() => setTab(t)}
-              >
-                {t === 'Ask Policy' ? '💬 Ask Policy' : t}
-                {count !== null && (
-                  <span className="tab-count">{count}</span>
-                )}
-              </button>
-            )
-          })}
+      <div className="results-tabs-bar" style={{ padding: '10px 24px' }}>
+        <div className="tabs-scroll" style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
+          <GooeyNav
+            items={gooeyItems}
+            initialActiveIndex={Math.max(0, TABS.indexOf(tab))}
+            onChange={(idx) => setTab(TABS[idx])}
+          />
         </div>
       </div>
 

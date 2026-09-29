@@ -6,8 +6,8 @@ export default function Page() {
     <>
       <div className="fixed inset-0 z-0">
         <LiquidEther
-          colors={['#129f8c', '#35d69c', '#dcf0eb']}
-          backgroundColor="#f2f6f5"
+          colors={['#129f8c', '#35d69c', '#61a08c']}
+          backgroundColor="#e8eeec"
           lightMode={true}
           mouseForce={25}
           cursorSize={120}
