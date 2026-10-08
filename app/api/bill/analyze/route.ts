@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractPdfPages } from '@/lib/pdf/extractor'
-import { getBestGeminiModel } from '@/lib/ai/extractor'
+import { executeWithGeminiFallback } from '@/lib/ai/extractor'
 import { parseCurrency } from '@/lib/policy/normalizers'
 import type { HospitalBill, HospitalBillLineItem, BillLineCategory, BillPaymentSummary } from '@/lib/types/bill'
 
@@ -152,34 +152,39 @@ Return ONLY valid JSON matching this schema exactly:
       let jsonStr = ''
 
       if (isGoogle) {
-        const model = await getBestGeminiModel(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY!
+        try {
+          jsonStr = await executeWithGeminiFallback(
+            apiKey,
+            (model) =>
+              fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
                 {
-                  role: 'user',
-                  parts: [{ text: `${systemPrompt}\n\nHospital Bill Text:\n${text.slice(0, 40000)}` }],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.1,
-                maxOutputTokens: 4096,
-                responseMimeType: 'application/json',
-              },
-            }),
-          }
-        )
-        if (res.ok) {
-          const respJson = await res.json()
-          jsonStr = respJson.candidates?.[0]?.content?.parts?.[0]?.text || ''
-        } else {
-          const errText = await res.text()
-          warnings.push(`AI extraction warning: ${res.status}. Falling back to heuristic parsing.`)
-          console.warn('[bill/analyze] Gemini error:', errText)
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [
+                      {
+                        role: 'user',
+                        parts: [{ text: `${systemPrompt}\n\nHospital Bill Text:\n${text.slice(0, 40000)}` }],
+                      },
+                    ],
+                    generationConfig: {
+                      temperature: 0.1,
+                      maxOutputTokens: 4096,
+                      responseMimeType: 'application/json',
+                    },
+                  }),
+                }
+              ),
+            async (res) => {
+              const respJson = await res.json()
+              return respJson.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            }
+          )
+        } catch (geminiErr: any) {
+          warnings.push(`AI extraction warning: ${geminiErr.message}. Falling back to heuristic parsing.`)
+          console.warn('[bill/analyze] Gemini error:', geminiErr)
         }
       } else {
         // OpenAI fallback
