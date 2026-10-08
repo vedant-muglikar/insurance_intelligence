@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { UserMenu } from '@/components/ui/UserMenu'
 import {
   CloudUpload,
   FileCheck2,
@@ -88,9 +89,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
           </div>
           <span className="lp-nav-name">Claim<span className="lp-accent">Lens</span></span>
         </div>
-        <a href="/" className="us-back-link">
-          ← Back to home
-        </a>
+        <UserMenu />
       </div>
 
       {/* ── Main layout: left context / right upload ── */}
