@@ -52,7 +52,7 @@ ClaimLens strictly enforces an architectural boundary:
 | Component | Path | Description |
 | :--- | :--- | :--- |
 | **Deterministic Rule Compiler** | `lib/policy/compiler.ts` | Transforms raw extracted clause data into strongly-typed, executable policy rules. |
-| **Quote-First Cost Engine** | `lib/estimate/cost.ts` | Calculates proportionate room penalties, consumable deductions, and net base charges. |
+| **Quote-First Cost Engine** | `lib/estimate/cost.ts` | Calculates proportionate room penalties, consumable deductions,and net base charges. |
 | **Policy Preflight Engine** | `lib/estimate/policy.ts` | Evaluates eligibility, waiting periods, deductibles, co-pays, and sub-limits against patient scenarios. |
 | **Indian Cost Benchmark Matrix** | `lib/estimate/dataset.ts` | Localized benchmarks across Tier 1, 2, and 3 Indian cities with Public/Private/Corporate multipliers for 16 procedures. |
 | **Procedure Fuzzy Matcher** | `lib/estimate/matching.ts` | Maps natural language inputs (e.g. *"knee surgery"*, *"angio"*) to standardized clinical keys. |
@@ -162,3 +162,36 @@ The test suite in `tests/acceptance_tests.ts` executes automatically via `npx ts
    - Selecting Deluxe Suite when policy permits Single Private triggers proportionate deduction penalty
 7. **Clause-to-Rupee Traceability**:
    - Verifies that deduction amounts, calculation traces, and evidence references exist for all ledger lines
+
+---
+
+## 8. 🧾 Hospital Bill Verification & Suspicious Charge Detection (Phase 1 & Phase 2 Built)
+
+### A. Architecture Overview
+ClaimLens features a dedicated **Hospital Bill Audit** module (`Bill Audit` tab) operating on a strict dual-track separation:
+
+1. **Track A — Hospital Billing Verification (Anomalies & Suspicious Charges)**:
+   - Evaluates the bill internally with zero reliance on insurance rules.
+   - **Arithmetic Discrepancy Engine**: Checks every line item ($Quantity \times Unit\ Rate \equiv Line\ Total$) with tolerance threshold and explicit mathematical discrepancy formulas.
+   - **Duplicate Charge Detection**: Uses string normalization and Levenshtein distance matching across identical categories to catch double-billed services and equipment.
+   - **Vague / Unitemized Charge Detection**: Flags generic labels (*"Miscellaneous Charges"*, *"Other Charges"*, *"General Administration"*) that insurers reject.
+   - **Bill-Total Reconciliation**: Identifies mismatches between stated gross totals and the sum of itemized rows.
+   - **Excessive Miscellaneous Ratio**: Alerts when unclassified charges exceed 15% of the total bill.
+
+2. **Track B — Insurance Policy Coverage Verification**:
+   - Cross-checks bill items against the active policy rules compiled in ClaimLens.
+   - **Exclusion Matching**: Detects non-payable items (surgical consumables, PPE kits, disposables, toiletries, documentation fees) and attaches the verbatim policy clause and page number.
+   - **Sub-Limit Detection**: Compares high-cost items (implants, stents, prosthetics, cataract lenses) against policy caps.
+   - **Room Rent Proportionate Deduction Risk**: Warns when room/ICU charges breach policy limits, alerting the user to downstream surgeon fee prorations.
+   - **Diagnosis Waiting Period Verification**: Matches bill diagnosis against 24-month or 48-month specific illness schedules.
+
+### B. Implementation Summary
+- **Type Definitions**: `lib/types/bill.ts` and `lib/types/audit.ts`
+- **Pure Deterministic Audit Engine**: `lib/bill/auditor.ts` (100% deterministic TypeScript, zero LLM math hallucinations)
+- **Interactive Audit Workspace**: `components/policy/BillAudit.tsx`
+  - 4 Key Metric Cards (Bill Total vs Items, Hospital Billing Flags, Insurance Policy Flags, Identified At-Risk Exposure)
+  - Interactive Dual-Track Findings Explorer with severity filters and click-to-highlight line item locator
+  - Discharge Counter Dispute Checklist with interactive checkboxes and one-click clipboard copying
+  - Itemised Charges Table with dual audit status badges (`Math Error`, `Verify`, `Excluded`, `Sub-limit`, `Covered`)
+- **Sample Bill Fixtures**: `lib/bill/sampleBills.ts` including realistic test cases with known billing discrepancies for instant testing.
+

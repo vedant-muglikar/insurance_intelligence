@@ -114,6 +114,34 @@ const mockPolicyRules: PolicyRule[] = [
     confidence: 'high',
     evidence_validated: true,
   },
+  {
+    id: 'r_excl_consumables',
+    category: 'exclusion',
+    rule_name: 'Non-Medical Consumables and Disposables Exclusion',
+    value: 'Excluded',
+    description: 'Non-payable expenses including gloves, masks, PPE kits, surgical disposables, and toiletries are excluded from coverage.',
+    status: 'not_covered',
+    conditions: [],
+    page_number: 19,
+    section_name: 'Section 7 - Permanent Exclusions',
+    evidence_text: 'Charges incurred towards consumables, disposables, gloves, gowns, and personal comfort items are not payable under this policy.',
+    confidence: 'high',
+    evidence_validated: true,
+  },
+  {
+    id: 'r_sublimit_implant',
+    category: 'sub_limit',
+    rule_name: 'Medical Implants and Stents Sub-Limit',
+    value: '₹50,000 per event',
+    description: 'Reimbursement for artificial implants, stents, and prostheses is capped at Rs 50,000 per hospitalization.',
+    status: 'conditionally_covered',
+    conditions: [],
+    page_number: 9,
+    section_name: 'Section 3 - Sub-Limits',
+    evidence_text: 'Expenses for medical devices, stents, and joint implants shall be subject to a maximum sub-limit of Rs 50,000.',
+    confidence: 'high',
+    evidence_validated: true,
+  },
 ]
 
 const mockPolicy: PolicyAnalysisResult = {
@@ -265,4 +293,96 @@ for (const line of suiteResult.ledger) {
   assert(line.evidence !== undefined, `Evidence reference exists for ${line.ruleName}`)
 }
 
-console.log('\n🎉 ALL ACCEPTANCE TESTS PASSED SUCCESSFULLY! 🎉\n')
+// ─── 9. Phase 1 — Hospital Bill Audit Data & Verification ────────────────────
+console.log('\n8. Phase 1 — Hospital Bill Audit & Line Item Integrity:')
+import { SAMPLE_HOSPITAL_BILLS } from '../lib/bill/sampleBills'
+import type { HospitalBillLineItem } from '../lib/types/bill'
+
+assert(SAMPLE_HOSPITAL_BILLS.length >= 2, 'Sample hospital discharge bills dataset loaded (at least 2 bills)')
+
+const sampleBill1 = SAMPLE_HOSPITAL_BILLS[0].bill
+assert(sampleBill1.lineItems.length === 10, 'Knee replacement sample bill contains 10 itemized line items')
+assert(sampleBill1.totalBilledAmount === 245000, 'Knee replacement bill gross total is ₹2,45,000')
+
+const computedSum = sampleBill1.lineItems.reduce((acc, item) => acc + item.amount, 0)
+assert(computedSum === sampleBill1.totalBilledAmount, 'Line item sum matches billed total with zero discrepancy')
+
+// Verify user-correction preservation logic
+const testItem: HospitalBillLineItem = {
+  id: 'test_item_1',
+  description: 'Single Deluxe AC Room (4 Days @ ₹8,000/day)',
+  category: 'room',
+  quantity: 4,
+  unitPrice: 8000,
+  amount: 32000,
+  sourcePage: 1,
+  originalText: 'Single Deluxe Room Charges (4 days @ 8000.00)',
+  originalAmount: 32000,
+  confidence: 'high',
+  isUserEdited: false,
+}
+
+// Simulate user correcting the amount from ₹32,000 to ₹30,000
+const userCorrectedItem: HospitalBillLineItem = {
+  ...testItem,
+  amount: 30000,
+  unitPrice: 7500,
+  isUserEdited: true,
+}
+
+assert(userCorrectedItem.originalText === testItem.originalText, 'Original extracted text is preserved after user edit')
+assert(userCorrectedItem.originalAmount === 32000, 'Original extracted amount (₹32,000) is preserved after user edit')
+assert(userCorrectedItem.amount === 30000, 'Updated user-corrected amount is ₹30,000')
+assert(userCorrectedItem.isUserEdited === true, 'isUserEdited flag accurately marked true')
+
+// Test payment summary arithmetic
+const ps = sampleBill1.paymentSummary!
+assert(ps.subtotal! - ps.discount! === ps.netPayable, 'Payment summary: Subtotal - Discount equals Net Payable')
+assert(ps.netPayable! - (ps.deposit! + ps.amountPaid!) === ps.balanceDue, 'Payment summary: Net Payable - Payments equals Balance Due')
+
+// ─── 10. Phase 2 — Deterministic Bill Audit Engine Acceptance Tests ─────────
+console.log('\n9. Phase 2 — Deterministic Bill Audit Engine (Dual Track):')
+import { runBillAudit } from '../lib/bill/auditor'
+
+// Test with the third sample bill (Fortis Angioplasty test case with anomalies)
+const anomalySample = SAMPLE_HOSPITAL_BILLS.find(s => s.id === 'sample-cardiac-anomalies')!
+assert(!!anomalySample, 'Sample bill with cardiac anomalies found in dataset')
+
+// Run Track A audit (without policy rules)
+const pureBillingAudit = runBillAudit(anomalySample.bill, anomalySample.bill.lineItems)
+assert(pureBillingAudit.policyLoaded === false, 'pureBillingAudit indicates policyLoaded is false')
+assert(pureBillingAudit.billingFindingCount >= 3, 'Pure billing audit detects at least 3 billing anomalies')
+
+// Verify arithmetic discrepancy finding
+const arithFinding = pureBillingAudit.findings.find(f => f.billingIssue === 'arithmetic_discrepancy')
+assert(!!arithFinding, 'Audit detects arithmetic discrepancy')
+assert(arithFinding?.calculatedDiscrepancy === 8000, 'Arithmetic discrepancy calculated exactly as ₹8,000 (1 × 40,000 ≠ 48,000)')
+
+// Verify duplicate finding
+const dupFinding = pureBillingAudit.findings.find(f => f.billingIssue === 'potential_duplicate')
+assert(!!dupFinding, 'Audit detects potential duplicate stent charge')
+
+// Verify vague charge finding
+const vagueFinding = pureBillingAudit.findings.find(f => f.billingIssue === 'vague_charge')
+assert(!!vagueFinding, 'Audit flags "Miscellaneous Hospital Charges" as vague charge requiring itemisation')
+
+// Run Track B audit (with mock policy rules)
+const fullAudit = runBillAudit(anomalySample.bill, anomalySample.bill.lineItems, mockPolicy.rules)
+assert(fullAudit.policyLoaded === true, 'fullAudit indicates policyLoaded is true')
+assert(fullAudit.insuranceFindingCount >= 1, 'Full audit identifies insurance policy findings')
+
+// Verify consumables exclusion finding
+const consumableFinding = fullAudit.findings.find(f => f.insuranceIssue === 'consumables_not_covered')
+assert(!!consumableFinding, 'Audit identifies consumable kit as non-payable exclusion under policy')
+assert(!!consumableFinding?.policyClause, 'Consumable finding quotes verbatim policy clause')
+
+// Verify per-item verdicts
+const mathErrorVerdict = fullAudit.verdicts.find(v => v.billingVerdict === 'discrepancy')
+assert(!!mathErrorVerdict, 'At least one line item has billingVerdict = discrepancy')
+
+const excludedVerdict = fullAudit.verdicts.find(v => v.insuranceVerdict === 'likely_excluded')
+assert(!!excludedVerdict, 'At least one line item has insuranceVerdict = likely_excluded')
+
+console.log('\n🎉 ALL ACCEPTANCE TESTS (POLICY BLUEPRINT + BILL AUDIT PHASE 1 & 2) PASSED! 🎉\n')
+
+
