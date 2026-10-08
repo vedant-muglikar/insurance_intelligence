@@ -18,6 +18,7 @@ import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
 import { PolicyQA } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
 import { BillAudit } from './BillAudit'
+import { ClaimDispute } from './ClaimDispute'
 import GooeyNav from '../ui/GooeyNav'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ type Tab =
   | 'Eligibility'
   | 'Claim Requirements'
   | 'Ask Policy'
+  | 'Claim Dispute'
   | 'Bill Audit'
 
 const TABS: Tab[] = [
@@ -44,6 +46,7 @@ const TABS: Tab[] = [
   'Eligibility',
   'Claim Requirements',
   'Ask Policy',
+  'Claim Dispute',
   'Bill Audit',
 ]
 
@@ -57,6 +60,7 @@ const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Eligibility: ['eligibility'],
   'Claim Requirements': ['claim_requirement'],
   'Ask Policy': [],
+  'Claim Dispute': [],
   'Bill Audit': [],
 }
 
@@ -314,9 +318,27 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
   }
 
   const gooeyItems = TABS.map(t => {
-    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' || t === 'Bill Audit' ? null : getRulesForTab(t).length
+    const count =
+      t === 'Overview' ||
+      t === 'Ask Policy' ||
+      t === 'Preflight Estimator' ||
+      t === 'Claim Dispute' ||
+      t === 'Bill Audit'
+        ? null
+        : getRulesForTab(t).length
     return {
-      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask' : t === 'Preflight Estimator' ? '⚡ Preflight' : t === 'Bill Audit' ? '🧾 Bill Audit' : t)
+      label:
+        count !== null
+          ? `${t} [${count}]`
+          : t === 'Ask Policy'
+          ? '💬 Ask'
+          : t === 'Preflight Estimator'
+          ? '⚡ Preflight'
+          : t === 'Claim Dispute'
+          ? '🛡️ Dispute'
+          : t === 'Bill Audit'
+          ? '🧾 Bill Audit'
+          : t,
     }
   })
 
@@ -364,6 +386,8 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           <PolicyQA pages={result.pages} />
         ) : tab === 'Preflight Estimator' ? (
           <EstimateForm policyResult={result} />
+        ) : tab === 'Claim Dispute' ? (
+          <ClaimDispute pages={result.pages} />
         ) : tab === 'Bill Audit' ? (
           <BillAudit
             policyRules={result.rules}

@@ -88,68 +88,25 @@ interface AIRawResult {
 export async function extractPolicyWithAI(
   pages: ExtractedPage[],
 ): Promise<AIRawResult> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
 
   if (!apiKey) {
     throw new Error(
-      'No AI API key found. Set OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in your .env.local file.',
+      'No AI API key found. Set GOOGLE_GENERATIVE_AI_API_KEY in your .env.local file.',
     )
   }
 
-  // Prefer Google if Google key is set
-  const useGoogle = !!process.env.GOOGLE_GENERATIVE_AI_API_KEY
-
-  if (useGoogle) {
-    return callGemini(pages)
-  }
-  return callOpenAI(pages)
-}
-
-// ─── OpenAI ──────────────────────────────────────────────────────────────────
-
-async function callOpenAI(pages: ExtractedPage[]): Promise<AIRawResult> {
-  const apiKey = process.env.OPENAI_API_KEY!
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0.1,
-      max_tokens: 8000,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(pages) },
-      ],
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`OpenAI API error: ${response.status} — ${err}`)
-  }
-
-  const json = await response.json()
-  const content = json.choices?.[0]?.message?.content
-  if (!content) throw new Error('Empty response from OpenAI')
-  return JSON.parse(content) as AIRawResult
+  return callGemini(pages)
 }
 
 // ─── Gemini ──────────────────────────────────────────────────────────────────
 
-let cachedGeminiModel: string | null = null
+let cachedGeminiModels: string[] | null = null
 
-let modelBlacklist = new Set<string>()
-
-export async function getBestGeminiModel(apiKey: string): Promise<string> {
-  if (cachedGeminiModel && !modelBlacklist.has(cachedGeminiModel)) {
-    return cachedGeminiModel
+export async function getAvailableGeminiModels(apiKey: string): Promise<string[]> {
+  if (cachedGeminiModels) {
+    return cachedGeminiModels
   }
-
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
@@ -159,76 +116,87 @@ export async function getBestGeminiModel(apiKey: string): Promise<string> {
     const data = await response.json()
     const models = data.models || []
     
-    // Filter for models supporting generateContent and not in blacklist
     const available = models
       .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
       .map((m: any) => m.name.replace('models/', ''))
-      .filter((m: string) => !modelBlacklist.has(m))
 
-    // Prioritize flash models, then pro, sorting to get highest version
     const flashModels = available.filter((m: string) => m.includes('flash')).sort((a: string, b: string) => b.localeCompare(a))
     const proModels = available.filter((m: string) => m.includes('pro')).sort((a: string, b: string) => b.localeCompare(a))
 
-    const selectedModel = flashModels[0] || proModels[0] || available[0] || 'gemini-1.5-flash'
-    
-    cachedGeminiModel = selectedModel
-    console.log(`[Gemini] Selected model dynamically: ${cachedGeminiModel}`)
-    return selectedModel
+    cachedGeminiModels = [...flashModels, ...proModels, ...available]
+    // Remove duplicates
+    cachedGeminiModels = Array.from(new Set(cachedGeminiModels))
+    return cachedGeminiModels
   } catch (err) {
-    console.warn('[Gemini] Could not dynamically fetch models, falling back to gemini-1.5-flash', err)
-    return 'gemini-1.5-flash'
+    console.warn('[Gemini] Could not dynamically fetch models', err)
+    return ['gemini-1.5-flash', 'gemini-1.5-pro']
   }
 }
 
-async function callGemini(pages: ExtractedPage[], retryCount = 0): Promise<AIRawResult> {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY!
-  const model = await getBestGeminiModel(apiKey)
+export async function executeWithGeminiFallback<T>(
+  apiKey: string,
+  requestBuilder: (model: string) => Promise<Response>,
+  responseParser: (response: Response) => Promise<T>
+): Promise<T> {
+  const models = await getAvailableGeminiModels(apiKey)
+  let lastError: any
 
+  for (const model of models) {
+    try {
+      console.log(`[Gemini] Attempting request with model: ${model}`)
+      const response = await requestBuilder(model)
+      
+      if (!response.ok) {
+        const err = await response.text()
+        throw new Error(`Status ${response.status}: ${err}`)
+      }
+      
+      return await responseParser(response)
+    } catch (err: any) {
+      console.warn(`[Gemini] Model ${model} failed: ${err.message}. Trying next available model...`)
+      lastError = err
+    }
+  }
+
+  throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`)
+}
+
+async function callGemini(pages: ExtractedPage[]): Promise<AIRawResult> {
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY!
   const systemPrompt = buildSystemPrompt()
   const userPrompt = buildUserPrompt(pages)
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+  return executeWithGeminiFallback(
+    apiKey,
+    (model) => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+            responseMimeType: 'application/json',
           },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }),
-    },
-  )
+        }),
+      },
+    ),
+    async (response) => {
+      const json = await response.json()
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) throw new Error('Empty response from Gemini')
 
-  if (!response.ok) {
-    const err = await response.text()
-    
-    // If model is not found (404) or we hit a hard 0-quota limit (429), blacklist it and try the next best model
-    if ((response.status === 404 || (response.status === 429 && err.includes('limit: 0'))) && retryCount < 3) {
-      console.warn(`[Gemini] Model ${model} is unavailable or has no free tier quota. Retrying with a different model...`)
-      modelBlacklist.add(model)
-      cachedGeminiModel = null
-      return callGemini(pages, retryCount + 1)
+      const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
+      return JSON.parse(cleaned) as AIRawResult
     }
-    
-    throw new Error(`Gemini API error: ${response.status} — ${err}`)
-  }
-
-  const json = await response.json()
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) throw new Error('Empty response from Gemini')
-
-  // Strip possible markdown fences
-  const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
-  return JSON.parse(cleaned) as AIRawResult
+  )
 }
 
 // ─── Validation & enrichment ─────────────────────────────────────────────────

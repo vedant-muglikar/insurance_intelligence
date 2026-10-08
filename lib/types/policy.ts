@@ -207,3 +207,36 @@ export interface AskResponse {
   error?: string
 }
 
+// ─── Claim Dispute Types ────────────────────────────────────────────────────
+
+export interface DisputeArgument {
+  rejection_reason: string
+  counter_argument: string
+  supporting_clauses: Citation[]
+  strength: 'strong' | 'moderate' | 'weak'
+  legal_basis?: string
+}
+
+export interface DisputeAnalysis {
+  verdict: 'disputable' | 'partially_disputable' | 'not_disputable'
+  verdict_summary: string
+  arguments: DisputeArgument[]
+  recommended_actions: string[]
+  overall_confidence: 'high' | 'medium' | 'low'
+  disclaimer: string
+}
+
+export interface DisputeRequest {
+  rejection_reasons: string[]
+  treatment_name?: string
+  claim_amount?: string
+  rejection_letter_text?: string
+  pages: ExtractedPage[]
+}
+
+export interface DisputeResponse {
+  success: boolean
+  data?: DisputeAnalysis
+  error?: string
+}
+
