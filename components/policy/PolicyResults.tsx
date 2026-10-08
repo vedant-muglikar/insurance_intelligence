@@ -17,6 +17,7 @@ import {
 import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
 import { PolicyQA } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
+import { ClaimDispute } from './ClaimDispute'
 import GooeyNav from '../ui/GooeyNav'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ type Tab =
   | 'Eligibility'
   | 'Claim Requirements'
   | 'Ask Policy'
+  | 'Claim Dispute'
 
 const TABS: Tab[] = [
   'Overview',
@@ -42,6 +44,7 @@ const TABS: Tab[] = [
   'Eligibility',
   'Claim Requirements',
   'Ask Policy',
+  'Claim Dispute',
 ]
 
 const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
@@ -54,6 +57,7 @@ const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Eligibility: ['eligibility'],
   'Claim Requirements': ['claim_requirement'],
   'Ask Policy': [],
+  'Claim Dispute': [],
 }
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
@@ -310,9 +314,9 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
   }
 
   const gooeyItems = TABS.map(t => {
-    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' ? null : getRulesForTab(t).length
+    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' || t === 'Claim Dispute' ? null : getRulesForTab(t).length
     return {
-      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask' : t === 'Preflight Estimator' ? '⚡ Preflight' : t)
+      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask' : t === 'Preflight Estimator' ? '⚡ Preflight' : t === 'Claim Dispute' ? '🛡️ Dispute' : t)
     }
   })
 
@@ -360,6 +364,8 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           <PolicyQA pages={result.pages} />
         ) : tab === 'Preflight Estimator' ? (
           <EstimateForm policyResult={result} />
+        ) : tab === 'Claim Dispute' ? (
+          <ClaimDispute pages={result.pages} />
         ) : (
           <RulesTab
             rules={getRulesForTab(tab)}
