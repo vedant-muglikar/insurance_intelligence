@@ -1,195 +1,601 @@
 'use client'
 
-import React, { useState } from 'react'
-import { PolicyAnalysisResult } from '@/lib/types/policy'
-import { TreatmentScenario, EstimateResult } from '@/lib/types/estimate'
-import { generateEstimate } from '@/lib/estimate'
-import { Calculator, AlertCircle, Info, ChevronRight, IndianRupee } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { PolicyAnalysisResult, PolicyRule } from '@/lib/types/policy'
+import {
+  TreatmentScenario,
+  CoverageResult,
+  QuoteLineItem,
+} from '@/lib/types/estimate'
+import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
+import { CANONICAL_PROCEDURES, formatINR } from '@/lib/policy/normalizers'
+import { CostLedger } from './CostLedger'
+import { MissingInfoPanel } from './MissingInfoPanel'
+import { WhatIfPanel } from './WhatIfPanel'
+import { PolicyTimeline } from './PolicyTimeline'
+import { ClaimReadiness } from './ClaimReadiness'
+import { QuoteReview } from './QuoteReview'
+import { ExportSummary } from './ExportSummary'
+import { CoverageGauge } from './CoverageGauge'
+import { ClauseFlowVisualizer } from './ClauseFlowVisualizer'
+import { EvidenceViewer } from './shared'
+import {
+  Calculator,
+  AlertCircle,
+  Clock,
+  Sparkles,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+  CheckSquare,
+  Download,
+  Upload,
+  Calendar,
+  Building2,
+  Bed,
+  User,
+  ShieldCheck,
+  ChevronRight,
+  RotateCcw,
+} from 'lucide-react'
 
-export function EstimateForm({ policyResult }: { policyResult: PolicyAnalysisResult }) {
+interface EstimateFormProps {
+  policyResult: PolicyAnalysisResult
+}
+
+export function EstimateForm({ policyResult }: EstimateFormProps) {
+  // Default scenario initialized with smart defaults
   const [scenario, setScenario] = useState<TreatmentScenario>({
-    treatment: '',
-    age: 30,
-    city: '',
+    treatment: 'Total Knee Replacement',
+    age: 58,
+    city: 'Mumbai',
     hospitalType: 'private',
     roomType: 'single-private',
-    stayDurationDays: 1,
-    quotedCost: undefined,
+    stayDurationDays: 4,
+    policyStartDate: '2023-01-15',
+    proposedAdmissionDate: new Date().toISOString().split('T')[0],
+    declaredPED: [],
+    availableSumInsured: policyResult.overview.sum_insured
+      ? parseInt(policyResult.overview.sum_insured.replace(/[^0-9]/g, '')) || 500000
+      : 500000,
+    isNetworkHospital: true,
   })
 
-  const [estimate, setEstimate] = useState<EstimateResult | null>(null)
-  const [errors, setErrors] = useState<string[]>([])
+  const [activePreflightTab, setActivePreflightTab] = useState<
+    'ledger' | 'missing_info' | 'what_if' | 'timeline' | 'readiness' | 'quote' | 'export'
+  >('ledger')
 
-  const handleCalculate = (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors([])
-    const res = generateEstimate(scenario, policyResult)
-    if (res.errors) {
-      setErrors(res.errors)
-    } else if (res.result) {
-      setEstimate(res.result)
+  const [preflight, setPreflight] = useState<CoverageResult | null>(null)
+  const [activeEvidenceModal, setActiveEvidenceModal] = useState<PolicyRule | null>(null)
+  const [showQuoteModal, setShowQuoteModal] = useState(false)
+
+  // Compute preflight deterministically whenever scenario changes
+  useEffect(() => {
+    if (scenario.treatment.trim()) {
+      const res = evaluatePolicyPreflight(scenario, policyResult)
+      setPreflight(res)
+    }
+  }, [scenario, policyResult])
+
+  const handleResolveMissingField = (field: string, value: any) => {
+    setScenario(prev => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSaveQuoteLineItems = (items: QuoteLineItem[], totalQuotedAmount: number) => {
+    setScenario(prev => ({
+      ...prev,
+      quoteLineItems: items,
+      quotedCost: totalQuotedAmount,
+    }))
+    setShowQuoteModal(false)
+  }
+
+  const handleOpenEvidenceDetails = (evidence: { page: number | null; quote: string; title: string }) => {
+    // Find matching rule from policyResult or synthesize
+    const found = policyResult.rules.find(r => r.rule_name.toLowerCase().includes(evidence.title.toLowerCase()))
+    if (found) {
+      setActiveEvidenceModal(found)
+    } else {
+      setActiveEvidenceModal({
+        id: `ev_${Date.now()}`,
+        category: 'coverage',
+        rule_name: evidence.title,
+        value: 'Evidence Referenced',
+        description: evidence.quote,
+        status: 'covered',
+        conditions: [],
+        page_number: evidence.page,
+        section_name: 'Policy Clause',
+        evidence_text: evidence.quote,
+        confidence: 'high',
+        evidence_validated: true,
+      })
     }
   }
 
-  const formatRupee = (num: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(num)
-  }
-
   return (
-    <div className="flex flex-col md:flex-row gap-6 p-4">
-      {/* Form Sidebar */}
-      <div className="w-full md:w-1/3 bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-        <h3 className="text-lg font-semibold text-[var(--text)] mb-4 flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-emerald-400" />
-          Estimate Calculator
-        </h3>
-        <form onSubmit={handleCalculate} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Treatment / Procedure</label>
-            <input 
-              type="text" 
-              required
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" 
-              value={scenario.treatment} 
-              onChange={e => setScenario({...scenario, treatment: e.target.value})}
-              placeholder="e.g. Appendectomy, Cataract"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Patient Age</label>
-              <input type="number" required min="1" className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.age} onChange={e => setScenario({...scenario, age: parseInt(e.target.value) || 0})} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">City</label>
-              <input type="text" required className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.city} onChange={e => setScenario({...scenario, city: e.target.value})} placeholder="e.g. Mumbai" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Hospital</label>
-              <select className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.hospitalType} onChange={e => setScenario({...scenario, hospitalType: e.target.value as any})}>
-                <option value="public">Public / Govt</option>
-                <option value="private">Private</option>
-                <option value="corporate">Corporate</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Room Type</label>
-              <select className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.roomType} onChange={e => setScenario({...scenario, roomType: e.target.value as any})}>
-                <option value="general">General Ward</option>
-                <option value="twin-sharing">Twin Sharing</option>
-                <option value="single-private">Single Private</option>
-                <option value="suite">Suite</option>
-                <option value="icu">ICU</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Days in Hospital</label>
-              <input type="number" required min="1" className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.stayDurationDays} onChange={e => setScenario({...scenario, stayDurationDays: parseInt(e.target.value) || 1})} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Quoted Cost (Opt)</label>
-              <input type="number" min="0" className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)]" value={scenario.quotedCost || ''} onChange={e => setScenario({...scenario, quotedCost: parseInt(e.target.value) || undefined})} placeholder="₹" />
-            </div>
+    <div className="flex flex-col xl:flex-row gap-6 p-4">
+      {/* ─── Scenario Inputs Sidebar ────────────────────────────────────────── */}
+      <div className="w-full xl:w-[380px] shrink-0 space-y-4">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <h3 className="text-base font-semibold text-white flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-emerald-400" />
+              Pre-Admission Preflight
+            </h3>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              Deterministic
+            </span>
           </div>
 
-          {errors.length > 0 && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-lg text-xs">
-              <ul className="list-disc pl-4 space-y-1">
-                {errors.map((e, i) => <li key={i}>{e}</li>)}
-              </ul>
+          <form className="space-y-3.5 text-xs" onSubmit={(e) => e.preventDefault()}>
+            {/* Treatment Selector with Procedure Suggestions */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-1 flex items-center justify-between">
+                <span>Treatment / Procedure</span>
+                <span className="text-[10px] text-slate-500 font-normal">Canonical match</span>
+              </label>
+              <input
+                type="text"
+                list="canonical-procedures"
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500 font-sans"
+                value={scenario.treatment}
+                onChange={e => setScenario({ ...scenario, treatment: e.target.value })}
+                placeholder="e.g. Total Knee Replacement, Cataract"
+              />
+              <datalist id="canonical-procedures">
+                {CANONICAL_PROCEDURES.map(p => (
+                  <option key={p.key} value={p.label} />
+                ))}
+              </datalist>
             </div>
-          )}
 
-          <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors mt-4">
-            Calculate Estimate
-          </button>
-        </form>
+            {/* Inception & Admission Dates */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
+                  <Calendar size={11} /> Policy Start Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.policyStartDate || ''}
+                  onChange={e => setScenario({ ...scenario, policyStartDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
+                  <Calendar size={11} /> Planned Admission
+                </label>
+                <input
+                  type="date"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.proposedAdmissionDate || ''}
+                  onChange={e => setScenario({ ...scenario, proposedAdmissionDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Patient Age & City */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
+                  <User size={11} /> Patient Age
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="110"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.age}
+                  onChange={e => setScenario({ ...scenario, age: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
+                  <Building2 size={11} /> City
+                </label>
+                <input
+                  type="text"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.city}
+                  onChange={e => setScenario({ ...scenario, city: e.target.value })}
+                  placeholder="e.g. Mumbai"
+                />
+              </div>
+            </div>
+
+            {/* Room & Hospital Type */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
+                  <Bed size={11} /> Room Choice
+                </label>
+                <select
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500 capitalize"
+                  value={scenario.roomType}
+                  onChange={e => setScenario({ ...scenario, roomType: e.target.value as any })}
+                >
+                  <option value="general">General Ward</option>
+                  <option value="twin-sharing">Twin Sharing</option>
+                  <option value="single-private">Single Private AC</option>
+                  <option value="suite">Deluxe Suite</option>
+                  <option value="icu">ICU / CCU</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1">Hospital Tier</label>
+                <select
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.hospitalType}
+                  onChange={e => setScenario({ ...scenario, hospitalType: e.target.value as any })}
+                >
+                  <option value="public">Government / Public</option>
+                  <option value="private">Private Nursing Home</option>
+                  <option value="corporate">Corporate Hospital</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Stay Duration & Available SI */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1">Stay Duration (Days)</label>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.stayDurationDays}
+                  onChange={e => setScenario({ ...scenario, stayDurationDays: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1">Available Sum Insured (₹)</label>
+                <input
+                  type="number"
+                  step="50000"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.availableSumInsured || ''}
+                  onChange={e => setScenario({ ...scenario, availableSumInsured: parseInt(e.target.value) || undefined })}
+                  placeholder="500000"
+                />
+              </div>
+            </div>
+
+            {/* Declared PED Selection */}
+            <div>
+              <label className="block text-slate-400 text-[11px] mb-1">Declared Pre-existing Diseases</label>
+              <div className="flex flex-wrap gap-1.5">
+                {['Diabetes', 'Hypertension', 'Arthritis', 'Cataract'].map(ped => {
+                  const isChecked = scenario.declaredPED?.includes(ped)
+                  return (
+                    <button
+                      key={ped}
+                      type="button"
+                      onClick={() => {
+                        const current = scenario.declaredPED || []
+                        const updated = isChecked ? current.filter(p => p !== ped) : [...current, ped]
+                        setScenario({ ...scenario, declaredPED: updated })
+                      }}
+                      className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                        isChecked
+                          ? 'bg-amber-950/80 border-amber-500 text-amber-300 font-semibold'
+                          : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {isChecked ? `✓ ${ped}` : `+ ${ped}`}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Hospital Quote Action Box */}
+            <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-slate-300 font-medium block">Hospital Estimate Document</span>
+                <span className="text-[10px] text-slate-500">
+                  {scenario.quoteLineItems?.length
+                    ? `${scenario.quoteLineItems.length} line items loaded`
+                    : 'Using benchmark tariff'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuoteModal(true)}
+                className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-medium transition-colors"
+              >
+                <Upload size={12} />
+                {scenario.quoteLineItems?.length ? 'Edit Quote' : 'Upload Quote'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      {/* Results Area */}
-      <div className="w-full md:w-2/3 flex flex-col gap-4">
-        {!estimate ? (
-           <div className="h-full flex flex-col items-center justify-center text-slate-500 border border-[var(--border)] rounded-xl border-dashed bg-[var(--card2)] p-10">
-             <Calculator className="w-10 h-10 mb-4 opacity-50" />
-             <p>Fill in the scenario details and click Calculate to see your estimated out-of-pocket costs.</p>
-           </div>
+      {/* ─── Preflight Results & Module Workspace ───────────────────────────── */}
+      <div className="flex-1 space-y-4">
+        {!preflight ? (
+          <div className="h-64 flex flex-col items-center justify-center text-slate-500 border border-[var(--border)] rounded-xl border-dashed bg-[var(--card2)] p-10">
+            <Calculator className="w-10 h-10 mb-3 opacity-40 text-emerald-400" />
+            <p className="text-sm">Calculating deterministic coverage preflight...</p>
+          </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Total Treatment Cost</p>
-                <div className="text-xl font-bold text-[var(--text)]">{formatRupee(estimate.coverage.estimatedCostRange[0])} – {formatRupee(estimate.coverage.estimatedCostRange[1])}</div>
-                <p className="text-xs text-slate-500 mt-1">Typical: {formatRupee(estimate.coverage.typicalCost)}</p>
+            {/* Top 3 KPI Cards + Status Banner */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Gross Treatment Cost */}
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                  Total Treatment Expense
+                </span>
+                <div className="text-xl font-bold text-white mt-1">
+                  {formatINR(preflight.treatmentCost.typical)}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <span>Range: {formatINR(preflight.treatmentCost.min)} – {formatINR(preflight.treatmentCost.max)}</span>
+                  <span className="capitalize text-slate-400 font-mono text-[10px]">{preflight.costSource.replace(/_/g, ' ')}</span>
+                </div>
               </div>
-              <div className="bg-[var(--card)] border border-emerald-500/30 bg-emerald-500/5 rounded-xl p-5">
-                <p className="text-xs font-medium text-emerald-400 uppercase tracking-wider mb-2">Potentially Covered</p>
-                <div className="text-xl font-bold text-emerald-400">{formatRupee(estimate.coverage.estimatedCoverageRange[0])} – {formatRupee(estimate.coverage.estimatedCoverageRange[1])}</div>
-                {!estimate.policyEval.isCovered && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded mt-1 inline-block">Not Covered</span>}
+
+              {/* Potentially Covered */}
+              <div className="bg-[var(--card)] border border-emerald-500/30 bg-emerald-950/10 rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider block">
+                  Potentially Covered
+                </span>
+                <div className="text-xl font-bold text-emerald-300 mt-1">
+                  {formatINR(preflight.potentiallyCovered.typical)}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                  <span>Verified Evidence: {preflight.evidenceCoverage}%</span>
+                  <span className="text-emerald-400 font-medium">
+                    {preflight.treatmentCost.typical > 0
+                      ? `${Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)}% Admissible`
+                      : '—'}
+                  </span>
+                </div>
               </div>
-              <div className="bg-[var(--card)] border border-amber-500/30 bg-amber-500/5 rounded-xl p-5">
-                <p className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-2">Out of Pocket (Est)</p>
-                <div className="text-xl font-bold text-amber-400">{formatRupee(estimate.coverage.estimatedOutOfPocketRange[0])} – {formatRupee(estimate.coverage.estimatedOutOfPocketRange[1])}</div>
-                <p className="text-xs text-slate-500 mt-1">You pay this</p>
+
+              {/* Out-of-Pocket Share */}
+              <div className="bg-[var(--card)] border border-amber-500/30 bg-amber-950/10 rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block">
+                  Estimated Patient Share
+                </span>
+                <div className="text-xl font-bold text-amber-300 mt-1">
+                  {formatINR(preflight.patientShare.typical)}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                  <span>Out of pocket</span>
+                  <span className="text-amber-400 font-medium">
+                    {preflight.treatmentCost.typical > 0
+                      ? `${Math.round((preflight.patientShare.typical / preflight.treatmentCost.typical) * 100)}% of Bill`
+                      : '—'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 flex-1">
-              <h4 className="font-semibold text-[var(--text)] mb-4">Calculation Breakdown & Reasons</h4>
-              
-              <div className="space-y-4">
-                {estimate.policyEval.reasons.length > 0 && (
-                  <div>
-                    <h5 className="text-xs font-medium text-slate-400 mb-2">Policy Factors:</h5>
-                    <ul className="space-y-1.5">
-                      {estimate.policyEval.reasons.map((r, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-[var(--muted)]">
-                           <ChevronRight className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                           {r}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                <div>
-                    <h5 className="text-xs font-medium text-slate-400 mb-2">Typical Cost Deductions:</h5>
-                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-3 space-y-2 text-sm">
-                       <div className="flex justify-between text-[var(--text)]"><span>Initial Typical Cost:</span> <span>{formatRupee(estimate.coverage.typicalCost + estimate.coverage.breakdown.coPayDeduction + estimate.coverage.breakdown.deductibleDeduction + estimate.coverage.breakdown.subLimitDeduction)}</span></div>
-                       {estimate.coverage.breakdown.deductibleDeduction > 0 && <div className="flex justify-between text-amber-400"><span>- Deductible:</span> <span>{formatRupee(estimate.coverage.breakdown.deductibleDeduction)}</span></div>}
-                       {estimate.coverage.breakdown.subLimitDeduction > 0 && <div className="flex justify-between text-amber-400"><span>- Sub-limit Exceeded:</span> <span>{formatRupee(estimate.coverage.breakdown.subLimitDeduction)}</span></div>}
-                       {estimate.coverage.breakdown.coPayDeduction > 0 && <div className="flex justify-between text-amber-400"><span>- Co-pay ({estimate.policyEval.coPayPercentage}%):</span> <span>{formatRupee(estimate.coverage.breakdown.coPayDeduction)}</span></div>}
-                       <div className="pt-2 border-t border-[var(--border)] flex justify-between font-medium text-emerald-400"><span>Estimated Coverage:</span> <span>{formatRupee(estimate.coverage.typicalCost)}</span></div>
-                    </div>
+            {/* Interactive Biometric Radial Coverage Gauge */}
+            <CoverageGauge
+              totalCost={preflight.treatmentCost.typical}
+              coveredAmount={preflight.potentiallyCovered.typical}
+              patientShare={preflight.patientShare.typical}
+              status={preflight.status}
+              evidenceCoverage={preflight.evidenceCoverage}
+            />
+
+            {/* Interactive Clause-to-Rupee Pipeline Flow Visualizer */}
+            <ClauseFlowVisualizer
+              totalCost={preflight.treatmentCost.typical}
+              coveredAmount={preflight.potentiallyCovered.typical}
+              patientShare={preflight.patientShare.typical}
+              ledger={preflight.ledger}
+              onSelectRule={(line) => {
+                setActivePreflightTab('ledger')
+              }}
+            />
+
+            {/* Status & Preflight Diagnostic Bar */}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400">Preflight Status:</span>
+                  <span
+                    className={`font-semibold uppercase px-2 py-0.5 rounded text-[11px] font-mono ${
+                      preflight.status === 'eligible'
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                        : preflight.status === 'conditional'
+                        ? 'bg-blue-950 text-blue-300 border border-blue-700'
+                        : preflight.status === 'not_eligible'
+                        ? 'bg-red-950 text-red-300 border border-red-700'
+                        : 'bg-amber-950 text-amber-300 border border-amber-700'
+                    }`}
+                  >
+                    {preflight.status.replace(/_/g, ' ')}
+                  </span>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5" /> Cost Confidence: <strong className="text-[var(--text)] capitalize">{estimate.confidence.costConfidence}</strong>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5" /> Coverage Confidence: <strong className="text-[var(--text)] capitalize">{estimate.confidence.coverageConfidence}</strong>
-                    </span>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                     {estimate.confidence.reasons.map((r, i) => (
-                        <p key={i} className="text-[11px] text-slate-500">• {r}</p>
-                     ))}
-                  </div>
+                <div className="hidden md:flex items-center gap-1.5 text-slate-400">
+                  <span>·</span>
+                  <span>Cost Conf: <strong className="capitalize text-slate-200">{preflight.costConfidence}</strong></span>
+                  <span>·</span>
+                  <span>Policy Conf: <strong className="capitalize text-slate-200">{preflight.coverageConfidence}</strong></span>
                 </div>
               </div>
+
+              <div className="text-[11px] text-slate-400">
+                {preflight.ledger.length} Clause Adjustment{preflight.ledger.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {/* Preflight Workspace Navigation Tabs */}
+            <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto pb-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('ledger')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'ledger'
+                    ? 'bg-[var(--card)] text-emerald-400 border-t-2 border-emerald-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileText size={13} />
+                Clause-to-Rupee Ledger
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('missing_info')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'missing_info'
+                    ? 'bg-[var(--card)] text-amber-400 border-t-2 border-amber-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <HelpCircle size={13} />
+                Missing Info Engine
+                {preflight.missingInformation.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] flex items-center justify-center font-bold">
+                    {preflight.missingInformation.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('what_if')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'what_if'
+                    ? 'bg-[var(--card)] text-cyan-400 border-t-2 border-cyan-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles size={13} />
+                What-If Simulator
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('timeline')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'timeline'
+                    ? 'bg-[var(--card)] text-blue-400 border-t-2 border-blue-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Clock size={13} />
+                Waiting Milestones
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('readiness')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'readiness'
+                    ? 'bg-[var(--card)] text-purple-400 border-t-2 border-purple-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <CheckSquare size={13} />
+                Pre-Auth Checklist
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePreflightTab('export')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'export'
+                    ? 'bg-[var(--card)] text-slate-200 border-t-2 border-slate-300'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Download size={13} />
+                Preflight Export
+              </button>
+            </div>
+
+            {/* Active Tab Sub-view Content */}
+            <div className="space-y-4">
+              {activePreflightTab === 'ledger' && (
+                <CostLedger
+                  totalCost={preflight.treatmentCost.typical}
+                  coveredAmount={preflight.potentiallyCovered.typical}
+                  patientShare={preflight.patientShare.typical}
+                  costSource={preflight.costSource}
+                  ledger={preflight.ledger}
+                  onOpenEvidence={handleOpenEvidenceDetails}
+                />
+              )}
+
+              {activePreflightTab === 'missing_info' && (
+                <MissingInfoPanel
+                  missingFields={preflight.missingInformation}
+                  onResolveField={handleResolveMissingField}
+                />
+              )}
+
+              {activePreflightTab === 'what_if' && (
+                <WhatIfPanel
+                  currentScenario={scenario}
+                  currentPreflight={preflight}
+                  policyResult={policyResult}
+                  onApplyScenarioChange={(updated) => setScenario(updated)}
+                />
+              )}
+
+              {activePreflightTab === 'timeline' && (
+                <PolicyTimeline
+                  milestones={preflight.milestones || []}
+                  policyStartDate={scenario.policyStartDate}
+                  proposedAdmissionDate={scenario.proposedAdmissionDate}
+                  onOpenEvidence={handleOpenEvidenceDetails}
+                />
+              )}
+
+              {activePreflightTab === 'readiness' && (
+                <ClaimReadiness
+                  items={preflight.readinessChecklist || []}
+                  isNetworkHospital={scenario.isNetworkHospital}
+                />
+              )}
+
+              {activePreflightTab === 'export' && (
+                <ExportSummary
+                  scenario={scenario}
+                  preflight={preflight}
+                  policy={policyResult}
+                />
+              )}
             </div>
           </>
         )}
       </div>
+
+      {/* Quote Review Modal */}
+      {showQuoteModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <QuoteReview
+              onSaveQuote={handleSaveQuoteLineItems}
+              onCancel={() => setShowQuoteModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Slide-in Evidence Viewer Panel */}
+      {activeEvidenceModal && (
+        <EvidenceViewer
+          rule={activeEvidenceModal}
+          onClose={() => setActiveEvidenceModal(null)}
+        />
+      )}
     </div>
   )
 }

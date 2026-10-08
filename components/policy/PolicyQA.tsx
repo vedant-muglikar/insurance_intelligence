@@ -61,10 +61,15 @@ export function PolicyQA({ pages }: PolicyQAProps) {
     setIsLoading(true)
 
     try {
+      const history = messages
+        .filter((m) => !m.isError)
+        .slice(-6)
+        .map((m) => ({ role: m.role, content: m.content }))
+
       const res = await fetch('/api/policy/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, pages }),
+        body: JSON.stringify({ question, pages, history }),
       })
       const result = await res.json()
 

@@ -17,11 +17,13 @@ import {
 import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
 import { PolicyQA } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
+import GooeyNav from '../ui/GooeyNav'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
 type Tab =
   | 'Overview'
+  | 'Preflight Estimator'
   | 'Coverage'
   | 'Exclusions'
   | 'Waiting Periods'
@@ -29,22 +31,22 @@ type Tab =
   | 'Eligibility'
   | 'Claim Requirements'
   | 'Ask Policy'
-  | 'Estimate Cost'
 
 const TABS: Tab[] = [
   'Overview',
+  'Preflight Estimator',
   'Coverage',
   'Exclusions',
   'Waiting Periods',
   'Limits',
   'Eligibility',
   'Claim Requirements',
-  'Estimate Cost',
   'Ask Policy',
 ]
 
 const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Overview: [],
+  'Preflight Estimator': [],
   Coverage: ['coverage'],
   Exclusions: ['exclusion'],
   'Waiting Periods': ['waiting_period'],
@@ -52,7 +54,6 @@ const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Eligibility: ['eligibility'],
   'Claim Requirements': ['claim_requirement'],
   'Ask Policy': [],
-  'Estimate Cost': [],
 }
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
@@ -128,6 +129,32 @@ function OverviewTab({
             <div className="overview-summary-value">{item.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Hero Preflight Callout Banner (Blueprint Section 1) */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-cyan-950/30 border border-emerald-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              ClaimLens Core Preflight
+            </span>
+            <span className="text-xs text-slate-400">· Pre-admission intelligence</span>
+          </div>
+          <h3 className="text-sm font-semibold text-white">
+            Evaluate Hospital Treatment Scenario with Clause-to-Rupee Traceability
+          </h3>
+          <p className="text-xs text-slate-400">
+            Check waiting periods, room eligibility, exclusions, sub-limits, and get an evidence-audited OOP estimate before hospital admission.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setTab('Preflight Estimator')}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors shrink-0 shadow-lg shadow-emerald-950"
+        >
+          <span>Launch Preflight</span>
+          <ChevronRight size={14} />
+        </button>
       </div>
 
       {/* Stat cards */}
@@ -272,8 +299,6 @@ interface PolicyResultsProps {
   onReset: () => void
 }
 
-import GooeyNav from '../ui/GooeyNav'
-
 export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps) {
   const [tab, setTab] = useState<Tab>('Overview')
   const [activeRule, setActiveRule] = useState<PolicyRule | null>(null)
@@ -285,9 +310,9 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
   }
 
   const gooeyItems = TABS.map(t => {
-    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Estimate Cost' ? null : getRulesForTab(t).length
+    const count = t === 'Overview' || t === 'Ask Policy' || t === 'Preflight Estimator' ? null : getRulesForTab(t).length
     return {
-      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask Policy' : t)
+      label: count !== null ? `${t} [${count}]` : (t === 'Ask Policy' ? '💬 Ask' : t === 'Preflight Estimator' ? '⚡ Preflight' : t)
     }
   })
 
@@ -333,7 +358,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           />
         ) : tab === 'Ask Policy' ? (
           <PolicyQA pages={result.pages} />
-        ) : tab === 'Estimate Cost' ? (
+        ) : tab === 'Preflight Estimator' ? (
           <EstimateForm policyResult={result} />
         ) : (
           <RulesTab

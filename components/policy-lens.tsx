@@ -43,6 +43,16 @@ export default function PolicyLens() {
     }
   }, [])
 
+  const handleLoadSample = useCallback((sample: PolicyAnalysisResult, name: string) => {
+    setFileName(name)
+    setState('processing')
+    setErrorMsg(null)
+    setTimeout(() => {
+      setResult(sample)
+      setState('results')
+    }, 1600)
+  }, [])
+
   const reset = () => {
     setState('upload')
     setResult(null)
@@ -51,7 +61,7 @@ export default function PolicyLens() {
   }
 
   if (state === 'upload') {
-    return <UploadScreen onAnalyze={handleAnalyze} />
+    return <UploadScreen onAnalyze={handleAnalyze} onLoadSample={handleLoadSample} />
   }
 
   if (state === 'processing') {

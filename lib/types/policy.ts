@@ -33,6 +33,92 @@ export interface PolicyRule {
   evidence_text: string
   confidence: 'high' | 'medium' | 'low'
   evidence_validated: boolean
+  usability?: 'executable' | 'explanatory_only' | 'needs_human_review'
+  used_in_estimate?: boolean
+}
+
+// ─── Rule Compiler Types (Section 7) ─────────────────────────────────────────
+
+export type CompiledRuleType =
+  | 'WAITING_PERIOD'
+  | 'COPAY'
+  | 'DEDUCTIBLE'
+  | 'SUB_LIMIT'
+  | 'ROOM_LIMIT'
+  | 'EXCLUSION'
+  | 'ELIGIBILITY'
+  | 'SUM_INSURED'
+  | 'CLAIM_REQUIREMENT'
+  | 'GENERAL_CLAUSE'
+
+export interface RuleCondition {
+  type: 'age' | 'waiting_elapsed' | 'ped' | 'room_category' | 'hospital_tier' | 'network' | 'custom'
+  field?: string
+  operator?: '>' | '>=' | '<' | '<=' | '==' | '!=' | 'in' | 'contains'
+  value?: any
+  description: string
+}
+
+export interface RuleEffect {
+  action: 'cap' | 'deduct_fixed' | 'deduct_percentage' | 'deny' | 'require_info' | 'allow' | 'room_excess' | 'proration'
+  amount?: number
+  percentage?: number
+  unit?: string
+  capAmount?: number
+  calculationBase?: 'bill_amount' | 'admissible_amount' | 'room_rent' | 'claim_amount'
+  description?: string
+}
+
+export interface CompiledRule {
+  id: string
+  ruleType: CompiledRuleType
+  rawCategory: PolicyCategory
+  ruleName: string
+  appliesTo: string[] // canonical treatment/category keys (e.g. ['cataract', 'joint_replacement', 'ped', 'maternity', 'all'])
+  conditions: RuleCondition[]
+  effect: RuleEffect
+  calculationBase?: string
+  precedence: number // lower number = applied earlier
+  effectivePeriod?: {
+    months?: number
+    days?: number
+    type?: 'initial' | 'specific_illness' | 'ped' | 'general'
+  }
+  evidence: {
+    page: number | null
+    section?: string
+    quote: string
+  }
+  confidence: 'high' | 'medium' | 'low'
+  verification: 'verified' | 'unverified'
+  usability: 'executable' | 'explanatory_only' | 'needs_human_review'
+  affectsEstimate?: boolean
+}
+
+// ─── Scalable Architecture: PlanTemplate vs UserPolicy (Section 13) ──────────
+
+export interface PlanTemplate {
+  planTemplateId: string
+  insurer: string
+  productName: string
+  uinVersion?: string
+  sourceDocumentHash?: string
+  compiledRules: CompiledRule[]
+  evidencePages: ExtractedPage[]
+  templateConfidence: 'high' | 'medium' | 'low'
+}
+
+export interface UserPolicy {
+  userPolicyId: string
+  planTemplateId: string
+  policyStartDate?: string
+  continuityDate?: string
+  policyEndDate?: string
+  sumInsured: number
+  remainingSumInsured?: number
+  insuredMemberAge: number
+  declaredPED: string[]
+  selectedRiders?: string[]
 }
 
 export interface PolicyOverview {
@@ -41,6 +127,7 @@ export interface PolicyOverview {
   sum_insured: string
   policy_type: string
   total_pages: number
+  uin?: string
 }
 
 export interface ExtractedPage {
@@ -52,6 +139,7 @@ export interface ExtractedPage {
 export interface PolicyAnalysisResult {
   overview: PolicyOverview
   rules: PolicyRule[]
+  compiled_rules?: CompiledRule[]
   pages: ExtractedPage[]
   total_pages: number
   scanned_pdf_warning: boolean
@@ -89,6 +177,16 @@ export interface Citation {
   evidence_text: string
 }
 
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  status?: PolicyStatus
+  citations?: Citation[]
+  confidence?: 'high' | 'medium' | 'low'
+  timestamp: string
+}
+
 export interface AskResponseData {
   answer: string
   status: PolicyStatus
@@ -99,6 +197,8 @@ export interface AskResponseData {
 export interface AskRequest {
   question: string
   pages: ExtractedPage[]
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  scenarioContext?: string
 }
 
 export interface AskResponse {

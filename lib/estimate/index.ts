@@ -3,7 +3,7 @@ import { PolicyAnalysisResult } from '../types/policy'
 import { validateScenario } from './validation'
 import { matchTreatment } from './matching'
 import { estimateCost } from './cost'
-import { evaluatePolicyRules } from './policy'
+import { evaluatePolicyRules, evaluatePolicyPreflight } from './policy'
 import { calculateCoverage } from './coverage'
 import { calculateConfidence } from './confidence'
 
@@ -23,11 +23,15 @@ export function generateEstimate(
   const coverage = calculateCoverage(costRange, policyEval)
   const confidence = calculateConfidence(scenario, isExactMatch, !!scenario.quotedCost, policyEval)
 
+  // Generate full ClaimLens preflight (ledger, missing info, milestones, checklist)
+  const preflight = evaluatePolicyPreflight(scenario, policyResult)
+
   const result: EstimateResult = {
     scenario,
     policyEval,
     coverage,
-    confidence
+    confidence,
+    preflight,
   }
 
   return { result }
