@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractPdfPages } from '@/lib/pdf/extractor'
-import { getBestGeminiModel } from '@/lib/ai/extractor'
+import { executeWithGeminiFallback } from '@/lib/ai/extractor'
 import { QuoteLineItem, ParsedHospitalQuote } from '@/lib/types/estimate'
 import { parseCurrency } from '@/lib/policy/normalizers'
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function extractQuoteWithAI(text: string): Promise<ParsedHospitalQuote> {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.OPENAI_API_KEY
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
   const warnings: string[] = []
 
   // If AI key is available, call structured LLM
@@ -102,50 +102,28 @@ Output ONLY valid JSON:
 
       let jsonStr = ''
 
-      if (isGoogle) {
-        const model = await getBestGeminiModel(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nDocument Text:\n${text.slice(0, 40000)}` }] }],
-              generationConfig: {
-                temperature: 0.1,
-                maxOutputTokens: 2048,
-                responseMimeType: 'application/json',
-              },
-            }),
+        jsonStr = await executeWithGeminiFallback(
+          apiKey,
+          (model) => fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nDocument Text:\n${text.slice(0, 40000)}` }] }],
+                generationConfig: {
+                  temperature: 0.1,
+                  maxOutputTokens: 2048,
+                  responseMimeType: 'application/json',
+                },
+              }),
+            }
+          ),
+          async (response) => {
+            const respJson = await response.json()
+            return respJson.candidates?.[0]?.content?.parts?.[0]?.text || ''
           }
         )
-        if (res.ok) {
-          const respJson = await res.json()
-          jsonStr = respJson.candidates?.[0]?.content?.parts?.[0]?.text || ''
-        }
-      } else {
-        // OpenAI Fallback
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Document Text:\n${text.slice(0, 40000)}` },
-            ],
-            temperature: 0.1,
-            response_format: { type: 'json_object' },
-          }),
-        })
-        if (res.ok) {
-          const respJson = await res.json()
-          jsonStr = respJson.choices?.[0]?.message?.content || ''
-        }
-      }
 
       if (jsonStr) {
         const cleaned = jsonStr.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()

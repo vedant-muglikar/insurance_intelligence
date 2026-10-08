@@ -8,7 +8,7 @@
  */
 
 import { ExtractedPage, Citation, AskResponseData } from '@/lib/types/policy'
-import { getBestGeminiModel } from './extractor'
+import { executeWithGeminiFallback } from './extractor'
 import { validateEvidence } from '../pdf/extractor'
 
 function buildAskSystemPrompt(scenarioContext?: string): string {
@@ -84,10 +84,9 @@ export async function askPolicyQuestion(
   scenarioContext?: string
 ): Promise<AskResponseData> {
   const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  const openAiApiKey = process.env.OPENAI_API_KEY
 
-  if (!googleApiKey && !openAiApiKey) {
-    throw new Error('No AI API key found. Set GOOGLE_GENERATIVE_AI_API_KEY or OPENAI_API_KEY.')
+  if (!googleApiKey) {
+    throw new Error('No AI API key found. Set GOOGLE_GENERATIVE_AI_API_KEY.')
   }
 
   const systemPrompt = buildAskSystemPrompt(scenarioContext)
@@ -95,85 +94,43 @@ export async function askPolicyQuestion(
 
   let rawJsonText = ''
 
-  // ─── Provider 1: Google Gemini ─────────────────────────────────────────────
+  // ─── Provider: Google Gemini ─────────────────────────────────────────────
   if (googleApiKey) {
     try {
-      const model = await getBestGeminiModel(googleApiKey)
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${googleApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+      rawJsonText = await executeWithGeminiFallback(
+        googleApiKey,
+        (model) => fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${googleApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 2048,
+                responseMimeType: 'application/json',
               },
-            ],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json',
-            },
-          }),
+            }),
+          }
+        ),
+        async (response) => {
+          const json = await response.json()
+          return json.candidates?.[0]?.content?.parts?.[0]?.text || ''
         }
       )
-
-      if (response.ok) {
-        const json = await response.json()
-        rawJsonText = json.candidates?.[0]?.content?.parts?.[0]?.text || ''
-      } else {
-        console.warn(`Gemini Q&A failed with status ${response.status}; checking OpenAI fallback...`)
-      }
     } catch (geminiErr: any) {
-      console.warn('Gemini Q&A exception:', geminiErr?.message)
-    }
-  }
-
-  // ─── Provider 2: OpenAI GPT-4o Fallback ───────────────────────────────────
-  if (!rawJsonText && openAiApiKey) {
-    try {
-      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-        { role: 'system', content: systemPrompt },
-      ]
-
-      if (history && history.length > 0) {
-        for (const h of history.slice(-4)) {
-          messages.push({ role: h.role, content: h.content })
-        }
-      }
-
-      messages.push({ role: 'user', content: userPrompt })
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${openAiApiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages,
-          temperature: 0.1,
-          response_format: { type: 'json_object' },
-        }),
-      })
-
-      if (response.ok) {
-        const json = await response.json()
-        rawJsonText = json.choices?.[0]?.message?.content || ''
-      } else {
-        const errText = await response.text()
-        throw new Error(`OpenAI error: ${response.status} — ${errText}`)
-      }
-    } catch (openAiErr: any) {
-      throw new Error(`AI providers failed for Q&A: ${openAiErr.message}`)
+      throw new Error(`Gemini AI failed for Q&A: ${geminiErr?.message}`)
     }
   }
 
   if (!rawJsonText) {
-    throw new Error('Failed to generate response from AI providers.')
+    throw new Error('Failed to generate response from Gemini API.')
   }
 
   const cleaned = rawJsonText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim()
