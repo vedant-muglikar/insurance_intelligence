@@ -22,6 +22,7 @@ import { BillAudit } from './BillAudit'
 import { Brand } from '../ui/Brand'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
+import { TranslateButton } from '../ui/TranslateButton'
 import { ExtractionQuality } from './ExtractionQuality'
 import { PreparationChecklist } from './checklist/PreparationChecklist'
 import { toChecklistScenario, toPreflightSignals } from './checklist/useChecklist'
@@ -229,6 +230,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
             <UploadSimple size={18} weight="bold" aria-hidden />
             <span>New policy</span>
           </button>
+          <TranslateButton />
           <ThemeToggle />
           <UserMenu />
         </div>

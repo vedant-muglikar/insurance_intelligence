@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle, FilePdf, UploadSimple, Warning, X } from '@pho
 import { UserMenu } from '@/components/ui/UserMenu'
 import { Brand } from '@/components/ui/Brand'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { TranslateButton } from '@/components/ui/TranslateButton'
 import { SAMPLE_POLICIES } from '@/lib/policy/samplePolicies'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
 
@@ -58,6 +59,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
       <header className="sx-top">
         <Brand size={36} />
         <div className="sx-top-actions">
+          <TranslateButton />
           <ThemeToggle />
           <UserMenu />
         </div>
