@@ -21,6 +21,9 @@ import { BillAudit } from './BillAudit'
 import { ClaimDispute } from './ClaimDispute'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
+import { ExtractionQuality } from './ExtractionQuality'
+import GooeyNav from '../ui/GooeyNav'
+
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -116,8 +119,13 @@ function OverviewTab({
 
   return (
     <div className="tab-content">
-      {/* Scanned PDF warning */}
-      {result.scanned_pdf_warning && (
+      {/* Per-page text-layer / OCR report */}
+      {result.extraction_report && (
+        <ExtractionQuality report={result.extraction_report} pages={result.pages} />
+      )}
+
+      {/* Scanned PDF warning (results without a per-page report) */}
+      {result.scanned_pdf_warning && !result.extraction_report && (
         <div className="scanned-warning">
           <AlertTriangle size={16} className="shrink-0 text-amber-400" />
           <div>

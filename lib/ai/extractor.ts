@@ -6,10 +6,16 @@ import type {
   PolicyCategory,
 } from '@/lib/types/policy'
 import { validateEvidence } from '@/lib/pdf/extractor'
+import { formatPageForPrompt, OCR_PROMPT_RULES } from '@/lib/pdf/promptFormat'
+import { UNCERTAIN_MARKER } from '@/lib/ocr/layout'
+
+export function hasOcrPages(pages: ExtractedPage[]): boolean {
+  return pages.some((p) => p.extraction_method === 'ocr' || p.extraction_method === 'hybrid')
+}
 
 // ─── Prompt building ─────────────────────────────────────────────────────────
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(includeOcrRules = false): string {
   return `You are an expert insurance policy analyst. Your task is to extract structured information from an insurance policy document.
 
 You will be given page-by-page text from a PDF. Extract every meaningful rule, coverage, exclusion, limit, waiting period, deductible, co-payment, sub-limit, eligibility condition, and claim requirement.
@@ -45,7 +51,7 @@ Return a valid JSON object with exactly this structure:
   ]
 }
 
-Respond with ONLY valid JSON. No markdown, no explanation.`
+${includeOcrRules ? `${OCR_PROMPT_RULES}\n\n` : ''}Respond with ONLY valid JSON. No markdown, no explanation.`
 }
 
 function buildUserPrompt(pages: ExtractedPage[]): string {
@@ -60,7 +66,7 @@ function buildUserPrompt(pages: ExtractedPage[]): string {
     const text = page.text.slice(0, remaining)
     totalChars += text.length
     if (text.trim().length > 0) {
-      pageChunks.push(`[PAGE ${page.page_number}]\n${text}`)
+      pageChunks.push(formatPageForPrompt(page, text))
     }
   }
 
@@ -163,7 +169,7 @@ export async function executeWithGeminiFallback<T>(
 
 async function callGemini(pages: ExtractedPage[]): Promise<AIRawResult> {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY!
-  const systemPrompt = buildSystemPrompt()
+  const systemPrompt = buildSystemPrompt(hasOcrPages(pages))
   const userPrompt = buildUserPrompt(pages)
 
   return executeWithGeminiFallback(
@@ -206,45 +212,98 @@ export function validateAndEnrichRules(
   pages: ExtractedPage[],
 ): PolicyRule[] {
   const pageMap = new Map<number, string>()
+  const pageByNumber = new Map<number, ExtractedPage>()
   for (const p of pages) {
     pageMap.set(p.page_number, p.text)
+    pageByNumber.set(p.page_number, p)
   }
 
   return rawRules.map((rule, idx) => {
-    let evidenceValidated = false
-    let confidence = rule.confidence
-
-    if (rule.page_number !== null && rule.evidence_text) {
-      const pageText = pageMap.get(rule.page_number) ?? ''
-      evidenceValidated = validateEvidence(rule.evidence_text, pageText)
-
-      // Downgrade confidence if evidence cannot be verified
-      if (!evidenceValidated) {
-        confidence = 'low'
-      }
-    }
-
-    const finalStatus =
-      !evidenceValidated && rule.page_number !== null
-        ? // Only override to unclear if evidence is missing AND page was cited
-          confidence === 'low' && rule.status !== 'not_covered'
-          ? 'unclear'
-          : rule.status
-        : rule.status
-
-    return {
-      id: `rule-${idx}-${Date.now()}`,
-      category: rule.category,
-      rule_name: rule.rule_name,
-      value: rule.value,
-      description: rule.description,
-      status: finalStatus,
-      conditions: Array.isArray(rule.conditions) ? rule.conditions : [],
-      page_number: rule.page_number,
-      section_name: rule.section_name || 'General',
-      evidence_text: rule.evidence_text || '',
-      confidence,
-      evidence_validated: evidenceValidated,
-    } satisfies PolicyRule
+    const enriched = enrichRule(rule, idx, pageMap)
+    return applyOcrSafeguards(enriched, rule.page_number !== null ? pageByNumber.get(rule.page_number) : undefined)
   })
+}
+
+const normaliseAmount = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+/**
+ * Deterministic guard for OCR pages: if a rule's value/evidence depends on text
+ * OCR could not read reliably, the rule is kept (so the user sees it) but is
+ * downgraded and excluded from automatic cost calculations — never guessed.
+ */
+export function applyOcrSafeguards(rule: PolicyRule, page: ExtractedPage | undefined): PolicyRule {
+  if (!page?.ocr || (page.extraction_method !== 'ocr' && page.extraction_method !== 'hybrid')) return rule
+
+  const reasons: string[] = []
+  const haystack = `${rule.value} ${rule.evidence_text}`
+  const haystackNorm = normaliseAmount(haystack)
+
+  if (rule.value.includes(UNCERTAIN_MARKER)) {
+    reasons.push(`OCR could not reliably read the value "${rule.value}" on page ${page.page_number}`)
+  } else {
+    const hit = page.ocr.ambiguous_amounts.find((a) => {
+      const n = normaliseAmount(a)
+      return n.length >= 3 && haystackNorm.includes(n)
+    })
+    if (hit) reasons.push(`OCR could not reliably read "${hit}" on page ${page.page_number}`)
+  }
+  if (page.ocr.quality === 'unreadable') {
+    reasons.push(`Page ${page.page_number} is largely unreadable in the scanned document`)
+  }
+
+  if (reasons.length === 0) {
+    // Poor scans cap confidence even when nothing specific was flagged
+    if (page.ocr.quality === 'poor' && rule.confidence === 'high') return { ...rule, confidence: 'medium' }
+    return rule
+  }
+
+  return {
+    ...rule,
+    confidence: 'low',
+    status: rule.status === 'not_covered' ? rule.status : 'unclear',
+    conditions: [...rule.conditions, `${reasons.join('; ')} — verify against the original document.`],
+    usability: 'needs_human_review',
+  }
+}
+
+function enrichRule(
+  rule: AIRawResult['rules'][number],
+  idx: number,
+  pageMap: Map<number, string>,
+): PolicyRule {
+  let evidenceValidated = false
+  let confidence = rule.confidence
+
+  if (rule.page_number !== null && rule.evidence_text) {
+    const pageText = pageMap.get(rule.page_number) ?? ''
+    evidenceValidated = validateEvidence(rule.evidence_text, pageText)
+
+    // Downgrade confidence if evidence cannot be verified
+    if (!evidenceValidated) {
+      confidence = 'low'
+    }
+  }
+
+  const finalStatus =
+    !evidenceValidated && rule.page_number !== null
+      ? // Only override to unclear if evidence is missing AND page was cited
+        confidence === 'low' && rule.status !== 'not_covered'
+        ? 'unclear'
+        : rule.status
+      : rule.status
+
+  return {
+    id: `rule-${idx}-${Date.now()}`,
+    category: rule.category,
+    rule_name: rule.rule_name,
+    value: rule.value,
+    description: rule.description,
+    status: finalStatus,
+    conditions: Array.isArray(rule.conditions) ? rule.conditions : [],
+    page_number: rule.page_number,
+    section_name: rule.section_name || 'General',
+    evidence_text: rule.evidence_text || '',
+    confidence,
+    evidence_validated: evidenceValidated,
+  } satisfies PolicyRule
 }

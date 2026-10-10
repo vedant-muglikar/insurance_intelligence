@@ -36,7 +36,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleFile = (f: File) => {
+  const handleFile = async (f: File) => {
     setError(null)
     if (!f.name.toLowerCase().endsWith('.pdf')) {
       setError('Only PDF files are supported.')
@@ -44,6 +44,12 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
     }
     if (f.size > 100 * 1024 * 1024) {
       setError('File exceeds 100 MB.')
+      return
+    }
+    // Same magic-header check the server performs, so renamed files fail fast
+    const head = await f.slice(0, 1024).text().catch(() => '')
+    if (!head.includes('%PDF-')) {
+      setError('This file is not a valid PDF document.')
       return
     }
     setFile(f)
@@ -122,7 +128,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
           <div className="us-panel glass-panel">
             <div className="us-panel-header">
               <span className="us-panel-title">Upload Policy Document</span>
-              <span className="us-panel-sub">PDF wording, up to 100 MB</span>
+              <span className="us-panel-sub">Digital or scanned PDF, up to 100 MB</span>
             </div>
 
             {/* Drop zone with animated scanning effect */}
@@ -171,7 +177,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
                   <div className="us-zone-text font-medium">
                     {dragging ? 'Drop PDF here' : 'Drag & drop your policy PDF or click to browse'}
                   </div>
-                  <div className="us-zone-hint">Digitally verified text extraction with page citation validation</div>
+                  <div className="us-zone-hint">Digital and scanned PDFs supported — scanned pages are read with OCR, with page citations preserved</div>
                 </div>
               )}
             </div>

@@ -266,6 +266,12 @@ function compileSingleRule(
     usability = 'explanatory_only'
   }
 
+  // Values flagged upstream (e.g. OCR could not read an amount reliably) must
+  // never drive the deterministic estimate.
+  if (raw.usability === 'needs_human_review' && usability === 'executable') {
+    usability = 'needs_human_review'
+  }
+
   return {
     id: raw.id || `comp_${Math.random().toString(36).substring(2, 9)}`,
     ruleType,

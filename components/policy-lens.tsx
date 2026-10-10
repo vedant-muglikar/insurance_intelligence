@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { UploadScreen } from './policy/UploadScreen'
 import { ProcessingTimeline } from './policy/ProcessingTimeline'
 import { PolicyResults } from './policy/PolicyResults'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
+import {
+  analyzePolicyUpload,
+  AnalysisCancelledError,
+  applyProgressEvent,
+  INITIAL_PROGRESS,
+  type AnalysisProgressState,
+} from '@/lib/client/analyzePolicyUpload'
 import { AlertTriangle } from 'lucide-react'
 
 type AppState = 'upload' | 'processing' | 'results' | 'error'
@@ -14,39 +21,53 @@ export default function PolicyLens() {
   const [fileName, setFileName] = useState('')
   const [result, setResult] = useState<PolicyAnalysisResult | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [progress, setProgress] = useState<AnalysisProgressState | null>(null)
+  const abortRef = useRef<(() => void) | null>(null)
 
   const handleAnalyze = useCallback(async (file: File) => {
     setFileName(file.name)
     setState('processing')
     setErrorMsg(null)
+    setProgress(INITIAL_PROGRESS)
+
+    const { promise, abort } = analyzePolicyUpload(file, (event) => {
+      setProgress((prev) => {
+        const current = prev ?? INITIAL_PROGRESS
+        if (event.type === 'upload') {
+          return { ...current, uploadPct: event.pct, message: event.pct < 100 ? `Uploading… ${event.pct}%` : 'Upload complete — waiting for server…' }
+        }
+        return applyProgressEvent(current, event)
+      })
+    })
+    abortRef.current = abort
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/policy/analyze', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const json = await res.json()
-
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || `Server error: ${res.status}`)
-      }
-
-      setResult(json.data)
+      const data = await promise
+      setResult(data)
       setState('results')
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Unexpected error during analysis.')
-      setState('error')
+      if (err instanceof AnalysisCancelledError) {
+        setState('upload')
+        setFileName('')
+      } else {
+        setErrorMsg(err?.message || 'Unexpected error during analysis.')
+        setState('error')
+      }
+    } finally {
+      abortRef.current = null
+      setProgress(null)
     }
+  }, [])
+
+  const handleCancel = useCallback(() => {
+    abortRef.current?.()
   }, [])
 
   const handleLoadSample = useCallback((sample: PolicyAnalysisResult, name: string) => {
     setFileName(name)
     setState('processing')
     setErrorMsg(null)
+    setProgress(null)
     setTimeout(() => {
       setResult(sample)
       setState('results')
@@ -65,7 +86,13 @@ export default function PolicyLens() {
   }
 
   if (state === 'processing') {
-    return <ProcessingTimeline fileName={fileName} />
+    return (
+      <ProcessingTimeline
+        fileName={fileName}
+        progress={progress ?? undefined}
+        onCancel={progress ? handleCancel : undefined}
+      />
+    )
   }
 
   if (state === 'error') {
@@ -86,6 +113,7 @@ export default function PolicyLens() {
                 </li>
                 <li>Check that the PDF is not password-protected</li>
                 <li>Try a smaller PDF (under 100 MB)</li>
+                <li>For scanned documents, rescan at 300 DPI or higher, flat and well-lit</li>
               </ul>
             </div>
             <button className="button-primary mt-6" onClick={reset}>

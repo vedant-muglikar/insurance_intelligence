@@ -1,5 +1,8 @@
 import type { ExtractedPage } from '@/lib/types/policy'
+import { textItemsToStructuredText } from './textLayout'
 export { detectScannedPdf, validateEvidence } from './validation'
+// OCR-aware extraction lives in ./hybrid (imported directly by routes so that
+// lightweight consumers of this module don't load the OCR stack).
 
 /**
  * Extracts text from each page of a PDF buffer using pdf-parse.
@@ -17,11 +20,8 @@ export async function extractPdfPages(buffer: ArrayBuffer): Promise<ExtractedPag
     }
 
     return pageData.getTextContent(render_options).then(function (textContent: any) {
-      let text = ''
-      for (const item of textContent.items) {
-        text += item.str + ' '
-      }
-      const cleanText = text.replace(/\s+/g, ' ').trim()
+      // Keep lines and table cells instead of flattening the page into one line
+      const cleanText = textItemsToStructuredText(textContent.items)
       pages.push({
         page_number: pageData.pageIndex + 1,
         text: cleanText,

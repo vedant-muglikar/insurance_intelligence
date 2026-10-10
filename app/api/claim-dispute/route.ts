@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { executeWithGeminiFallback } from '@/lib/ai/extractor'
 import { validateEvidence } from '@/lib/pdf/extractor'
+import { formatPageForPrompt, OCR_PROMPT_RULES } from '@/lib/pdf/promptFormat'
+import { hasOcrPages } from '@/lib/ai/extractor'
 import type { DisputeAnalysis, ExtractedPage, Citation } from '@/lib/types/policy'
 
 export const maxDuration = 120
@@ -66,7 +68,7 @@ function buildDisputeUserPrompt(
     const text = page.text.slice(0, remaining)
     totalChars += text.length
     if (text.trim().length > 0) {
-      pageChunks.push(`[PAGE ${page.page_number}]\n${text}`)
+      pageChunks.push(formatPageForPrompt(page, text))
     }
   }
 
@@ -122,7 +124,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const systemPrompt = buildDisputeSystemPrompt()
+    const systemPrompt =
+      buildDisputeSystemPrompt() + (hasOcrPages(pages) ? `\n${OCR_PROMPT_RULES}` : '')
     const userPrompt = buildDisputeUserPrompt(
       rejection_reasons,
       pages,

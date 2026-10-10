@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractPdfPages } from '@/lib/pdf/extractor'
+import { extractPagesHybrid } from '@/lib/pdf/hybrid'
+import { formatPageForPrompt } from '@/lib/pdf/promptFormat'
+import { hasPdfHeader } from '@/lib/pdf/validation'
 import { executeWithGeminiFallback } from '@/lib/ai/extractor'
 import { QuoteLineItem, ParsedHospitalQuote } from '@/lib/types/estimate'
 import { parseCurrency } from '@/lib/policy/normalizers'
@@ -23,14 +25,21 @@ export async function POST(request: NextRequest) {
       }
 
       const buffer = await file.arrayBuffer()
-      const pages = await extractPdfPages(buffer)
-      if (pages.length === 0) {
+      if (!hasPdfHeader(new Uint8Array(buffer))) {
         return NextResponse.json(
-          { success: false, error: 'Could not extract text from quotation PDF.' },
+          { success: false, error: 'This file is not a valid PDF document.' },
+          { status: 400 }
+        )
+      }
+      // Text layer for digital quotes, OCR for scanned ones
+      const { pages } = await extractPagesHybrid(buffer, { signal: request.signal })
+      if (pages.length === 0 || pages.every(p => p.text.trim().length === 0)) {
+        return NextResponse.json(
+          { success: false, error: 'Could not extract text from quotation PDF, even with OCR. Please upload a clearer scan.' },
           { status: 422 }
         )
       }
-      textContent = pages.map(p => `[Page ${p.page_number}]\n${p.text}`).join('\n\n')
+      textContent = pages.map(p => formatPageForPrompt(p)).join('\n\n')
     }
 
     if (!textContent || textContent.trim().length === 0) {

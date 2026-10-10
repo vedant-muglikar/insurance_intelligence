@@ -7,14 +7,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npx tsx tests/acceptance_tests.ts"
+    "test": "tsx tests/acceptance_tests.ts && tsx tests/ocr_tests.ts",
+    "test:ocr": "tsx tests/ocr_tests.ts",
+    "fixtures:generate": "tsx tests/fixtures/generatePolicyPdfs.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@napi-rs/canvas": "^0.1.100",
     "@supabase/server": "^1.9.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@vercel/analytics": "1.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -27,8 +31,10 @@
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.11.0",
+    "sharp": "^0.35.4",
     "styled-components": "^6.5.3",
     "tailwind-merge": "^3.3.1",
+    "tesseract.js": "^7.0.0",
     "three": "^0.186.1",
     "tw-animate-css": "^1.4.0"
   },
@@ -39,8 +45,10 @@
     "@types/react-dom": "^19",
     "@types/styled-components": "^5.1.36",
     "@types/three": "^0.186.0",
+    "pdf-lib": "^1.17.1",
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.3",
     "typescript": "5.7.3"
   }
 }

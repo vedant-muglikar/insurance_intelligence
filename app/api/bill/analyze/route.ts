@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractPdfPages } from '@/lib/pdf/extractor'
+import { extractPagesHybrid } from '@/lib/pdf/hybrid'
+import { formatPageForPrompt } from '@/lib/pdf/promptFormat'
+import { hasPdfHeader, PdfInputError } from '@/lib/pdf/validation'
+import type { ExtractedPage } from '@/lib/types/policy'
 import { executeWithGeminiFallback } from '@/lib/ai/extractor'
 import { parseCurrency } from '@/lib/policy/normalizers'
 import type { HospitalBill, HospitalBillLineItem, BillLineCategory, BillPaymentSummary } from '@/lib/types/bill'
@@ -24,19 +27,31 @@ export async function POST(request: NextRequest) {
 
       if (!isPdf) {
         return NextResponse.json(
-          { success: false, error: 'Please upload a PDF hospital bill. Image-only scans are not yet supported.' },
+          { success: false, error: 'Please upload the hospital bill as a PDF (scanned PDFs are supported).' },
           { status: 400 }
         )
       }
 
       const buffer = await file.arrayBuffer()
-      let pages: Awaited<ReturnType<typeof extractPdfPages>> = []
+      if (!hasPdfHeader(new Uint8Array(buffer))) {
+        return NextResponse.json(
+          { success: false, error: 'This file is not a valid PDF document.' },
+          { status: 400 }
+        )
+      }
+      let pages: ExtractedPage[] = []
 
       try {
-        pages = await extractPdfPages(buffer)
-      } catch (_e) {
+        // Text layer for digital bills, OCR for scanned ones
+        pages = (await extractPagesHybrid(buffer, { signal: request.signal })).pages
+      } catch (e) {
         return NextResponse.json(
-          { success: false, error: 'Could not read this PDF. It may be password-protected, corrupted, or a scanned image. Try a text-based PDF.' },
+          {
+            success: false,
+            error: e instanceof PdfInputError
+              ? e.message
+              : 'Could not read this PDF. It may be password-protected or corrupted.',
+          },
           { status: 422 }
         )
       }
@@ -46,8 +61,8 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error:
-              'This PDF appears to be a scanned image (no extractable text). ' +
-              'Please use a text-based PDF, or type in the bill amounts manually.',
+              'No readable text was found in this bill, even with OCR. ' +
+              'Please upload a clearer scan, or type in the bill amounts manually.',
           },
           { status: 422 }
         )
@@ -55,7 +70,7 @@ export async function POST(request: NextRequest) {
 
       totalPages = pages.length
       textContent = pages
-        .map(p => `[Page ${p.page_number}]\n${p.text}`)
+        .map(p => formatPageForPrompt(p))
         .join('\n\n')
     }
 
@@ -116,6 +131,7 @@ IMPORTANT RULES:
 - For sourcePage, provide the page number (integer) where each line item appears.
 - Preserve the original bill description exactly in "description".
 - Set confidence: "high" if amount is clearly readable, "medium" if inferred, "low" if uncertain.
+- Some pages may come from OCR of a scanned bill. A token followed by [?] was read with low OCR confidence: never correct or guess it — set that item's confidence to "low".
 
 Return ONLY valid JSON matching this schema exactly:
 {
@@ -341,7 +357,7 @@ function fallbackBillParser(
     const lower = line.toLowerCase()
 
     // Track page markers from our extractor format "[Page N]"
-    const pageMarker = line.match(/^\[Page (\d+)\]/)
+    const pageMarker = line.match(/^\[Page (\d+)[\]\s]/i)
     if (pageMarker) {
       currentPage = parseInt(pageMarker[1], 10)
       continue

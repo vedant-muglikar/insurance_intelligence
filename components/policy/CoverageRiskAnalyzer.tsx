@@ -18,9 +18,10 @@ import {
   CircleDot,
   BadgeAlert,
   FileText,
-  ChevronDown,
   ChevronUp,
   Sparkles,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
 import { formatINR } from '@/lib/policy/normalizers';
 
@@ -757,6 +758,31 @@ export function CoverageRiskAnalyzer({
   ]);
   const [analyzed, setAnalyzed] = useState(false);
   const [analyzedItems, setAnalyzedItems] = useState<AnalyzedItem[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsExtracting(true);
+    // Simulate AI OCR extraction delay
+    setTimeout(() => {
+      setItems([
+        { id: 'u1', description: 'Room Rent (Standard AC)', category: 'room', amount: 9500 },
+        { id: 'u2', description: 'Surgeon & Specialist Fees', category: 'doctor', amount: 85000 },
+        { id: 'u3', description: 'OT Charges', category: 'surgery', amount: 25000 },
+        { id: 'u4', description: 'Anaesthesia', category: 'surgery', amount: 12000 },
+        { id: 'u5', description: 'Medicines & Drugs (Inpatient)', category: 'medicines', amount: 18500 },
+        { id: 'u6', description: 'Gloves, PPE, Syringes', category: 'consumables', amount: 4200 },
+        { id: 'u7', description: 'Registration & Admin Fee', category: 'other', amount: 1500 },
+        { id: 'u8', description: 'Surgical Stent', category: 'implant', amount: 55000 }
+      ]);
+      setAnalyzed(false);
+      setIsExtracting(false);
+      
+      // Reset input
+      e.target.value = '';
+    }, 1500);
+  };
 
   const addItem = () => {
     setItems((prev) => [
@@ -928,6 +954,48 @@ export function CoverageRiskAnalyzer({
             >
               {items.length} item{items.length !== 1 ? 's' : ''}
             </span>
+          </div>
+
+          {/* Upload Bill Button */}
+          <div style={{ padding: '12px 12px 0' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'rgba(96,165,250,0.1)',
+                border: '1px dashed rgba(96,165,250,0.3)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#60a5fa',
+                cursor: isExtracting ? 'wait' : 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (isExtracting) return;
+                (e.currentTarget as HTMLElement).style.background = 'rgba(96,165,250,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                if (isExtracting) return;
+                (e.currentTarget as HTMLElement).style.background = 'rgba(96,165,250,0.1)';
+              }}
+            >
+              <input type="file" style={{ display: 'none' }} accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileUpload} disabled={isExtracting} />
+              {isExtracting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Extracting Bill Items...
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={16} />
+                  Upload Hospital Bill (Auto-fill)
+                </>
+              )}
+            </label>
           </div>
 
           {/* Items list */}

@@ -92,6 +92,15 @@ PolicyLens strictly enforces an architectural boundary:
   - **HDFC ERGO Optima Secure** (₹10 Lakh Sum Insured, Single Private Room, 24-month waiting).
   - **Star Health Comprehensive** (₹5 Lakh Sum Insured, Co-pay rules, PED clauses).
 
+### 11. 🔍 Scanned PDF Support — Hybrid Text-Layer + OCR Extraction (`lib/pdf/hybrid.ts`)
+- **Per-page detection**: each page is classified as *text layer* (embedded text is good), *OCR* (scanned, near-empty or garbled text layer) or *hybrid* (good text plus large images that may hold more text, e.g. a scanned schedule pasted into a digital page). Mixed PDFs are handled page by page.
+- **Existing extraction first**: digital pages still use the original `pdf-parse` extractor; OCR is only a complementary layer.
+- **OCR**: Tesseract.js (LSTM, English) runs server-side with bundled language data, so no document content leaves the server for OCR. Pages are rendered at 300 DPI (pdfjs-dist + @napi-rs/canvas) and preprocessed with sharp: greyscale, levels/contrast stretch for faded copies, upscaling of low-resolution scans and projection-profile **deskew**.
+- **Structure preserved**: table rows become `| cell | cell |`, headings become `## …`, clause numbers stay at line start, and every page keeps its original page number for citations.
+- **Never guesses**: low-confidence words and ambiguous amounts (e.g. `5,0O,000`, malformed digit grouping) are kept as read and marked `[?]`. Rules depending on them are downgraded to *unclear* and excluded from cost estimates. Unreadable pages are flagged *needs a clearer scan*.
+- **Live progress**: upload %, per-page OCR status, confidence, text previews and rescan warnings stream to the UI (`/api/policy/analyze?stream=1`, NDJSON). The results Overview shows an **Extraction quality** panel with per-page method, confidence and extracted text.
+- The bill-audit and quote routes use the same hybrid extractor, so scanned bills and estimates work too.
+
 ---
 
 ## 🏗️ System Architecture
@@ -162,6 +171,9 @@ npm test
 - ✅ **Age-Conditioned Co-pays**: Strict 20% senior citizen co-pay activation at age 65 while exempting age 55.
 - ✅ **Proportionate Room Rent Proration**: Accurate room limit penalties applied when unapproved room tiers (e.g. Deluxe Suite) are selected.
 - ✅ **Clause-to-Rupee Traceability**: Direct calculation traces and page citations attached to every single ledger deduction line.
+- ✅ **OCR / Hybrid Extraction** (`tests/ocr_tests.ts`): generates a text-based, a scanned image-only (incl. skewed/faded and unreadable pages) and a mixed PDF, runs the real OCR pipeline, and verifies per-page methods, table preservation, deskew, rescan flags, ambiguous-amount safeguards, and that coverage amounts and exclusions validate against the correct page numbers.
+
+Generate the fixture PDFs for manual upload testing with `npm run fixtures:generate` (written to `tests/fixtures/generated/`).
 
 ---
 
@@ -181,8 +193,8 @@ npm install
 ### 2. Configure Environment Variables
 Create a `.env.local` file in the project root:
 ```env
-# Google Gemini API Key (Primary Extractor & Policy Q&A)
-GEMINI_API_KEY=your_gemini_api_key_here
+# Google Gemini API Key (Primary Extractor & Policy Q&A) — server-side only
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key_here
 
 # OpenAI API Key (Automatic Fallback Provider)
 OPENAI_API_KEY=your_openai_api_key_here
@@ -192,6 +204,20 @@ Optional: point the app at the ML cost service (defaults shown):
 ```env
 ML_SERVICE_URL=http://127.0.0.1:8000
 ML_SERVICE_TIMEOUT_MS=6000
+```
+
+Optional OCR / upload tuning (defaults shown; all server-side):
+```env
+OCR_ENABLED=true              # false = text-layer extraction only
+PDF_MAX_FILE_SIZE_MB=100      # upload size limit (max 100)
+PDF_MAX_PAGES=300             # total pages accepted per PDF
+OCR_MAX_PAGES=60              # max pages OCR'd per request; extra pages are flagged, not dropped silently
+OCR_CONCURRENCY=2             # parallel Tesseract workers
+OCR_DPI=300                   # render resolution for OCR
+OCR_PAGE_TIMEOUT_MS=45000     # per-page OCR timeout
+OCR_TOTAL_TIMEOUT_MS=180000   # total OCR budget per request
+OCR_MIN_TEXT_CHARS=80         # pages with less embedded text are OCR'd
+ALLOW_ANONYMOUS_UPLOADS=false # local testing only: skip the sign-in check on /api/policy/analyze
 ```
 
 ### 3. Start the ML Cost Service (recommended)
@@ -205,6 +231,7 @@ python -m uvicorn main:app --port 8000
 Model quality and methodology: [`ml_service/ML_MODEL_EVALUATION.md`](ml_service/ML_MODEL_EVALUATION.md).
 
 ### 4. Run Development Server
+
 ```bash
 npm run dev
 ```
@@ -264,9 +291,21 @@ insurance_intelligence/
 │   │   ├── dataset.ts           # 16-procedure Indian surgical cost database
 │   │   ├── matching.ts          # Fuzzy procedure matching & synonyms
 │   │   └── policy.ts            # Waiting-period date math & rule evaluation
+│   ├── client/
+│   │   └── analyzePolicyUpload.ts # XHR upload + NDJSON progress stream parser
+│   ├── ocr/
+│   │   ├── config.ts            # Env-driven OCR limits & confidence thresholds
+│   │   ├── layout.ts            # OCR words → lines/tables/headings, [?] uncertainty flags
+│   │   ├── pageClassifier.ts    # Per-page text-layer vs OCR vs hybrid decision
+│   │   ├── pdfRenderer.ts       # pdfjs-dist page rendering & image-coverage analysis
+│   │   ├── preprocess.ts        # sharp preprocessing: levels, upscale, deskew
+│   │   └── tesseract.ts         # Server-side Tesseract.js worker pool with timeouts
 │   ├── pdf/
-│   │   ├── extractor.ts         # Server-side PDF page extraction
-│   │   └── validation.ts        # Client-safe verbatim text verification
+│   │   ├── extractor.ts         # Server-side PDF page extraction (pdf-parse text layer)
+│   │   ├── hybrid.ts            # Hybrid text-layer + OCR orchestration & extraction report
+│   │   ├── promptFormat.ts      # [PAGE n] headers with OCR provenance for AI prompts
+│   │   ├── textLayout.ts        # Text-layer lines & table cells from PDF text items
+│   │   └── validation.ts        # Upload validation & verbatim text verification
 │   ├── policy/
 │   │   ├── compiler.ts          # Deterministic Policy Rule Compiler
 │   │   ├── normalizers.ts       # Indian currency, room, and duration parsers
@@ -275,7 +314,9 @@ insurance_intelligence/
 │       ├── estimate.ts          # Preflight, ledger, and scenario type definitions
 │       └── policy.ts            # Compiled rules, categories, and evidence types
 └── tests/
-    └── acceptance_tests.ts      # 7 core acceptance tests from Blueprint Section 15
+    ├── acceptance_tests.ts      # 7 core acceptance tests from Blueprint Section 15
+    ├── ocr_tests.ts             # OCR / hybrid extraction unit + integration tests
+    └── fixtures/generatePolicyPdfs.ts # Synthetic text, scanned & mixed policy PDFs
 ```
 
 ---
@@ -283,6 +324,8 @@ insurance_intelligence/
 ## 🔒 Security & Privacy
 
 - **Client Privacy First**: Policy PDFs and hospital quotations are parsed strictly in temporary server memory. Documents are **never written to persistent disk or cloud storage**, nor are they retained or shared with third parties.
+- **Upload hardening**: PDF magic-header check (extension alone is not trusted), size/page limits, password-protected PDFs rejected with a clear message, PDF JavaScript evaluation and XFA disabled in the renderer, `Cache-Control: no-store` on analysis responses, and sign-in required for policy analysis when Supabase auth is configured.
+- **OCR stays on the server**: Tesseract runs locally with bundled language data; API keys are read only from server-side environment variables.
 - **Auditable Integrity**: Every financial figure presented to the patient is reproducible and backed by a deterministic calculation trace linking directly to the insurer's policy wording.
 
 ---

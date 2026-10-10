@@ -10,6 +10,8 @@
 import { ExtractedPage, Citation, AskResponseData } from '@/lib/types/policy'
 import { executeWithGeminiFallback } from './extractor'
 import { validateEvidence } from '../pdf/extractor'
+import { formatPageForPrompt, OCR_PROMPT_RULES } from '../pdf/promptFormat'
+import { hasOcrPages } from './extractor'
 
 function buildAskSystemPrompt(scenarioContext?: string): string {
   let prompt = `You are PolicyLens, an expert insurance policy intelligence engine. Your task is to answer user inquiries accurately and strictly based on the provided policy wording.
@@ -62,7 +64,7 @@ function buildAskUserPrompt(
     const text = page.text.slice(0, remaining)
     totalChars += text.length
     if (text.trim().length > 0) {
-      pageChunks.push(`[PAGE ${page.page_number}]\n${text}`)
+      pageChunks.push(formatPageForPrompt(page, text))
     }
   }
 
@@ -89,7 +91,8 @@ export async function askPolicyQuestion(
     throw new Error('No AI API key found. Set GOOGLE_GENERATIVE_AI_API_KEY.')
   }
 
-  const systemPrompt = buildAskSystemPrompt(scenarioContext)
+  const systemPrompt =
+    buildAskSystemPrompt(scenarioContext) + (hasOcrPages(pages) ? `\n${OCR_PROMPT_RULES}` : '')
   const userPrompt = buildAskUserPrompt(question, pages, history)
 
   let rawJsonText = ''

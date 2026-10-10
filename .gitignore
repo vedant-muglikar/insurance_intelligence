@@ -20,3 +20,6 @@ __pycache__/
 .train_full.log
 .ml_service.log
 ml_service/data/__pycache__/
+
+# Generated OCR test fixtures (npm run fixtures:generate)
+tests/fixtures/generated/

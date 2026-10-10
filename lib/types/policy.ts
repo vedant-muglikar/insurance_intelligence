@@ -134,7 +134,111 @@ export interface ExtractedPage {
   page_number: number
   text: string
   char_count: number
+  /** How the text was obtained. Absent for legacy/sample data (= 'text_layer'). */
+  extraction_method?: PageExtractionMethod
+  /** OCR diagnostics — present only when OCR ran on this page. */
+  ocr?: PageOcrInfo
 }
+
+// ─── OCR / Hybrid Extraction Types ──────────────────────────────────────────
+
+/**
+ * text_layer — embedded PDF text was sufficient (existing pdf-parse path)
+ * ocr        — page was scanned/garbled; OCR text replaced the text layer
+ * hybrid     — text layer kept, plus OCR of embedded image content appended
+ * failed     — neither method produced usable text
+ */
+export type PageExtractionMethod = 'text_layer' | 'ocr' | 'hybrid' | 'failed'
+
+export type PageOcrQuality = 'good' | 'fair' | 'poor' | 'unreadable'
+
+export interface OcrUncertainToken {
+  text: string
+  confidence: number
+  /** Why the token was flagged */
+  reason: 'low_confidence' | 'ambiguous_amount' | 'confusable_characters'
+}
+
+export interface PageOcrInfo {
+  /** Mean word confidence 0–100 */
+  confidence: number
+  quality: PageOcrQuality
+  word_count: number
+  /** Degrees the page image was rotated to correct skew */
+  deskew_angle: number
+  /** Effective render resolution used for OCR */
+  dpi: number
+  /** Low-confidence words and ambiguous monetary values (capped) */
+  uncertain_tokens: OcrUncertainToken[]
+  /** Monetary values that could not be read reliably — never auto-corrected */
+  ambiguous_amounts: string[]
+  table_rows_detected: number
+  duration_ms: number
+  /** Human-readable warnings, e.g. "Page requires a clearer scan" */
+  warnings: string[]
+}
+
+export interface PageExtractionSummary {
+  page_number: number
+  method: PageExtractionMethod
+  /** Why this method was chosen, e.g. "Only 12 characters in text layer" */
+  reason: string
+  char_count: number
+  image_coverage: number
+  ocr_confidence?: number
+  ocr_quality?: PageOcrQuality
+  needs_clearer_scan: boolean
+  warnings: string[]
+  /** First ~300 chars of the final page text */
+  preview: string
+}
+
+export interface ExtractionReport {
+  total_pages: number
+  text_layer_pages: number
+  ocr_pages: number
+  hybrid_pages: number
+  failed_pages: number
+  /** Pages the user should rescan */
+  pages_needing_rescan: number[]
+  /** Pages with OCR-uncertain monetary values */
+  pages_with_ambiguous_amounts: number[]
+  /** Pages that were not OCR'd because a limit or timeout was hit */
+  skipped_pages: number[]
+  average_ocr_confidence: number | null
+  ocr_engine: string | null
+  pages: PageExtractionSummary[]
+  warnings: string[]
+  duration_ms: number
+}
+
+/** Server → client progress events streamed as NDJSON from /api/policy/analyze?stream=1 */
+export type AnalysisStage =
+  | 'validating'
+  | 'text_extraction'
+  | 'page_detection'
+  | 'ocr'
+  | 'ai_analysis'
+  | 'evidence_validation'
+  | 'complete'
+
+export type AnalysisProgressEvent =
+  | { type: 'stage'; stage: AnalysisStage; message: string; progress: number }
+  | {
+      type: 'page'
+      page_number: number
+      total_pages: number
+      method: PageExtractionMethod
+      status: 'detected' | 'ocr_started' | 'ocr_done' | 'done'
+      reason?: string
+      ocr_confidence?: number
+      ocr_quality?: PageOcrQuality
+      needs_clearer_scan?: boolean
+      warnings?: string[]
+      preview?: string
+    }
+  | { type: 'result'; data: PolicyAnalysisResult }
+  | { type: 'error'; error: string }
 
 export interface PolicyAnalysisResult {
   overview: PolicyOverview
@@ -143,6 +247,8 @@ export interface PolicyAnalysisResult {
   pages: ExtractedPage[]
   total_pages: number
   scanned_pdf_warning: boolean
+  /** Per-page text-layer/OCR report. Absent for sample data and older results. */
+  extraction_report?: ExtractionReport
   extraction_stats: {
     total_rules: number
     coverage_count: number
