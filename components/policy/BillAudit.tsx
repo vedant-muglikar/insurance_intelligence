@@ -69,7 +69,7 @@ const CATEGORY_OPTIONS: { value: BillLineCategory; label: string }[] = [
 // ─── Small helpers ───────────────────────────────────────────────────────────
 
 function ConfidencePip({ c }: { c: 'high' | 'medium' | 'low' }) {
-  const map = { high: '#4ade80', medium: '#fbbf24', low: '#f87171' }
+  const map = { high: 'var(--ok)', medium: 'var(--warn)', low: 'var(--deny)' }
   return (
     <span
       title={`Extraction confidence: ${c}`}
@@ -93,9 +93,9 @@ function EditedBadge() {
         fontWeight: 700,
         letterSpacing: '.06em',
         textTransform: 'uppercase',
-        background: '#1d4ed820',
-        color: '#60a5fa',
-        border: '1px solid #3b82f640',
+        background: 'color-mix(in srgb, var(--info) 14%, transparent)',
+        color: 'var(--info)',
+        border: '1px solid color-mix(in srgb, var(--info) 30%, transparent)',
         borderRadius: 4,
         padding: '1px 5px',
       }}
@@ -194,7 +194,7 @@ function BillUploadPrompt({
                 className="ba-sample-btn"
                 onClick={() => onLoadSample(s.bill, s.name)}
               >
-                <Sparkles size={11} style={{ color: '#4ade80' }} />
+                <Sparkles size={11} style={{ color: 'var(--ok)' }} />
                 <span>{s.name}</span>
                 <span style={{ color: 'var(--subtle)', fontSize: 10 }}>
                   ({s.total})
@@ -285,7 +285,7 @@ function PaymentSummaryPanel({
           <div className="ba-summary-card-label">Line Item Sum</div>
           <div
             className="ba-summary-card-value"
-            style={{ color: showDiscrepancy ? '#fbbf24' : 'inherit' }}
+            style={{ color: showDiscrepancy ? 'var(--warn)' : 'inherit' }}
           >
             {formatINR(calculatedSum)}
           </div>
@@ -293,7 +293,7 @@ function PaymentSummaryPanel({
         {ps?.netPayable != null && (
           <div className="ba-summary-card">
             <div className="ba-summary-card-label">Net Payable</div>
-            <div className="ba-summary-card-value" style={{ color: '#4ade80' }}>
+            <div className="ba-summary-card-value" style={{ color: 'var(--ok)' }}>
               {formatINR(ps.netPayable)}
             </div>
           </div>
@@ -301,7 +301,7 @@ function PaymentSummaryPanel({
         {ps?.balanceDue != null && (
           <div className="ba-summary-card">
             <div className="ba-summary-card-label">Balance Due</div>
-            <div className="ba-summary-card-value" style={{ color: '#f87171' }}>
+            <div className="ba-summary-card-value" style={{ color: 'var(--deny)' }}>
               {formatINR(ps.balanceDue)}
             </div>
           </div>
@@ -334,7 +334,7 @@ function PaymentSummaryPanel({
                 <span className="ba-payment-label">{label}</span>
                 <span
                   className="ba-payment-value"
-                  style={isMinus ? { color: '#4ade80' } : undefined}
+                  style={isMinus ? { color: 'var(--ok)' } : undefined}
                 >
                   {isMinus ? '−' : ''}{formatINR(value!)}
                 </span>
@@ -376,7 +376,7 @@ function AuditSummaryMetrics({
             <ShieldCheck size={16} />
             <span>
               Policy Verified:{' '}
-              <strong style={{ color: '#93c5fd' }}>
+              <strong style={{ color: 'var(--info)' }}>
                 {policyName || 'Uploaded Health Policy'}
               </strong>{' '}
               · Cross-checked against policy exclusions, sub-limits & room rent rules
@@ -407,19 +407,19 @@ function AuditSummaryMetrics({
           <div className="ba-metric-label">
             <span>Bill Total vs Items</span>
             {hasTotalDiff ? (
-              <AlertTriangle size={13} style={{ color: '#fbbf24' }} />
+              <AlertTriangle size={13} style={{ color: 'var(--warn)' }} />
             ) : (
-              <CheckCircle2 size={13} style={{ color: '#4ade80' }} />
+              <CheckCircle2 size={13} style={{ color: 'var(--ok)' }} />
             )}
           </div>
           <div className="ba-metric-value">{formatINR(lineSum)}</div>
           <div className="ba-metric-sub">
             {hasTotalDiff ? (
-              <span style={{ color: '#fbbf24' }}>
+              <span style={{ color: 'var(--warn)' }}>
                 ₹{diffAmt.toLocaleString('en-IN')} mismatch with stated ₹{statedTotal.toLocaleString('en-IN')}
               </span>
             ) : (
-              <span style={{ color: '#4ade80' }}>
+              <span style={{ color: 'var(--ok)' }}>
                 Matches stated total (₹{statedTotal.toLocaleString('en-IN')})
               </span>
             )}
@@ -436,9 +436,9 @@ function AuditSummaryMetrics({
         >
           <div className="ba-metric-label">
             <span>Hospital Billing Track</span>
-            <Receipt size={13} style={{ color: '#f59e0b' }} />
+            <Receipt size={13} style={{ color: 'var(--warn)' }} />
           </div>
-          <div className="ba-metric-value" style={{ color: '#fbbf24' }}>
+          <div className="ba-metric-value" style={{ color: 'var(--warn)' }}>
             {auditResult.billingFindingCount}{' '}
             <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>
               {auditResult.billingFindingCount === 1 ? 'finding' : 'findings'}
@@ -459,9 +459,9 @@ function AuditSummaryMetrics({
         >
           <div className="ba-metric-label">
             <span>Insurance Policy Track</span>
-            <ShieldCheck size={13} style={{ color: '#8b5cf6' }} />
+            <ShieldCheck size={13} style={{ color: 'var(--plum)' }} />
           </div>
-          <div className="ba-metric-value" style={{ color: '#c4b5fd' }}>
+          <div className="ba-metric-value" style={{ color: 'var(--plum)' }}>
             {auditResult.insuranceFindingCount}{' '}
             <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>
               {auditResult.insuranceFindingCount === 1 ? 'flag' : 'flags'}
@@ -478,9 +478,9 @@ function AuditSummaryMetrics({
         <div className="ba-metric-card ba-metric-card--alert">
           <div className="ba-metric-label">
             <span>Flagged / At-Risk Amount</span>
-            <AlertCircle size={13} style={{ color: '#f87171' }} />
+            <AlertCircle size={13} style={{ color: 'var(--deny)' }} />
           </div>
-          <div className="ba-metric-value" style={{ color: '#f87171' }}>
+          <div className="ba-metric-value" style={{ color: 'var(--deny)' }}>
             {formatINR(atRiskAmount)}
           </div>
           <div className="ba-metric-sub">
@@ -520,7 +520,7 @@ function AuditFindingsPanel({
       {/* Header & filters */}
       <div className="ba-findings-header">
         <h3 className="ba-findings-title">
-          <Layers size={18} style={{ color: 'var(--emerald)' }} />
+          <Layers size={18} style={{ color: 'var(--brand)' }} />
           Audit Findings & Charge Discrepancies ({findings.length})
         </h3>
       </div>
@@ -583,7 +583,7 @@ function AuditFindingsPanel({
       <div className="ba-findings-list">
         {filteredFindings.length === 0 ? (
           <div className="ba-empty-findings">
-            <CheckCircle2 size={24} style={{ color: '#4ade80', margin: '0 auto 8px' }} />
+            <CheckCircle2 size={24} style={{ color: 'var(--ok)', margin: '0 auto 8px' }} />
             <p style={{ margin: 0, fontWeight: 600 }}>No findings match the selected filter.</p>
             <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--subtle)' }}>
               All examined line items in this view passed the deterministic audit checks.
@@ -630,7 +630,8 @@ function AuditFindingsPanel({
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      color: '#f87171',
+                      color: 'var(--deny)',
+                      fontFamily: 'var(--font-mono)',
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
@@ -676,7 +677,7 @@ function AuditFindingsPanel({
 
               {/* Action Callout */}
               <div className="ba-action-callout">
-                <Sparkles size={14} style={{ color: '#34d399', flexShrink: 0, marginTop: 1 }} />
+                <Sparkles size={14} style={{ color: 'var(--ok)', flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <strong>Recommended Action:</strong> {f.suggestedAction}
                 </div>
@@ -748,7 +749,7 @@ function DischargeChecklistPanel({ findings }: { findings: AuditFinding[] }) {
     <div className="ba-checklist-panel">
       <div className="ba-checklist-header">
         <h3 className="ba-checklist-title">
-          <FileSpreadsheet size={16} style={{ color: '#4ade80' }} />
+          <FileSpreadsheet size={16} style={{ color: 'var(--ok)' }} />
           Discharge Counter Action Checklist ({checklistItems.length} points to clarify)
         </h3>
         <button
@@ -756,7 +757,7 @@ function DischargeChecklistPanel({ findings }: { findings: AuditFinding[] }) {
           className="ba-copy-checklist-btn"
           onClick={handleCopyChecklist}
         >
-          {copied ? <CheckCheck size={13} style={{ color: '#4ade80' }} /> : <Copy size={13} />}
+          {copied ? <CheckCheck size={13} style={{ color: 'var(--ok)' }} /> : <Copy size={13} />}
           <span>{copied ? 'Copied to clipboard!' : 'Copy Checklist'}</span>
         </button>
       </div>
@@ -1060,7 +1061,7 @@ function BillLineRow({
               <code className="ba-original-text">{item.originalText}</code>
               {item.originalAmount != null &&
                 item.originalAmount !== item.amount && (
-                  <span style={{ color: '#fbbf24', fontSize: 11 }}>
+                  <span style={{ color: 'var(--warn)', fontSize: 11 }}>
                     Original amount: {formatINR(item.originalAmount)}
                   </span>
                 )}
@@ -1103,7 +1104,7 @@ function ExtractionLegend() {
         <ConfidencePip c="low" /> Low
       </span>
       <span className="ba-legend-item">
-        <Pencil size={10} style={{ color: '#60a5fa' }} /> User edited
+        <Pencil size={10} style={{ color: 'var(--info)' }} /> User edited
       </span>
     </div>
   )
@@ -1283,10 +1284,10 @@ export function BillAudit({ policyRules, policyName }: BillAuditProps = {}) {
               style={{
                 color:
                   bill.parsingConfidence === 'high'
-                    ? '#4ade80'
+                    ? 'var(--ok)'
                     : bill.parsingConfidence === 'medium'
-                    ? '#fbbf24'
-                    : '#f87171',
+                    ? 'var(--warn)'
+                    : 'var(--deny)',
               }}
             >
               {bill.extractionMethod === 'ai' ? 'AI extracted' : 'Heuristic'} ·{' '}
@@ -1367,7 +1368,7 @@ export function BillAudit({ policyRules, policyName }: BillAuditProps = {}) {
           {/* Status footer bar */}
           <div className="ba-cta-bar">
             <div className="ba-cta-info">
-              <CheckCircle2 size={14} style={{ color: '#4ade80' }} />
+              <CheckCircle2 size={14} style={{ color: 'var(--ok)' }} />
               <span>
                 {lineItems.filter(i => !i.isUserEdited).length} items as extracted
                 ·{' '}
@@ -1379,7 +1380,7 @@ export function BillAudit({ policyRules, policyName }: BillAuditProps = {}) {
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
-                className="button-primary ba-cta-btn"
+                className="pl-btn pl-btn-primary pl-btn-sm ba-cta-btn"
                 onClick={() => {
                   const el = document.getElementById('line-items-table')
                   if (el) el.scrollIntoView({ behavior: 'smooth' })

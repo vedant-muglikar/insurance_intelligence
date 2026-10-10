@@ -413,6 +413,14 @@ const FEATURES = [
     desc: 'No hallucinated arithmetic. Coverage rules, waiting-period date maths, room proration and sub-limits run in auditable TypeScript.',
   },
   {
+    title: 'Hospital Bill Audit Engine',
+    desc: 'Upload actual hospital bills to verify line-item arithmetic, flag duplicate charges, unbundled fees, and room-rent linked inflation.',
+  },
+  {
+    title: 'Claim Dispute & Counter-Denial',
+    desc: 'Generate formal dispute packets with legal citations, clause cross-references, and step-by-step resolution checklists.',
+  },
+  {
     title: 'What-If Scenario Simulator',
     desc: 'Test a different room, a later admission date or an age co-pay threshold, with live side-by-side deltas.',
   },

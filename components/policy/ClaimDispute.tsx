@@ -440,14 +440,14 @@ export function ClaimDispute({ pages }: ClaimDisputeProps) {
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={() => generateDisputePDF(analysis, treatmentName)}
-            className="flex items-center gap-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-4 py-2.5 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+            className="pl-btn pl-btn-primary pl-btn-sm"
           >
             <Download size={15} />
             Download Dispute Report (PDF)
           </button>
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors"
+            className="pl-btn pl-btn-ghost pl-btn-sm"
           >
             Analyze Another Rejection
           </button>
@@ -578,7 +578,7 @@ export function ClaimDispute({ pages }: ClaimDisputeProps) {
         <button
           onClick={handleSubmit}
           disabled={loading || reasons.every((r) => !r.trim())}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-orange-500 px-4 py-3 text-sm font-bold text-white transition-all hover:from-red-400 hover:to-orange-400 hover:shadow-[0_4px_24px_rgba(239,68,68,0.25)] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="pl-btn pl-btn-primary w-full justify-center"
         >
           {loading ? (
             <>

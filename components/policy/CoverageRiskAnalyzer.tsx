@@ -79,41 +79,41 @@ const RISK_CONFIG: Record<
   }
 > = {
   'Likely Covered': {
-    color: '#4ade80',
-    bg: 'rgba(74,222,128,0.08)',
-    border: 'rgba(74,222,128,0.25)',
-    glow: '0 0 20px rgba(74,222,128,0.15)',
-    dot: '#4ade80',
+    color: 'var(--ok)',
+    bg: 'color-mix(in srgb, var(--ok) 10%, transparent)',
+    border: 'color-mix(in srgb, var(--ok) 30%, transparent)',
+    glow: '0 0 20px color-mix(in srgb, var(--ok) 15%, transparent)',
+    dot: 'var(--ok)',
     icon: <CheckCircle2 size={16} />,
     label: 'Likely Covered',
     short: 'COVERED',
   },
   'Partially Covered': {
-    color: '#fbbf24',
-    bg: 'rgba(251,191,36,0.08)',
-    border: 'rgba(251,191,36,0.25)',
-    glow: '0 0 20px rgba(251,191,36,0.15)',
-    dot: '#fbbf24',
+    color: 'var(--warn)',
+    bg: 'color-mix(in srgb, var(--warn) 10%, transparent)',
+    border: 'color-mix(in srgb, var(--warn) 30%, transparent)',
+    glow: '0 0 20px color-mix(in srgb, var(--warn) 15%, transparent)',
+    dot: 'var(--warn)',
     icon: <AlertTriangle size={16} />,
     label: 'Partially Covered',
     short: 'PARTIAL',
   },
   'Not Covered': {
-    color: '#f87171',
-    bg: 'rgba(248,113,113,0.08)',
-    border: 'rgba(248,113,113,0.28)',
-    glow: '0 0 20px rgba(248,113,113,0.18)',
-    dot: '#f87171',
+    color: 'var(--deny)',
+    bg: 'color-mix(in srgb, var(--deny) 10%, transparent)',
+    border: 'color-mix(in srgb, var(--deny) 30%, transparent)',
+    glow: '0 0 20px color-mix(in srgb, var(--deny) 18%, transparent)',
+    dot: 'var(--deny)',
     icon: <ShieldAlert size={16} />,
     label: 'Not Covered',
     short: 'EXCLUDED',
   },
   'Verify First': {
-    color: '#60a5fa',
-    bg: 'rgba(96,165,250,0.08)',
-    border: 'rgba(96,165,250,0.25)',
-    glow: '0 0 20px rgba(96,165,250,0.15)',
-    dot: '#60a5fa',
+    color: 'var(--info)',
+    bg: 'color-mix(in srgb, var(--info) 10%, transparent)',
+    border: 'color-mix(in srgb, var(--info) 30%, transparent)',
+    glow: '0 0 20px color-mix(in srgb, var(--info) 15%, transparent)',
+    dot: 'var(--info)',
     icon: <HelpCircle size={16} />,
     label: 'Verify First',
     short: 'VERIFY',
@@ -456,9 +456,9 @@ function RiskSummaryBar({ items }: { items: AnalyzedItem[] }) {
             <span style={{ color: cfg.color }}>{cfg.icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 11, color: cfg.color, fontWeight: 700 }}>{cfg.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'white', lineHeight: 1.1 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
                 {count}
-                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginLeft: 4 }}>
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500, marginLeft: 4 }}>
                   item{count !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -471,8 +471,8 @@ function RiskSummaryBar({ items }: { items: AnalyzedItem[] }) {
       <div
         style={{
           gridColumn: '1 / -1',
-          background: 'rgba(248,113,113,0.06)',
-          border: '1px solid rgba(248,113,113,0.2)',
+          background: 'color-mix(in srgb, var(--deny) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--deny) 25%, transparent)',
           borderRadius: 12,
           padding: '14px 16px',
           display: 'flex',
@@ -481,19 +481,19 @@ function RiskSummaryBar({ items }: { items: AnalyzedItem[] }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <BadgeAlert size={18} style={{ color: '#f87171' }} />
+          <BadgeAlert size={18} style={{ color: 'var(--deny)' }} />
           <div>
-            <div style={{ fontSize: 11, color: '#f87171', fontWeight: 700 }}>Total At-Risk Amount</div>
-            <div style={{ fontSize: 10, color: '#64748b' }}>
+            <div style={{ fontSize: 11, color: 'var(--deny)', fontWeight: 700 }}>Total At-Risk Amount</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)' }}>
               Items requiring attention or likely not covered
             </div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#f87171' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--deny)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
             {formatINR(totalAtRisk)}
           </div>
-          <div style={{ fontSize: 10, color: '#64748b' }}>
+          <div style={{ fontSize: 10, color: 'var(--muted)' }}>
             {totalBill > 0 ? `${Math.round((totalAtRisk / totalBill) * 100)}% of bill` : '—'}
           </div>
         </div>
@@ -550,7 +550,7 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: 'white',
+                color: 'var(--text)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -561,7 +561,7 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
             <div
               style={{
                 fontSize: 11,
-                color: '#64748b',
+                color: 'var(--muted)',
                 marginTop: 2,
                 display: 'flex',
                 gap: 8,
@@ -569,15 +569,15 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               }}
             >
               <span>{CATEGORIES.find((c) => c.value === item.category)?.label}</span>
-              <span style={{ color: '#334155' }}>·</span>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>{formatINR(item.amount)}</span>
+              <span style={{ color: 'var(--border2)' }}>·</span>
+              <span style={{ color: 'var(--text)', fontWeight: 600, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{formatINR(item.amount)}</span>
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <RiskBadge level={item.riskLevel} />
-          <span style={{ color: '#475569' }}>
+          <span style={{ color: 'var(--muted)' }}>
             {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </span>
         </div>
@@ -585,14 +585,14 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
 
       {/* Expanded body */}
       {expanded && (
-        <div style={{ background: '#0a0f1a', padding: '0 16px 16px' }}>
+        <div style={{ background: 'var(--surface)', padding: '0 16px 16px' }}>
           {/* Risk explanation */}
           <div
             style={{
               padding: '12px 14px',
               borderRadius: 10,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               marginTop: 12,
             }}
           >
@@ -600,7 +600,7 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: '#475569',
+                color: 'var(--muted)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 marginBottom: 5,
@@ -612,7 +612,7 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               <CircleDot size={11} style={{ color: cfg.color }} />
               Why this risk level?
             </div>
-            <p style={{ fontSize: 12, color: '#cbd5e1', lineHeight: 1.65, margin: 0 }}>
+            <p style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
               {item.explanation}
             </p>
           </div>
@@ -624,15 +624,15 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
                 marginTop: 10,
                 padding: '10px 14px',
                 borderRadius: 10,
-                background: '#060c18',
-                border: '1px solid rgba(100,116,139,0.25)',
+                background: 'var(--sunk)',
+                border: '1px solid var(--border)',
               }}
             >
               <div
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
-                  color: '#475569',
+                  color: 'var(--muted)',
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   marginBottom: 5,
@@ -641,18 +641,18 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <FileText size={11} style={{ color: '#60a5fa' }} />
+                  <FileText size={11} style={{ color: 'var(--info)' }} />
                   Policy Clause
                 </span>
                 {item.policyPage && (
-                  <span style={{ color: '#334155' }}>Page {item.policyPage}</span>
+                  <span style={{ color: 'var(--subtle)' }}>Page {item.policyPage}</span>
                 )}
               </div>
               {item.policySection && (
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#60a5fa',
+                    color: 'var(--info)',
                     marginBottom: 4,
                     fontWeight: 600,
                   }}
@@ -663,9 +663,9 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               <blockquote
                 style={{
                   fontSize: 11,
-                  color: '#94a3b8',
+                  color: 'var(--text)',
                   fontStyle: 'italic',
-                  borderLeft: '2px solid rgba(96,165,250,0.4)',
+                  borderLeft: '2px solid var(--info)',
                   paddingLeft: 8,
                   margin: 0,
                   lineHeight: 1.6,
@@ -683,15 +683,15 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
                 marginTop: 10,
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: 'rgba(251,191,36,0.06)',
-                border: '1px solid rgba(251,191,36,0.2)',
+                background: 'color-mix(in srgb, var(--warn) 8%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--warn) 25%, transparent)',
                 display: 'flex',
                 gap: 7,
                 alignItems: 'flex-start',
               }}
             >
-              <Info size={12} style={{ color: '#fbbf24', marginTop: 1, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: '#fcd34d', lineHeight: 1.5 }}>
+              <Info size={12} style={{ color: 'var(--warn)', marginTop: 1, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: 'var(--warn)', lineHeight: 1.5 }}>
                 {item.missingInfo}
               </span>
             </div>
@@ -703,20 +703,20 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               marginTop: 10,
               padding: '10px 14px',
               borderRadius: 10,
-              background: 'rgba(52,211,153,0.06)',
-              border: '1px solid rgba(52,211,153,0.2)',
+              background: 'color-mix(in srgb, var(--ok) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--ok) 25%, transparent)',
               display: 'flex',
               gap: 8,
               alignItems: 'flex-start',
             }}
           >
-            <ArrowRight size={13} style={{ color: '#34d399', marginTop: 1, flexShrink: 0 }} />
+            <ArrowRight size={13} style={{ color: 'var(--ok)', marginTop: 1, flexShrink: 0 }} />
             <div>
               <div
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
-                  color: '#34d399',
+                  color: 'var(--ok)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                   marginBottom: 3,
@@ -724,7 +724,7 @@ function ItemResultCard({ item, index }: { item: AnalyzedItem; index: number }) 
               >
                 Recommended Action
               </div>
-              <p style={{ fontSize: 12, color: '#a7f3d0', margin: 0, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 12, color: 'var(--ok-ink)', margin: 0, lineHeight: 1.6 }}>
                 {item.recommendation}
               </p>
             </div>
@@ -791,10 +791,9 @@ export function CoverageRiskAnalyzer({
       {/* ─── Hero Banner ──────────────────────────────────────────────────── */}
       <div
         style={{
-          background:
-            'linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(251,191,36,0.08) 50%, rgba(96,165,250,0.08) 100%)',
-          border: '1px solid rgba(248,113,113,0.25)',
-          borderRadius: 16,
+          background: 'var(--card)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
           padding: '20px 24px',
           marginBottom: 24,
           display: 'flex',
@@ -810,12 +809,12 @@ export function CoverageRiskAnalyzer({
               width: 48,
               height: 48,
               borderRadius: 12,
-              background: 'rgba(248,113,113,0.15)',
-              border: '1px solid rgba(248,113,113,0.3)',
+              background: 'color-mix(in srgb, var(--deny) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--deny) 25%, transparent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#f87171',
+              color: 'var(--deny)',
               flexShrink: 0,
             }}
           >
@@ -829,23 +828,23 @@ export function CoverageRiskAnalyzer({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: '#f87171',
+                  color: 'var(--deny)',
                   padding: '2px 8px',
                   borderRadius: 99,
-                  background: 'rgba(248,113,113,0.15)',
-                  border: '1px solid rgba(248,113,113,0.3)',
+                  background: 'color-mix(in srgb, var(--deny) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--deny) 25%, transparent)',
                 }}
               >
                 Coverage Risk Analyzer
               </span>
-              <PulseDot color="#f87171" />
+              <PulseDot color="var(--deny)" />
             </div>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'white' }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>
               Which bill items won't be covered?
             </h2>
-            <p style={{ margin: '3px 0 0', fontSize: 12, color: '#64748b' }}>
+            <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--muted)' }}>
               Cross-references each bill item against{' '}
-              <strong style={{ color: '#93c5fd' }}>
+              <strong style={{ color: 'var(--brand)' }}>
                 {policyName || 'your uploaded policy'}
               </strong>{' '}
               — citing exact clauses and pages.
@@ -893,8 +892,8 @@ export function CoverageRiskAnalyzer({
         {/* ─── Left: Item Input Panel ──────────────────────────────────────── */}
         <div
           style={{
-            background: '#0d1624',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
             borderRadius: 14,
             overflow: 'hidden',
             position: 'sticky',
@@ -905,23 +904,24 @@ export function CoverageRiskAnalyzer({
           <div
             style={{
               padding: '14px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(255,255,255,0.02)',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
             }}
           >
-            <Zap size={14} style={{ color: '#fbbf24' }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>
+            <Zap size={14} style={{ color: 'var(--warn)' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
               Bill Line Items
             </span>
             <span
               style={{
                 marginLeft: 'auto',
                 fontSize: 10,
-                color: '#475569',
-                background: '#1e2d3d',
+                color: 'var(--muted)',
+                background: 'var(--sunk)',
+                border: '1px solid var(--border)',
                 padding: '2px 8px',
                 borderRadius: 6,
               }}
@@ -945,8 +945,8 @@ export function CoverageRiskAnalyzer({
               <div
                 key={item.id}
                 style={{
-                  background: '#111827',
-                  border: '1px solid rgba(255,255,255,0.07)',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                   padding: '10px 11px',
                   display: 'flex',
@@ -965,7 +965,7 @@ export function CoverageRiskAnalyzer({
                     style={{
                       fontSize: 10,
                       fontWeight: 700,
-                      color: '#475569',
+                      color: 'var(--muted)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
                     }}
@@ -978,7 +978,7 @@ export function CoverageRiskAnalyzer({
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#334155',
+                      color: 'var(--subtle)',
                       padding: 2,
                       cursor: 'pointer',
                       display: 'flex',
@@ -987,10 +987,10 @@ export function CoverageRiskAnalyzer({
                       transition: 'color 0.15s',
                     }}
                     onMouseEnter={(e) =>
-                      ((e.currentTarget as HTMLElement).style.color = '#f87171')
+                      ((e.currentTarget as HTMLElement).style.color = 'var(--deny)')
                     }
                     onMouseLeave={(e) =>
-                      ((e.currentTarget as HTMLElement).style.color = '#334155')
+                      ((e.currentTarget as HTMLElement).style.color = 'var(--subtle)')
                     }
                   >
                     <Trash2 size={13} />
@@ -1003,12 +1003,12 @@ export function CoverageRiskAnalyzer({
                   value={item.description}
                   onChange={(e) => changeItem(item.id, 'description', e.target.value)}
                   style={{
-                    background: '#0d1624',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--sunk)',
+                    border: '1px solid var(--border)',
                     borderRadius: 7,
                     padding: '7px 10px',
                     fontSize: 12,
-                    color: 'white',
+                    color: 'var(--text)',
                     outline: 'none',
                     width: '100%',
                   }}
@@ -1020,12 +1020,12 @@ export function CoverageRiskAnalyzer({
                     onChange={(e) => changeItem(item.id, 'category', e.target.value)}
                     style={{
                       flex: 1,
-                      background: '#0d1624',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--sunk)',
+                      border: '1px solid var(--border)',
                       borderRadius: 7,
                       padding: '7px 8px',
                       fontSize: 11,
-                      color: '#94a3b8',
+                      color: 'var(--muted)',
                       outline: 'none',
                     }}
                   >
@@ -1043,12 +1043,14 @@ export function CoverageRiskAnalyzer({
                     onChange={(e) => changeItem(item.id, 'amount', Number(e.target.value))}
                     style={{
                       width: 90,
-                      background: '#0d1624',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--sunk)',
+                      border: '1px solid var(--border)',
                       borderRadius: 7,
                       padding: '7px 8px',
                       fontSize: 12,
-                      color: 'white',
+                      color: 'var(--text)',
+                      fontFamily: 'var(--font-mono)',
+                      fontVariantNumeric: 'tabular-nums',
                       outline: 'none',
                     }}
                   />
@@ -1061,7 +1063,7 @@ export function CoverageRiskAnalyzer({
           <div
             style={{
               padding: '10px 12px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid var(--border)',
               display: 'flex',
               gap: 8,
             }}
@@ -1071,12 +1073,12 @@ export function CoverageRiskAnalyzer({
               onClick={addItem}
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px dashed rgba(255,255,255,0.12)',
+                background: 'var(--surface)',
+                border: '1px dashed var(--border2)',
                 borderRadius: 8,
                 padding: '8px 12px',
                 fontSize: 12,
-                color: '#64748b',
+                color: 'var(--muted)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -1085,12 +1087,12 @@ export function CoverageRiskAnalyzer({
                 transition: 'all 0.15s',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.color = 'white';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.3)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--text)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--brand)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#64748b';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--muted)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)';
               }}
             >
               <Plus size={13} /> Add Item
@@ -1100,23 +1102,10 @@ export function CoverageRiskAnalyzer({
               type="button"
               onClick={runAnalysis}
               disabled={items.filter((i) => i.description.trim()).length === 0}
+              className="pl-btn pl-btn-primary pl-btn-sm"
               style={{
                 flex: 2,
-                background: 'linear-gradient(135deg, #f87171, #dc2626)',
-                border: 'none',
-                borderRadius: 8,
-                padding: '8px 14px',
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                boxShadow: '0 4px 20px rgba(248,113,113,0.35)',
                 opacity: items.filter((i) => i.description.trim()).length === 0 ? 0.4 : 1,
-                transition: 'opacity 0.15s',
               }}
             >
               <Search size={13} />
@@ -1136,10 +1125,11 @@ export function CoverageRiskAnalyzer({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '1.5px dashed rgba(255,255,255,0.08)',
+                border: '1.5px dashed var(--border)',
                 borderRadius: 14,
                 padding: 40,
                 textAlign: 'center',
+                background: 'var(--card)',
               }}
             >
               <div
@@ -1147,23 +1137,23 @@ export function CoverageRiskAnalyzer({
                   width: 56,
                   height: 56,
                   borderRadius: 14,
-                  background: 'rgba(248,113,113,0.1)',
-                  border: '1px solid rgba(248,113,113,0.2)',
+                  background: 'color-mix(in srgb, var(--deny) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--deny) 25%, transparent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 16,
-                  color: '#f87171',
+                  color: 'var(--deny)',
                 }}
               >
                 <ShieldAlert size={26} />
               </div>
-              <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: 'white' }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
                 Coverage Risk Report
               </h3>
-              <p style={{ fontSize: 13, color: '#475569', maxWidth: 320, margin: 0, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 320, margin: 0, lineHeight: 1.6 }}>
                 Add your hospital bill items and click{' '}
-                <strong style={{ color: '#f87171' }}>Analyze Coverage Risk</strong> to see which
+                <strong style={{ color: 'var(--brand)' }}>Analyze Coverage Risk</strong> to see which
                 charges your policy covers, partially covers, or excludes — with exact clause
                 citations.
               </p>
