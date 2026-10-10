@@ -108,6 +108,9 @@ function Nav() {
           <Link href="/login" tabIndex={open ? 0 : -1}>
             Sign in
           </Link>
+          <Link href="/app" tabIndex={open ? 0 : -1} className="pl-btn pl-btn-primary lp-mobile-cta">
+            Launch Preflight
+          </Link>
         </nav>
       </header>
     </>
@@ -186,7 +189,7 @@ function Stats() {
       <div className="lp-wrap lp-stats-grid">
         <Stat value={12} suffix="" label="policy clause categories extracted" />
         <Stat value={17} suffix="" label="procedures priced by the cost model" />
-        <Stat value={60} suffix="s" label="average analysis time" />
+        <Stat value={100} suffix=" MB" label="largest policy PDF accepted" />
       </div>
     </div>
   )
@@ -556,7 +559,7 @@ function Cta() {
         <div className="lp-cta-card">
           <div>
             <h2>Stop guessing. Know your patient share.</h2>
-            <p>Upload your policy and quotation now and get an auditable preflight in under 60 seconds.</p>
+            <p>Upload your policy and quotation now and get an auditable preflight.</p>
           </div>
           <div className="lp-cta-actions">
             <Link href="/app" className="pl-btn pl-btn-primary">

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, type Dispatch, type SetStateAction } from 'react'
+import { createPortal } from 'react-dom'
 import { ExtractedPage, AskResponseData, Citation, PolicyRule, PolicyStatus } from '@/lib/types/policy'
 import type { HospitalBill, HospitalBillLineItem } from '@/lib/types/bill'
 import { runBillAudit } from '@/lib/bill/auditor'
@@ -95,6 +96,13 @@ export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) 
       speakerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (!selectedCitation) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSelectedCitation(null)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedCitation])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -466,7 +474,7 @@ export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) 
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={voice === 'listening' ? 'Listening...' : 'Ask anything about your policy...'}
+            placeholder={voice === 'listening' ? 'Listening...' : 'Ask your policy...'}
             disabled={busy}
             className="flex-1 min-w-0 bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text)] placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 disabled:opacity-50 transition-colors"
           />
@@ -530,9 +538,12 @@ export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) 
       </div>
 
       {/* Evidence Panel Modal */}
-      {selectedCitation && (
+      {/* Portalled to <body> so it sits above the bottom bar (the page column is its own stacking context). */}
+      {selectedCitation &&
+        typeof document !== 'undefined' &&
+        createPortal(
         <div
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-[70]"
           onClick={() => setSelectedCitation(null)}
         >
           <div
@@ -570,6 +581,8 @@ export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) 
             </div>
           </div>
         </div>
+      ,
+        document.body,
       )}
     </div>
   )

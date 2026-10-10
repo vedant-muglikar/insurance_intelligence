@@ -12,7 +12,7 @@ import {
   Copy,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -101,6 +101,12 @@ export function EvidenceViewer({
 }) {
   const [copied, setCopied] = useState(false)
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   const copy = () => {
     navigator.clipboard.writeText(rule.evidence_text)
     setCopied(true)
@@ -115,7 +121,7 @@ export function EvidenceViewer({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
 

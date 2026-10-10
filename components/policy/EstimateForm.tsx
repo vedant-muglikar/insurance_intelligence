@@ -11,6 +11,7 @@ import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
 import { fetchMlCostPrediction, scenarioNeedsMlCost } from '@/lib/estimate/mlClient'
 import { CANONICAL_PROCEDURES, formatINR } from '@/lib/policy/normalizers'
 import { CostLedger } from './CostLedger'
+import { CostBreakdownCard } from './CostBreakdownCard'
 import { MissingInfoPanel } from './MissingInfoPanel'
 import { WhatIfPanel } from './WhatIfPanel'
 import { PolicyTimeline } from './PolicyTimeline'
@@ -41,6 +42,18 @@ import {
   ChevronRight,
   RotateCcw,
 } from 'lucide-react'
+
+function sharePct(part: number, whole: number): number {
+  return whole > 0 ? Math.min(100, Math.round((part / whole) * 100)) : 0
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  hospital_quote: 'Hospital quote',
+  manual_quote: 'Your quote',
+  ml_model: 'Model estimate',
+  benchmark: 'Benchmark prices',
+  synthetic: 'Rough guide',
+}
 
 interface EstimateFormProps {
   policyResult: PolicyAnalysisResult
@@ -139,7 +152,7 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
   }
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6">
+    <div className="db-est">
       {/* ─── Scenario Inputs Sidebar ────────────────────────────────────────── */}
       <div className="w-full xl:w-[380px] shrink-0 space-y-4 order-2 xl:order-1">
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-4">
@@ -339,34 +352,34 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
           <p className="sx-wait">Working it out...</p>
         ) : (
           <>
-            <section className="sx-result" aria-label="Your estimated share">
-              <p className="sx-result-lead">You would pay about</p>
-              <p className="sx-result-amt">{formatINR(preflight.patientShare.typical)}</p>
-              <p className="sx-result-meta">
-                of a {formatINR(preflight.treatmentCost.typical)} bill. Your insurer covers{' '}
-                <strong>{formatINR(preflight.potentiallyCovered.typical)}</strong>.
-              </p>
-              <div
-                className="sx-result-bar"
-                role="img"
-                aria-label={`Insurer covers ${
-                  preflight.treatmentCost.typical > 0
-                    ? Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)
-                    : 0
-                } percent`}
-              >
-                <i
-                  style={{
-                    width: `${
-                      preflight.treatmentCost.typical > 0
-                        ? Math.min(100, Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
+            <section className="est-kpis" aria-label="Your estimated share">
+              <div className="est-kpi est-kpi-main">
+                <span className="est-label">You would pay about</span>
+                <span className="est-value">{formatINR(preflight.patientShare.typical)}</span>
+                <span className="est-sub">{sharePct(preflight.patientShare.typical, preflight.treatmentCost.typical)}% of the bill</span>
               </div>
-              <div className="sx-result-foot">
-                <span className={`sx-status sx-status-${preflight.status}`}>
+              <div className="est-kpi">
+                <span className="est-label">Insurer covers</span>
+                <span className="est-value est-ok">{formatINR(preflight.potentiallyCovered.typical)}</span>
+                <span className="est-sub">{sharePct(preflight.potentiallyCovered.typical, preflight.treatmentCost.typical)}% of the bill</span>
+              </div>
+              <div className="est-kpi">
+                <span className="est-label">Estimated bill</span>
+                <span className="est-value">{formatINR(preflight.treatmentCost.typical)}</span>
+                <span className="est-sub">
+                  Range {formatINR(preflight.treatmentCost.min)} to {formatINR(preflight.treatmentCost.max)}
+                </span>
+              </div>
+            </section>
+
+            <section className="db-card est-split">
+              <div className="est-split-head">
+                <span
+                  className="db-chip"
+                  data-tone={
+                    preflight.status === 'eligible' ? 'ok' : preflight.status === 'conditional' ? 'info' : preflight.status === 'not_eligible' ? 'deny' : 'warn'
+                  }
+                >
                   {preflight.status === 'eligible'
                     ? 'Looks covered'
                     : preflight.status === 'conditional'
@@ -375,13 +388,28 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
                     ? 'Not covered'
                     : 'Needs more info'}
                 </span>
-                <span className="sx-result-range">
-                  Bill could be {formatINR(preflight.treatmentCost.min)} to {formatINR(preflight.treatmentCost.max)}
+                <span className="est-source">{SOURCE_LABEL[preflight.costSource] ?? 'Estimate'}</span>
+              </div>
+              <div
+                className="est-bar"
+                role="img"
+                aria-label={`Insurer covers ${sharePct(preflight.potentiallyCovered.typical, preflight.treatmentCost.typical)} percent`}
+              >
+                <i style={{ width: `${sharePct(preflight.potentiallyCovered.typical, preflight.treatmentCost.typical)}%` }} />
+              </div>
+              <div className="est-bar-legend">
+                <span>
+                  <i data-k="ok" /> Insurer pays
+                </span>
+                <span>
+                  <i data-k="you" /> You pay
                 </span>
               </div>
             </section>
 
-            <div className="sx-chips" role="tablist" aria-label="More about this estimate">
+            {preflight.costBreakdown && <CostBreakdownCard breakdown={preflight.costBreakdown} />}
+
+            <div className="db-tabs db-tabs-solo" role="tablist" aria-label="More about this estimate">
               {(
                 [
                   ['ledger', 'Breakdown'],
@@ -400,7 +428,7 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
                     type="button"
                     role="tab"
                     aria-selected={selected}
-                    className="sx-chip"
+                    className="db-tab"
                     onClick={() => setActivePreflightTab(id)}
                   >
                     {label}
