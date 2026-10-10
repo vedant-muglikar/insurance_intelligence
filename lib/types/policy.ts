@@ -247,6 +247,8 @@ export interface PolicyAnalysisResult {
   pages: ExtractedPage[]
   total_pages: number
   scanned_pdf_warning: boolean
+  /** SHA-256 of the uploaded PDF — stable policy identity for saved checklists. Absent for samples. */
+  document_hash?: string
   /** Per-page text-layer/OCR report. Absent for sample data and older results. */
   extraction_report?: ExtractionReport
   extraction_stats: {

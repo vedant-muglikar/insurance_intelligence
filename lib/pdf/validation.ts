@@ -40,7 +40,8 @@ export async function readValidatedPdfUpload(
 
 /** PDF spec allows junk before the header; readers accept it within the first 1 KB. */
 export function hasPdfHeader(bytes: Uint8Array): boolean {
-  const head = Buffer.from(bytes.subarray(0, 1024)).toString('latin1')
+  // TextDecoder (not Buffer) so the check also runs in the browser
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024))
   return head.includes('%PDF-')
 }
 

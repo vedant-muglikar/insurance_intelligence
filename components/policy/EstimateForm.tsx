@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { PolicyAnalysisResult, PolicyRule } from '@/lib/types/policy'
 import {
   TreatmentScenario,
@@ -45,11 +45,15 @@ import {
 
 interface EstimateFormProps {
   policyResult: PolicyAnalysisResult
+  /** Restores the scenario when the user returns to this tab */
+  initialScenario?: TreatmentScenario | null
+  /** Reports each evaluated scenario; `userEdited` is false while the placeholder defaults are untouched */
+  onPreflightChange?: (scenario: TreatmentScenario, preflight: CoverageResult, userEdited: boolean) => void
 }
 
-export function EstimateForm({ policyResult }: EstimateFormProps) {
+export function EstimateForm({ policyResult, initialScenario, onPreflightChange }: EstimateFormProps) {
   // Default scenario initialized with smart defaults
-  const [scenario, setScenario] = useState<TreatmentScenario>({
+  const [scenario, setScenario] = useState<TreatmentScenario>(() => initialScenario ?? {
     treatment: 'Total Knee Replacement',
     age: 58,
     city: 'Mumbai',
@@ -73,6 +77,11 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
   const [activeEvidenceModal, setActiveEvidenceModal] = useState<PolicyRule | null>(null)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
 
+  // Any user edit replaces the scenario object, so identity tells defaults from real input
+  const initialScenarioRef = useRef(scenario)
+  const onPreflightChangeRef = useRef(onPreflightChange)
+  onPreflightChangeRef.current = onPreflightChange
+
   // Recompute the preflight whenever the scenario changes. Cost comes from the ML service
   // (debounced, cached); policy rules stay deterministic. If the service is down the
   // prediction is null and the static benchmark is used.
@@ -82,7 +91,9 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
     const timer = setTimeout(async () => {
       const mlPrediction = await fetchMlCostPrediction(scenario, controller.signal)
       if (controller.signal.aborted) return
-      setPreflight(evaluatePolicyPreflight(scenario, policyResult, { mlPrediction }))
+      const result = evaluatePolicyPreflight(scenario, policyResult, { mlPrediction })
+      setPreflight(result)
+      onPreflightChangeRef.current?.(scenario, result, scenario !== initialScenarioRef.current)
     }, scenarioNeedsMlCost(scenario) ? 300 : 0)
     return () => {
       clearTimeout(timer)

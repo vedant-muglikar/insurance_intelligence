@@ -1,7 +1,7 @@
 'use client'
 
 import type { PolicyAnalysisResult, PolicyCategory, PolicyRule } from '@/lib/types/policy'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -22,6 +22,9 @@ import { ClaimDispute } from './ClaimDispute'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
 import { ExtractionQuality } from './ExtractionQuality'
+import { PreparationChecklist } from './checklist/PreparationChecklist'
+import { toChecklistScenario, toPreflightSignals } from './checklist/useChecklist'
+import type { CoverageResult, TreatmentScenario } from '@/lib/types/estimate'
 import GooeyNav from '../ui/GooeyNav'
 
 
@@ -30,6 +33,7 @@ import GooeyNav from '../ui/GooeyNav'
 type Tab =
   | 'Overview'
   | 'Preflight Estimator'
+  | 'Checklist'
   | 'Coverage'
   | 'Exclusions'
   | 'Waiting Periods'
@@ -43,6 +47,7 @@ type Tab =
 const TABS: Tab[] = [
   'Overview',
   'Preflight Estimator',
+  'Checklist',
   'Coverage',
   'Exclusions',
   'Waiting Periods',
@@ -57,6 +62,7 @@ const TABS: Tab[] = [
 const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
   Overview: [],
   'Preflight Estimator': [],
+  Checklist: [],
   Coverage: ['coverage'],
   Exclusions: ['exclusion'],
   'Waiting Periods': ['waiting_period'],
@@ -319,6 +325,20 @@ interface PolicyResultsProps {
 export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps) {
   const [tab, setTab] = useState<Tab>('Overview')
   const [activeRule, setActiveRule] = useState<PolicyRule | null>(null)
+  // Preflight scenario lives here so it survives tab switches and can personalise the checklist
+  const [estimator, setEstimator] = useState<{
+    scenario: TreatmentScenario
+    preflight: CoverageResult
+    userEdited: boolean
+  } | null>(null)
+  const checklistScenario = useMemo(
+    () => (estimator?.userEdited ? toChecklistScenario(estimator.scenario) : null),
+    [estimator],
+  )
+  const checklistPreflight = useMemo(
+    () => (estimator?.userEdited ? toPreflightSignals(estimator.preflight) : null),
+    [estimator],
+  )
 
   const getRulesForTab = (t: Tab): PolicyRule[] => {
     const cats = TAB_CATEGORIES[t]
@@ -336,6 +356,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     t === 'Overview' ||
     t === 'Ask Policy' ||
     t === 'Preflight Estimator' ||
+    t === 'Checklist' ||
     t === 'Claim Dispute' ||
     t === 'Bill Audit'
       ? null
@@ -409,7 +430,22 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
         ) : tab === 'Ask Policy' ? (
           <PolicyQA pages={result.pages} />
         ) : tab === 'Preflight Estimator' ? (
-          <EstimateForm policyResult={result} />
+          <EstimateForm
+            policyResult={result}
+            initialScenario={estimator?.scenario}
+            onPreflightChange={(scenario, preflight, userEdited) =>
+              setEstimator((prev) => ({ scenario, preflight, userEdited: userEdited || !!prev?.userEdited }))
+            }
+          />
+        ) : tab === 'Checklist' ? (
+          <PreparationChecklist
+            result={result}
+            fileName={fileName}
+            scenario={checklistScenario}
+            preflight={checklistPreflight}
+            onOpenEstimator={() => setTab('Preflight Estimator')}
+            onViewClause={setActiveRule}
+          />
         ) : tab === 'Claim Dispute' ? (
           <ClaimDispute pages={result.pages} />
         ) : tab === 'Bill Audit' ? (

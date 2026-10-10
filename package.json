@@ -7,9 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx tests/acceptance_tests.ts && tsx tests/ocr_tests.ts",
+    "test": "tsx tests/acceptance_tests.ts && tsx tests/ocr_tests.ts && tsx tests/checklist_tests.ts",
     "test:ocr": "tsx tests/ocr_tests.ts",
-    "fixtures:generate": "tsx tests/fixtures/generatePolicyPdfs.ts"
+    "fixtures:generate": "tsx tests/fixtures/generatePolicyPdfs.ts",
+    "test:checklist": "tsx tests/checklist_tests.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

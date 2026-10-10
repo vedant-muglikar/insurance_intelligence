@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { detectScannedPdf } from '@/lib/pdf/extractor'
 import { extractPagesHybrid } from '@/lib/pdf/hybrid'
@@ -104,6 +105,7 @@ async function runAnalysis(
     total_pages: totalPages,
     scanned_pdf_warning: scannedPdfWarning,
     extraction_report: report,
+    document_hash: createHash('sha256').update(new Uint8Array(buffer)).digest('hex'),
     extraction_stats: stats,
     processing_time_ms: Date.now() - startTime,
   }

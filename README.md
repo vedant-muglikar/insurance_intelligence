@@ -101,6 +101,13 @@ PolicyLens strictly enforces an architectural boundary:
 - **Live progress**: upload %, per-page OCR status, confidence, text previews and rescan warnings stream to the UI (`/api/policy/analyze?stream=1`, NDJSON). The results Overview shows an **Extraction quality** panel with per-page method, confidence and extracted text.
 - The bill-audit and quote routes use the same hybrid extractor, so scanned bills and estimates work too.
 
+### 12. ✅ Hospitalization Preparation Checklist (`components/policy/checklist/`)
+- **Generated from your policy, not a template** (`lib/checklist/generator.ts`): tasks for *Before hospitalization*, *During treatment* and *Claim submission* are built deterministically from the extracted clauses — pre-authorization/intimation periods, waiting periods, room-rent/ICU limits, co-payments, deductibles, sub-limits, exclusions, non-payable items and the claim documents the policy names — each with the clause quote and PDF page.
+- **Personalised by your Preflight scenario**: treatment-matched waiting periods, sub-limits and exclusions become high priority; due dates are suggested only when a clause states a period (e.g. “48 hours before admission”, “within 30 days of discharge”) and you entered dates. Coverage figures come from the existing Preflight result, never recomputed.
+- **Honest labelling**: *Policy requirement* only when the cited clause itself says must/shall/required; *Policy term* for limits and conditions; *Recommendation* for general good practice. Low-confidence or unverified clauses and unreadable scanned pages are flagged *Verify*.
+- **Dashboard**: progress bar, stage tabs, All/Pending/Completed filters, expandable details with “View clause”, unresolved high-priority list, smart risk alerts (pre-auth, waiting period, room rent, excluded/limited expenses, missing documents, items to verify), due dates, reopen completed tasks.
+- **Documents & persistence**: attach PDFs/images (type checked from file bytes, 10 MB max) to tasks; checklists are saved per user and per policy (SHA-256 of the PDF) in Supabase and restored when you return. Regenerating keeps completed tasks, due dates and documents.
+
 ---
 
 ## 🏗️ System Architecture
@@ -220,6 +227,15 @@ OCR_MIN_TEXT_CHARS=80         # pages with less embedded text are OCR'd
 ALLOW_ANONYMOUS_UPLOADS=false # local testing only: skip the sign-in check on /api/policy/analyze
 ```
 
+### 2b. Apply the Checklist Database Migration
+The hospitalization checklist stores tasks, progress and documents in Supabase. Apply
+[`supabase/migrations/20261010120000_policy_checklists.sql`](supabase/migrations/20261010120000_policy_checklists.sql) once,
+either in the Supabase dashboard (**SQL Editor → paste → Run**) or with the Supabase CLI (`supabase db push`).
+It creates `policy_checklists`, `checklist_tasks` and `checklist_attachments` with row-level security, plus a private
+`checklist-documents` storage bucket whose files are readable only by their owner. No new environment variables are needed
+(it uses the existing `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Until the migration is applied, or when
+signed out, the checklist still works but saves progress in the browser only and document attachments are disabled.
+
 ### 3. Start the ML Cost Service (recommended)
 Treatment costs come from a LightGBM quantile-regression microservice (`ml_service/`). If it is not running, the app falls back to the static benchmark in `lib/estimate/dataset.ts`.
 ```bash
@@ -291,6 +307,14 @@ insurance_intelligence/
 │   │   ├── dataset.ts           # 16-procedure Indian surgical cost database
 │   │   ├── matching.ts          # Fuzzy procedure matching & synonyms
 │   │   └── policy.ts            # Waiting-period date math & rule evaluation
+│   ├── checklist/
+│   │   ├── generator.ts         # Policy-grounded checklist tasks (stages, priority, citations, deadlines)
+│   │   ├── state.ts             # Progress, risk alerts, merge-on-regenerate (keeps progress)
+│   │   ├── service.ts           # Sync / restore / update / attachments use-cases
+│   │   ├── repository.ts        # Supabase persistence (RLS-scoped to the signed-in user)
+│   │   ├── attachments.ts       # Document type detection & limits
+│   │   ├── http.ts              # Auth + error mapping for /api/checklist routes
+│   │   └── policyKey.ts         # Stable policy identity (PDF SHA-256 / sample id)
 │   ├── client/
 │   │   └── analyzePolicyUpload.ts # XHR upload + NDJSON progress stream parser
 │   ├── ocr/
@@ -316,6 +340,7 @@ insurance_intelligence/
 └── tests/
     ├── acceptance_tests.ts      # 7 core acceptance tests from Blueprint Section 15
     ├── ocr_tests.ts             # OCR / hybrid extraction unit + integration tests
+    ├── checklist_tests.ts       # Checklist generation, alerts, persistence, attachments, isolation
     └── fixtures/generatePolicyPdfs.ts # Synthetic text, scanned & mixed policy PDFs
 ```
 
