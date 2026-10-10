@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Benchmark Treatment Dataset (Blueprint Section 9)
+ * PolicyLens - Benchmark Treatment Dataset (Blueprint Section 9)
  * Curated 16-procedure benchmark covering Tier 1, 2, and 3 cities in India
  * with component-level pricing (Room, Surgery, Doctor, Medicines, Implants, Consumables, Diagnostics)
  * and stay-day scaling.

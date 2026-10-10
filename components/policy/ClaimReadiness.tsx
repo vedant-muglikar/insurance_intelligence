@@ -16,25 +16,25 @@ export function ClaimReadiness({ items, isNetworkHospital }: ClaimReadinessProps
     switch (status) {
       case 'available':
         return (
-          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
+          <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
             <CheckCircle2 size={11} /> Ready
           </span>
         )
       case 'recommended':
         return (
-          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
+          <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
             <FileCheck size={11} /> Recommended
           </span>
         )
       case 'missing':
         return (
-          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1">
+          <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1">
             <AlertCircle size={11} /> Required
           </span>
         )
       default:
         return (
-          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+          <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400">
             Optional
           </span>
         )
@@ -68,7 +68,7 @@ export function ClaimReadiness({ items, isNetworkHospital }: ClaimReadinessProps
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-200">{item.title}</span>
-                <span className="text-[10px] font-mono uppercase text-slate-500">
+                <span className="text-[11px] uppercase text-slate-500">
                   {item.category.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -76,7 +76,7 @@ export function ClaimReadiness({ items, isNetworkHospital }: ClaimReadinessProps
                 {item.description}
               </p>
               {item.pageNumber && (
-                <span className="text-[10px] text-slate-500 font-mono inline-block">
+                <span className="text-[11px] text-slate-500 font-mono inline-block">
                   Policy Section: Page {item.pageNumber}
                 </span>
               )}

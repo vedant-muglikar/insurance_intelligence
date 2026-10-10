@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/app'
 
   if (code) {
     const supabase = await createClient()
@@ -17,5 +17,5 @@ export async function GET(request: Request) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?message=Could not authenticate user with Google`)
+  return NextResponse.redirect(`${origin}/login?message=${encodeURIComponent('Google sign-in did not complete. Please try again.')}&status=error`)
 }

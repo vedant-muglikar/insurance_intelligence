@@ -253,20 +253,20 @@ export function UsabilityBadge({
 }) {
   if (!usability || usability === 'explanatory_only') {
     return (
-      <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-slate-700 bg-slate-800/60 text-slate-400">
+      <span className="text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-slate-700 bg-slate-800/60 text-slate-400">
         Explanatory Clause
       </span>
     )
   }
   if (usability === 'executable') {
     return (
-      <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-950/40 text-cyan-300">
+      <span className="text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-950/40 text-cyan-300">
         ⚡ Executable Rule
       </span>
     )
   }
   return (
-    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-amber-500/40 bg-amber-950/40 text-amber-300">
+    <span className="text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded border border-amber-500/40 bg-amber-950/40 text-amber-300">
       ⚠ Needs Human Review
     </span>
   )
@@ -274,7 +274,7 @@ export function UsabilityBadge({
 
 export function UsedInEstimateBadge() {
   return (
-    <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-950/50 text-emerald-300">
+    <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-950/50 text-emerald-300">
       🎯 Applied in Preflight
     </span>
   )

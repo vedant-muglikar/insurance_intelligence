@@ -64,15 +64,8 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
   return (
     <div className="processing-wrapper relative overflow-hidden flex items-center justify-center min-h-[85vh] p-4">
       {/* Ambient glowing aurora circles */}
-      <div className="aurora-bg w-96 h-96 -top-20 -left-20 bg-emerald-500/20" />
-      <div className="aurora-bg w-96 h-96 -bottom-20 -right-20 bg-cyan-500/20" />
 
       <div className="processing-card glass-panel relative z-10 max-w-xl w-full p-6 sm:p-8 rounded-2xl border border-slate-700/60 shadow-2xl space-y-6">
-        {/* Animated laser scanline sweeping across */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-          <div className="w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-40 animate-[scanline_3s_ease-in-out_infinite]" />
-        </div>
-
         {/* Header with Loader & Brand */}
         <div className="flex items-center gap-4">
           <div className="shrink-0">
@@ -81,8 +74,8 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-white tracking-tight">ClaimLens Policy Engine</h2>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              <h2 className="text-lg font-bold text-white tracking-tight">PolicyLens Policy Engine</h2>
+              <span className="text-[11px] uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
                 Compiling
               </span>
             </div>
@@ -111,7 +104,7 @@ export function ProcessingTimeline({ fileName }: ProcessingTimelineProps) {
           </div>
           <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 transition-all duration-500 ease-out shadow-sm shadow-emerald-500"
+              className="h-full bg-[var(--brand)] transition-all duration-500 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>

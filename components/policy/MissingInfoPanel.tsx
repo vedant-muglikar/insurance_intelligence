@@ -54,12 +54,12 @@ export function MissingInfoPanel({
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-200">{field.label}</span>
                 {field.impact === 'blocks_estimate' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-700 font-mono">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-700 font-mono">
                     Blocks Waiting Period
                   </span>
                 )}
                 {field.impact === 'changes_copay' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-700 font-mono">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-700 font-mono">
                     Affects Co-pay
                   </span>
                 )}

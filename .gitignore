@@ -8,8 +8,15 @@ __v0_jsx-dev-runtime.ts
 
 # Environment variables
 .env*.local
-
+.env 
 # Common ignores
 node_modules
 .next/
 .DS_Store
+
+# Python / ML service
+__pycache__/
+*.pyc
+.train_full.log
+.ml_service.log
+ml_service/data/__pycache__/

@@ -60,7 +60,7 @@ export function PolicyTimeline({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-white">Policy Inception Date</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+              <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
                 Day 0
               </span>
             </div>
@@ -97,7 +97,7 @@ export function PolicyTimeline({
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-200">{m.title}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
                       {m.durationText}
                     </span>
                   </div>

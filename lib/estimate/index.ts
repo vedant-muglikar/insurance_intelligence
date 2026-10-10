@@ -23,7 +23,7 @@ export function generateEstimate(
   const coverage = calculateCoverage(costRange, policyEval)
   const confidence = calculateConfidence(scenario, isExactMatch, !!scenario.quotedCost, policyEval)
 
-  // Generate full ClaimLens preflight (ledger, missing info, milestones, checklist)
+  // Generate full PolicyLens preflight (ledger, missing info, milestones, checklist)
   const preflight = evaluatePolicyPreflight(scenario, policyResult)
 
   const result: EstimateResult = {

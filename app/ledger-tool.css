@@ -1,0 +1,189 @@
+/* Tool: statement of patient share + coverage readout, in the ledger idiom. */
+.pl-statement,
+.pl-gauge {
+  position: relative;
+  border: 1px solid var(--border3);
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, transparent 0 15px, var(--rule) 15px 16px, transparent 16px 19px, var(--rule) 19px 20px, transparent 20px),
+    var(--card);
+  box-shadow: var(--shadow);
+}
+.pl-statement {
+  padding: 16px 20px 6px 30px;
+}
+.pl-st-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border3);
+}
+.pl-st-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.pl-st-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pl-st-what {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.pl-st-what strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pl-st-what em {
+  font-style: normal;
+  color: var(--subtle);
+  font-size: 13px;
+}
+.pl-st-amt {
+  font-size: 20px;
+  font-weight: 500;
+  text-align: right;
+}
+.pl-st-row[data-tone='ok'] .pl-st-amt {
+  color: var(--ok);
+}
+.pl-st-total {
+  border-top: 3px double var(--border3);
+  border-bottom: 0;
+  margin-top: 2px;
+  padding-top: 14px;
+}
+.pl-st-total[data-tone='deny'] .pl-st-amt {
+  color: var(--deny);
+  font-size: 24px;
+}
+.pl-st-total .pl-st-what strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+.pl-st-notes {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 13px;
+}
+.pl-st-warn {
+  color: var(--warn-ink);
+}
+
+.pl-gauge {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding: 18px 22px 18px 34px;
+}
+.pl-gauge-fig {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-width: 116px;
+}
+.pl-gauge-cap {
+  color: var(--subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-gauge-pct {
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+.pl-gauge-pct small {
+  font-size: 22px;
+  margin-left: 2px;
+  color: var(--brand);
+}
+.pl-gauge[data-tone='ok'] .pl-gauge-pct {
+  color: var(--ok);
+}
+.pl-gauge[data-tone='deny'] .pl-gauge-pct {
+  color: var(--deny);
+}
+.pl-gauge[data-tone='warn'] .pl-gauge-pct {
+  color: var(--warn);
+}
+.pl-gauge-marks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pl-gauge-marks .pl-stamp {
+  white-space: normal;
+}
+.pl-gauge-evidence {
+  color: var(--subtle);
+  font-size: 13px;
+}
+.pl-gauge-text {
+  margin: 10px 0 14px;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.pl-gauge-split {
+  display: grid;
+  gap: 6px;
+}
+.pl-gauge-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.pl-gauge-line b {
+  font-weight: 500;
+}
+.pl-gauge-ins {
+  color: var(--ok);
+}
+.pl-gauge-you {
+  color: var(--deny);
+}
+.pl-gauge-bar {
+  height: 9px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--deny) 70%, var(--card));
+  overflow: hidden;
+}
+.pl-gauge-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (max-width: 640px) {
+  .pl-gauge {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .pl-gauge-pct {
+    font-size: 44px;
+  }
+  .pl-statement {
+    padding-inline: 26px 14px;
+  }
+}

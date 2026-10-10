@@ -59,39 +59,39 @@ const StyledWrapper = styled.div`
   }
 
   .cell:nth-child(1) {
-    --cell-color: #00FF87;
+    --cell-color: color-mix(in srgb, var(--brand) 100%, var(--deny));
   }
 
   .cell:nth-child(2) {
-    --cell-color: #0CFD95;
+    --cell-color: color-mix(in srgb, var(--brand) 88%, var(--deny));
   }
 
   .cell:nth-child(3) {
-    --cell-color: #17FBA2;
+    --cell-color: color-mix(in srgb, var(--brand) 76%, var(--deny));
   }
 
   .cell:nth-child(4) {
-    --cell-color: #23F9B2;
+    --cell-color: color-mix(in srgb, var(--brand) 64%, var(--deny));
   }
 
   .cell:nth-child(5) {
-    --cell-color: #30F7C3;
+    --cell-color: color-mix(in srgb, var(--brand) 52%, var(--deny));
   }
 
   .cell:nth-child(6) {
-    --cell-color: #3DF5D4;
+    --cell-color: color-mix(in srgb, var(--brand) 40%, var(--deny));
   }
 
   .cell:nth-child(7) {
-    --cell-color: #45F4DE;
+    --cell-color: color-mix(in srgb, var(--brand) 28%, var(--deny));
   }
 
   .cell:nth-child(8) {
-    --cell-color: #53F1F0;
+    --cell-color: color-mix(in srgb, var(--brand) 16%, var(--deny));
   }
 
   .cell:nth-child(9) {
-    --cell-color: #60EFFF;
+    --cell-color: color-mix(in srgb, var(--brand) 4%, var(--deny));
   }
 
   /*Animation*/

@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Conversational Policy Q&A Engine (Blueprint Section 11 & 12)
+ * PolicyLens - Conversational Policy Q&A Engine (Blueprint Section 11 & 12)
  * Features:
  * - Multi-turn conversational memory (passes prior user/assistant turns)
  * - Dual AI provider: Google Gemini with dynamic fallback to OpenAI GPT-4o
@@ -12,7 +12,7 @@ import { executeWithGeminiFallback } from './extractor'
 import { validateEvidence } from '../pdf/extractor'
 
 function buildAskSystemPrompt(scenarioContext?: string): string {
-  let prompt = `You are ClaimLens, an expert insurance policy intelligence engine. Your task is to answer user inquiries accurately and strictly based on the provided policy wording.
+  let prompt = `You are PolicyLens, an expert insurance policy intelligence engine. Your task is to answer user inquiries accurately and strictly based on the provided policy wording.
 
 CRITICAL INSTRUCTIONS:
 1. Answer ONLY from the provided policy text. If the policy does not state or clarify the answer, clearly state "I cannot determine this from the provided policy document."

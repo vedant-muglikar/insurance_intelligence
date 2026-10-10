@@ -1,5 +1,5 @@
 /**
- * ClaimLens Acceptance Test Suite (Blueprint Section 15)
+ * PolicyLens Acceptance Test Suite (Blueprint Section 15)
  * Validates deterministic rule compiler, coverage engine, date math,
  * room limits, co-pay, missing information, and what-if delta calculations.
  */
@@ -9,7 +9,8 @@ import { compilePolicyRules } from '../lib/policy/compiler'
 import { matchTreatmentWithCandidates } from '../lib/estimate/matching'
 import { evaluatePolicyPreflight } from '../lib/estimate/policy'
 import { PolicyAnalysisResult, PolicyRule } from '../lib/types/policy'
-import { TreatmentScenario } from '../lib/types/estimate'
+import { TreatmentScenario, MlCostPrediction } from '../lib/types/estimate'
+import { buildMlRequest, scenarioNeedsMlCost } from '../lib/estimate/mlClient'
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -19,7 +20,7 @@ function assert(condition: boolean, message: string) {
   console.log(`✅ PASS: ${message}`)
 }
 
-console.log('\n--- Running ClaimLens Blueprint Acceptance Tests ---\n')
+console.log('\n--- Running PolicyLens Blueprint Acceptance Tests ---\n')
 
 // ─── 1. Currency & Normalizers ────────────────────────────────────────────────
 console.log('1. Normalizers & Parsing:')
@@ -293,8 +294,31 @@ for (const line of suiteResult.ledger) {
   assert(line.evidence !== undefined, `Evidence reference exists for ${line.ruleName}`)
 }
 
+// ─── 8. ML Cost Model Integration ────────────────────────────────────────────
+console.log('\n8. ML Cost Model Integration:')
+const mlScenario: TreatmentScenario = { ...suiteScenario, treatment: 'Knee replacement', city: 'Pune', hospitalType: 'corporate', roomType: 'twin-sharing', stayDurationDays: 5 }
+const mlReq = buildMlRequest(mlScenario)
+assert(mlReq.procedure_name === 'Total Knee Replacement', 'ML request resolves fuzzy treatment to the trained procedure')
+assert(mlReq.city_tier === 1 && mlReq.hospital_tier === 1 && mlReq.room_category === 'twin' && mlReq.stay_duration_days === 5, 'ML request maps city/hospital/room/stay features')
+assert(scenarioNeedsMlCost(mlScenario) && !scenarioNeedsMlCost({ ...mlScenario, quotedCost: 300000 }), 'A hospital quote bypasses the ML model')
+
+const fakeMl: MlCostPrediction = {
+  costP10: 300000, costP50: 350000, costP90: 420000, confidenceScore: 0.8, uncertaintyLevel: 'low',
+  itemizedBreakdown: { roomAndNursing: 40000, surgeryAndOt: 150000, doctorFees: 40000, medicinesAndImplants: 90000, consumables: 30000 },
+  costDrivers: ['Test driver'], matchedProcedure: 'Total Knee Replacement', modelVersion: 'test', extrapolated: false, warnings: [],
+}
+const mlResult = evaluatePolicyPreflight(mlScenario, mockPolicy, { mlPrediction: fakeMl })
+assert(mlResult.costSource === 'ml_model', 'ML prediction becomes the cost source')
+assert(mlResult.treatmentCost.min === 300000 && mlResult.treatmentCost.typical === 350000 && mlResult.treatmentCost.max === 420000, 'P10/P50/P90 map to min/typical/max')
+assert(mlResult.lineItems!.reduce((a, i) => a + i.amount, 0) === 350000, 'ML line items sum to the P50 total')
+assert(mlResult.costModel?.drivers[0] === 'Test driver', 'Cost drivers are surfaced')
+const quotedResult = evaluatePolicyPreflight({ ...mlScenario, quotedCost: 280000 }, mockPolicy, { mlPrediction: fakeMl })
+assert(quotedResult.costSource === 'manual_quote', 'Quoted cost outranks the ML model')
+const fallbackResult = evaluatePolicyPreflight(mlScenario, mockPolicy, { mlPrediction: null })
+assert(fallbackResult.costSource === 'benchmark', 'Without a prediction the static benchmark is used')
+
 // ─── 9. Phase 1 — Hospital Bill Audit Data & Verification ────────────────────
-console.log('\n8. Phase 1 — Hospital Bill Audit & Line Item Integrity:')
+console.log('\n9. Phase 1 — Hospital Bill Audit & Line Item Integrity:')
 import { SAMPLE_HOSPITAL_BILLS } from '../lib/bill/sampleBills'
 import type { HospitalBillLineItem } from '../lib/types/bill'
 
@@ -341,7 +365,7 @@ assert(ps.subtotal! - ps.discount! === ps.netPayable, 'Payment summary: Subtotal
 assert(ps.netPayable! - (ps.deposit! + ps.amountPaid!) === ps.balanceDue, 'Payment summary: Net Payable - Payments equals Balance Due')
 
 // ─── 10. Phase 2 — Deterministic Bill Audit Engine Acceptance Tests ─────────
-console.log('\n9. Phase 2 — Deterministic Bill Audit Engine (Dual Track):')
+console.log('\n10. Phase 2 — Deterministic Bill Audit Engine (Dual Track):')
 import { runBillAudit } from '../lib/bill/auditor'
 
 // Test with the third sample bill (Fortis Angioplasty test case with anomalies)
@@ -383,6 +407,4 @@ assert(!!mathErrorVerdict, 'At least one line item has billingVerdict = discrepa
 const excludedVerdict = fullAudit.verdicts.find(v => v.insuranceVerdict === 'likely_excluded')
 assert(!!excludedVerdict, 'At least one line item has insuranceVerdict = likely_excluded')
 
-console.log('\n🎉 ALL ACCEPTANCE TESTS (POLICY BLUEPRINT + BILL AUDIT PHASE 1 & 2) PASSED! 🎉\n')
-
-
+console.log('\n🎉 ALL ACCEPTANCE TESTS (POLICY BLUEPRINT + ML MODEL + BILL AUDIT) PASSED! 🎉\n')

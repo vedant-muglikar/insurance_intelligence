@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Deterministic Normalizers (Blueprint Section 10 & 15)
+ * PolicyLens - Deterministic Normalizers (Blueprint Section 10 & 15)
  * Pure helper functions for parsing currency, percentages, durations,
  * room categories, dates, and canonical medical tags.
  */

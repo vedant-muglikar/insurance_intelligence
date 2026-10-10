@@ -1,18 +1,20 @@
 /**
- * ClaimLens - Cost Estimation Engine (Blueprint Section 9)
+ * PolicyLens - Cost Estimation Engine (Blueprint Section 9)
  * Priority 1: Uploaded hospital quotation or user line items
- * Priority 2: Structured benchmark with stay-day and tier scaling
+ * Priority 2: ML quantile model (LightGBM microservice) - dynamic P10/P50/P90 + line items
+ * Priority 3: Static benchmark with stay-day and tier scaling (used when the ML service is unavailable)
  * Fallback: Labelled synthetic fallback range
  */
 
-import { TreatmentCostData, TreatmentScenario, CostComponents, QuoteLineItem } from '../types/estimate'
+import { TreatmentCostData, TreatmentScenario, CostComponents, QuoteLineItem, MlCostPrediction, CostModelInfo, CostSource } from '../types/estimate'
 import { getCityTier, getCityTierMultiplier, getHospitalMultiplier, getRoomMultiplier } from './dataset'
 
 export interface DetailedCostResult {
   min: number
   avg: number
   max: number
-  costSource: 'hospital_quote' | 'manual_quote' | 'benchmark' | 'synthetic'
+  costSource: CostSource
+  costModel?: CostModelInfo
   components: CostComponents
   lineItems: QuoteLineItem[]
   stayDurationDays: number
@@ -21,15 +23,17 @@ export interface DetailedCostResult {
 
 export function estimateCost(
   scenario: TreatmentScenario,
-  data: TreatmentCostData | null
+  data: TreatmentCostData | null,
+  ml?: MlCostPrediction | null
 ): { min: number; avg: number; max: number } {
-  const detailed = estimateCostDetailed(scenario, data)
+  const detailed = estimateCostDetailed(scenario, data, ml)
   return { min: detailed.min, avg: detailed.avg, max: detailed.max }
 }
 
 export function estimateCostDetailed(
   scenario: TreatmentScenario,
-  data: TreatmentCostData | null
+  data: TreatmentCostData | null,
+  ml?: MlCostPrediction | null
 ): DetailedCostResult {
   const stayDays = Math.max(1, scenario.stayDurationDays || 1)
 
@@ -84,7 +88,12 @@ export function estimateCostDetailed(
     }
   }
 
-  // ─── Priority 3: Structured Benchmark Dataset with stay & tier scaling ───────
+  // ─── Priority 3: ML quantile model (dynamic distribution + learned line items) ──
+  if (ml) {
+    return mlCostResult(scenario, ml, stayDays)
+  }
+
+  // ─── Priority 4: Structured Benchmark Dataset with stay & tier scaling ───────
   if (data) {
     const tier = getCityTier(scenario.city)
     const tierMult = getCityTierMultiplier(tier)
@@ -140,7 +149,7 @@ export function estimateCostDetailed(
     }
   }
 
-  // ─── Priority 4: Generic Fallback ───────────────────────────────────────────
+  // ─── Priority 5: Generic Fallback ───────────────────────────────────────────
   const fbAvg = 120000
   const fbMin = 60000
   const fbMax = 220000
@@ -170,6 +179,47 @@ export function estimateCostDetailed(
     lineItems: fallbackItems,
     stayDurationDays: stayDays,
     sourceLabel: 'Generic Medical Tariff Fallback (Procedure Not In Benchmark)',
+  }
+}
+
+function mlCostResult(scenario: TreatmentScenario, ml: MlCostPrediction, stayDays: number): DetailedCostResult {
+  const b = ml.itemizedBreakdown
+  const lineConf: QuoteLineItem['confidence'] =
+    ml.uncertaintyLevel === 'low' ? 'high' : ml.uncertaintyLevel === 'medium' ? 'medium' : 'low'
+  const comps: CostComponents = {
+    room: Math.round(b.roomAndNursing),
+    surgery: Math.round(b.surgeryAndOt),
+    doctor: Math.round(b.doctorFees),
+    medicines: Math.round(b.medicinesAndImplants),
+    consumables: Math.round(b.consumables),
+    diagnostics: 0,
+  }
+  const lineItems: QuoteLineItem[] = [
+    { id: 'qli_ml_1', category: 'room', description: `Room & Nursing (${scenario.roomType}) - ${stayDays} day(s)`, quantity: stayDays, unitPrice: Math.round(comps.room / stayDays), amount: comps.room, confidence: lineConf },
+    ...(comps.surgery > 0 ? [{ id: 'qli_ml_2', category: 'surgery' as const, description: `Operation Theatre & Procedure Fee (${ml.matchedProcedure})`, quantity: 1, unitPrice: comps.surgery, amount: comps.surgery, confidence: lineConf }] : []),
+    { id: 'qli_ml_3', category: 'doctor', description: 'Surgeon, Anesthetist & Specialist Fees', quantity: 1, unitPrice: comps.doctor, amount: comps.doctor, confidence: lineConf },
+    { id: 'qli_ml_4', category: 'medicines', description: 'Pharmacy, Medicines & Implants', quantity: 1, unitPrice: comps.medicines, amount: comps.medicines, confidence: lineConf },
+    { id: 'qli_ml_5', category: 'consumables', description: 'Medical Consumables & Disposables', quantity: 1, unitPrice: comps.consumables, amount: comps.consumables, confidence: lineConf },
+  ]
+
+  return {
+    min: Math.round(ml.costP10),
+    avg: Math.round(ml.costP50),
+    max: Math.round(ml.costP90),
+    costSource: 'ml_model',
+    costModel: {
+      modelVersion: ml.modelVersion,
+      matchedProcedure: ml.matchedProcedure,
+      confidenceScore: ml.confidenceScore,
+      uncertaintyLevel: ml.uncertaintyLevel,
+      drivers: ml.costDrivers,
+      warnings: ml.warnings,
+      extrapolated: ml.extrapolated,
+    },
+    components: comps,
+    lineItems,
+    stayDurationDays: stayDays,
+    sourceLabel: `ML Cost Model v${ml.modelVersion} (P10-P90 range for ${ml.matchedProcedure}, ${stayDays} days stay)`,
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Policy Rule Compiler (Blueprint Section 7)
+ * PolicyLens - Policy Rule Compiler (Blueprint Section 7)
  * Converts raw LLM extracted policy clauses into controlled, deterministic,
  * executable rules with typed conditions, effects, precedence, and evidence provenance.
  */

@@ -1,4 +1,4 @@
-# 🛡️ ClaimLens
+# 🛡️ PolicyLens
 ### Policy-to-Patient Insurance Coverage & Treatment Cost Intelligence
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.3_(Turbopack)-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
@@ -14,7 +14,7 @@
 
 Over **70% of health insurance policyholders in India** face surprise out-of-pocket expenses at the hospital billing desk. Complex policy wording, hidden sub-limits, proportionate room rent deductions, waiting period date traps, and age-conditioned co-pays leave patients and families blindsided during critical healthcare events.
 
-**ClaimLens** bridges the gap between insurer contracts and hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
+**PolicyLens** bridges the gap between insurer contracts and hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
 
 ---
 
@@ -22,7 +22,7 @@ Over **70% of health insurance policyholders in India** face surprise out-of-poc
 
 > **"Language models are exceptional at reading comprehension and entity extraction, but catastrophic at financial arithmetic and calendar boundary calculations."**
 
-ClaimLens strictly enforces an architectural boundary:
+PolicyLens strictly enforces an architectural boundary:
 1. **AI Extraction Layer**: Large Language Models (Google Gemini 2.5 Flash with OpenAI GPT-4o-mini fallback) extract clauses and verbatim textual quotes.
 2. **Provenance Verification**: Text citations are cross-checked against exact character spans in the source PDF.
 3. **Deterministic Compiler**: Extracts are transformed into typed executable rule sets with conditions, room categories, percentages, and rupee thresholds.
@@ -123,7 +123,7 @@ flowchart TD
 
 ## 🏥 Indian Surgical Cost Benchmark Matrix
 
-When a hospital quotation is not yet available, ClaimLens utilizes a localized cost matrix calibrated across Tier 1, Tier 2, and Tier 3 Indian cities with hospital category multipliers (Public, Private, Corporate):
+When a hospital quotation is not yet available, PolicyLens utilizes a localized cost matrix calibrated across Tier 1, Tier 2, and Tier 3 Indian cities with hospital category multipliers (Public, Private, Corporate):
 
 | Procedure | Canonical Key | Tier 1 Typical | Tier 2 Typical | Tier 3 Typical | Typical Stay |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -148,7 +148,7 @@ When a hospital quotation is not yet available, ClaimLens utilizes a localized c
 
 ## 🧪 Automated Acceptance Tests
 
-ClaimLens includes an automated test suite verifying all core requirements from the ClaimLens Blueprint:
+PolicyLens includes an automated test suite verifying all core requirements from the PolicyLens Blueprint:
 
 ```bash
 npm test
@@ -188,13 +188,29 @@ GEMINI_API_KEY=your_gemini_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 3. Run Development Server
+Optional: point the app at the ML cost service (defaults shown):
+```env
+ML_SERVICE_URL=http://127.0.0.1:8000
+ML_SERVICE_TIMEOUT_MS=6000
+```
+
+### 3. Start the ML Cost Service (recommended)
+Treatment costs come from a LightGBM quantile-regression microservice (`ml_service/`). If it is not running, the app falls back to the static benchmark in `lib/estimate/dataset.ts`.
+```bash
+cd ml_service
+pip install -r requirements.txt
+python train.py            # tune + train + write models/ and ML_MODEL_EVALUATION.md (skip if models/bundle.pkl exists)
+python -m uvicorn main:app --port 8000
+```
+Model quality and methodology: [`ml_service/ML_MODEL_EVALUATION.md`](ml_service/ML_MODEL_EVALUATION.md).
+
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Build for Production
+### 5. Build for Production
 ```bash
 npm run build
 npm start
@@ -210,7 +226,8 @@ insurance_intelligence/
 │   ├── api/
 │   │   ├── policy/analyze/      # Policy PDF ingestion & rule compilation
 │   │   ├── policy/ask/          # Multi-turn Q&A with dual LLM fallback
-│   │   └── quote/analyze/       # Hospital estimate OCR & line-item parser
+│   │   ├── quote/analyze/       # Hospital estimate OCR & line-item parser
+│   │   └── estimate/cost/       # Proxy to the ML cost microservice (P10/P50/P90 + line items)
 │   ├── globals.css              # Custom keyframe animations, glassmorphism, HUD styles
 │   ├── layout.tsx               # Root layout & font definitions
 │   └── page.tsx                 # Main application with LiquidEther WebGL canvas
@@ -235,7 +252,7 @@ insurance_intelligence/
 │   │   ├── LiquidEther.tsx      # Three.js WebGL fluid dynamics canvas
 │   │   ├── loader-4.tsx         # Multi-ring cybernetic spinner
 │   │   └── onboard-card.tsx     # Animated multi-stage step indicator
-│   ├── landing-page.tsx         # ClaimLens product landing page
+│   ├── landing-page.tsx         # PolicyLens product landing page
 │   └── policy-lens.tsx          # Main state machine (upload -> processing -> results)
 ├── lib/
 │   ├── ai/

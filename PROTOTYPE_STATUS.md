@@ -1,4 +1,4 @@
-# 🛡️ ClaimLens (PolicyLens) — Prototype Status & Architecture Report
+# 🛡️ PolicyLens (PolicyLens) — Prototype Status & Architecture Report
 
 *Generated on October 8, 2026*
 
@@ -26,18 +26,18 @@ Over **70% of health insurance policyholders in India** face surprise out-of-poc
 2. **The Proportionate Deduction Trap**: Selecting a room tier (e.g. Deluxe Suite or Single Private) above the policy's sanctioned limit (e.g. Twin Sharing or 1% of Sum Insured) triggers proportionate penalties across *all* associated hospital fees—including surgeon charges, OT fees, and nursing care.
 3. **Calendar Waiting Period Pitfalls**: Elective and specific illnesses (such as cataract, hernia, joint replacement, hysterectomy) carry mandatory 24-month or 48-month waiting periods. Being admitted even **one day before** milestone completion results in a 100% claim denial.
 4. **Hidden Co-payments & Sub-limits**: Senior citizen clauses (10–20% co-pay) and procedure-specific caps (e.g., ₹25,000 for cataract or ₹50,000 for robotic surgery) are buried in obscure sub-clauses.
-5. **No Pre-Admission Transparency**: Prior to ClaimLens, patients had no mechanism to simulate hospital estimates against their policy before admission.
+5. **No Pre-Admission Transparency**: Prior to PolicyLens, patients had no mechanism to simulate hospital estimates against their policy before admission.
 
 ---
 
 ## 3. 💡 Our Solution & Architectural Foundation
 
-**ClaimLens** bridges the gap between insurer contracts and real-world hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
+**PolicyLens** bridges the gap between insurer contracts and real-world hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
 
 ### ⚡ The Core Philosophy: Zero LLM Math
 > **"Language models are exceptional at reading comprehension and textual extraction, but catastrophic at financial arithmetic and calendar boundary calculations."**
 
-ClaimLens strictly enforces an architectural boundary:
+PolicyLens strictly enforces an architectural boundary:
 1. **AI Extraction Layer**: Large Language Models (Google Gemini 2.5 Flash with OpenAI GPT-4o-mini fallback) extract clauses, verbatim policy excerpts, and numeric caps.
 2. **Provenance Verification**: Verbatim citations are cross-checked against exact character spans in the source PDF (`lib/pdf/validation.ts`).
 3. **Deterministic Compiler**: Extracts are compiled into typed executable rule sets with conditions, room categories, percentages, and rupee thresholds (`lib/policy/compiler.ts`).
@@ -82,7 +82,7 @@ ClaimLens strictly enforces an architectural boundary:
 
 ```mermaid
 flowchart TD
-    A["Landing Page (Route: /)"] -->|"Click 'Launch ClaimLens' or 'Try Demo'"| B["Intelligence Workspace (Route: /app)"]
+    A["Landing Page (Route: /)"] -->|"Click 'Launch PolicyLens' or 'Try Demo'"| B["Intelligence Workspace (Route: /app)"]
     
     subgraph "/app State Machine"
         B --> C["Stage 1: UploadScreen"]
@@ -115,7 +115,7 @@ flowchart TD
 
 ## 6. 🏥 Indian Surgical Cost Benchmark Matrix
 
-When a user does not have an itemized hospital quote, ClaimLens provides pre-calibrated baseline costs across Indian city tiers:
+When a user does not have an itemized hospital quote, PolicyLens provides pre-calibrated baseline costs across Indian city tiers:
 
 | Procedure | Canonical Key | Tier 1 Typical | Tier 2 Typical | Tier 3 Typical | Typical Stay |
 | :--- | :--- | :--- | :--- | :--- | :--- |

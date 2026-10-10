@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Policy Rule Evaluation Engine (Blueprint Section 8)
+ * PolicyLens - Policy Rule Evaluation Engine (Blueprint Section 8)
  * Compiles policy rules into executable form, runs deterministic eligibility,
  * waiting periods (date math), exclusions, room caps, deductibles, co-pays,
  * and sums insured, emitting an auditable Clause-to-Rupee ledger.
@@ -8,6 +8,7 @@
 import { PolicyAnalysisResult, CompiledRule } from '../types/policy'
 import {
   TreatmentScenario,
+  MlCostPrediction,
   PolicyEvaluation,
   CoverageResult,
   DeductionLine,
@@ -34,6 +35,8 @@ import { matchTreatmentWithCandidates } from './matching'
 
 export interface PreflightEvaluationOptions {
   customCompiledRules?: CompiledRule[]
+  /** Dynamic cost distribution from the ML microservice; omit to use the static benchmark. */
+  mlPrediction?: MlCostPrediction | null
 }
 
 export function evaluatePolicyPreflight(
@@ -49,11 +52,14 @@ export function evaluatePolicyPreflight(
   // 2. Resolve treatment canonical identity
   const canonicalTreatment = getCanonicalProcedureKey(scenario.treatment)
   const matchedCandidate = matchTreatmentWithCandidates(scenario)
-  const costDetails = estimateCostDetailed(scenario, matchedCandidate.bestMatch)
+  const costDetails = estimateCostDetailed(scenario, matchedCandidate.bestMatch, options?.mlPrediction)
 
   const ledger: DeductionLine[] = []
   const missingInformation: MissingField[] = []
   const assumptions: string[] = []
+  if (costDetails.costSource === 'ml_model') {
+    assumptions.push('Treatment cost is a model estimate (P10-P90 range, median shown as typical) built from procedure, city, hospital tier, room class, age and stay length; it is not a hospital quote.')
+  }
   const milestones: TimelineMilestone[] = []
   const readinessChecklist: ClaimReadinessItem[] = []
 
@@ -502,7 +508,9 @@ export function evaluatePolicyPreflight(
   const costConfidence: 'high' | 'medium' | 'low' =
     costDetails.costSource === 'hospital_quote' ? 'high' :
     costDetails.costSource === 'manual_quote' ? 'high' :
-    costDetails.costSource === 'benchmark' ? 'medium' : 'low'
+    costDetails.costSource === 'ml_model'
+      ? (costDetails.costModel?.uncertaintyLevel === 'high' ? 'low' : 'medium')
+    : costDetails.costSource === 'benchmark' ? 'medium' : 'low'
 
   const coverageConfidence: 'high' | 'medium' | 'low' =
     evidenceCoverage >= 75 && missingInformation.length === 0 ? 'high' :
@@ -530,6 +538,7 @@ export function evaluatePolicyPreflight(
       max: oopMax,
     },
     costSource: costDetails.costSource,
+    costModel: costDetails.costModel,
     ledger,
     missingInformation,
     assumptions,

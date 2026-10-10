@@ -19,7 +19,8 @@ import { PolicyQA } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
 import { BillAudit } from './BillAudit'
 import { ClaimDispute } from './ClaimDispute'
-import GooeyNav from '../ui/GooeyNav'
+import { ThemeToggle } from '../ui/ThemeToggle'
+import { UserMenu } from '../ui/UserMenu'
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -140,11 +141,11 @@ function OverviewTab({
       </div>
 
       {/* Hero Preflight Callout Banner (Blueprint Section 1) */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-cyan-950/30 border border-emerald-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl bg-[var(--card2)] border border-emerald-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-              ClaimLens Core Preflight
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              PolicyLens Core Preflight
             </span>
             <span className="text-xs text-slate-400">· Pre-admission intelligence</span>
           </div>
@@ -158,7 +159,7 @@ function OverviewTab({
 
         <button
           onClick={() => setTab('Preflight Estimator')}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors shrink-0 shadow-lg shadow-emerald-950"
+          className="bg-[var(--brand)] hover:bg-[var(--brand-hi)] text-[var(--on-brand)] font-semibold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors shrink-0"
         >
           <span>Launch Preflight</span>
           <ChevronRight size={14} />
@@ -317,30 +318,28 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     return result.rules.filter((r) => cats.includes(r.category))
   }
 
-  const gooeyItems = TABS.map(t => {
-    const count =
-      t === 'Overview' ||
-      t === 'Ask Policy' ||
-      t === 'Preflight Estimator' ||
-      t === 'Claim Dispute' ||
-      t === 'Bill Audit'
-        ? null
-        : getRulesForTab(t).length
-    return {
-      label:
-        count !== null
-          ? `${t} [${count}]`
-          : t === 'Ask Policy'
-          ? '💬 Ask'
-          : t === 'Preflight Estimator'
-          ? '⚡ Preflight'
-          : t === 'Claim Dispute'
-          ? '🛡️ Dispute'
-          : t === 'Bill Audit'
-          ? '🧾 Bill Audit'
-          : t,
-    }
-  })
+  const TAB_LABEL: Partial<Record<Tab, string>> = {
+    'Ask Policy': 'Ask',
+    'Preflight Estimator': 'Preflight',
+    'Claim Dispute': 'Dispute',
+    'Bill Audit': 'Bill Audit',
+  }
+  const tabCount = (t: Tab) =>
+    t === 'Overview' ||
+    t === 'Ask Policy' ||
+    t === 'Preflight Estimator' ||
+    t === 'Claim Dispute' ||
+    t === 'Bill Audit'
+      ? null
+      : getRulesForTab(t).length
+
+  const onTabKey = (e: React.KeyboardEvent, i: number) => {
+    const next = e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i - 1 + TABS.length) % TABS.length : null
+    if (next === null) return
+    e.preventDefault()
+    setTab(TABS[next])
+    ;(e.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus()
+  }
 
   return (
     <div className="results-wrapper">
@@ -361,16 +360,33 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
             <StatusBadge status="covered" />
           </div>
         </div>
+        <div className="results-actions">
+          <ThemeToggle />
+          <UserMenu />
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="results-tabs-bar" style={{ padding: '10px 24px' }}>
-        <div className="tabs-scroll" style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
-          <GooeyNav
-            items={gooeyItems}
-            initialActiveIndex={Math.max(0, TABS.indexOf(tab))}
-            onChange={(idx) => setTab(TABS[idx])}
-          />
+      <div className="results-tabs-bar">
+        <div className="tabs-scroll" role="tablist" aria-label="Policy sections">
+          {TABS.map((t, i) => {
+            const count = tabCount(t)
+            return (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                tabIndex={tab === t ? 0 : -1}
+                className={`tab-button ${tab === t ? 'tab-active' : ''}`}
+                onClick={() => setTab(t)}
+                onKeyDown={(e) => onTabKey(e, i)}
+                type="button"
+              >
+                {TAB_LABEL[t] ?? t}
+                {count !== null && <span className="tab-count">{count}</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 

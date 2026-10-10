@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Procedure Normalization & Fuzzy Matcher (Blueprint F5)
+ * PolicyLens - Procedure Normalization & Fuzzy Matcher (Blueprint F5)
  * Matches free-form user query to canonical procedures via token overlap,
  * synonym matching, Levenshtein distance, and returns confidence.
  */
