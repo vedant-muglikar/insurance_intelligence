@@ -18,6 +18,7 @@ import { QuoteReview } from './QuoteReview'
 import { ExportSummary } from './ExportSummary'
 import { CoverageGauge } from './CoverageGauge'
 import { ClauseFlowVisualizer } from './ClauseFlowVisualizer'
+import { CoverageRiskAnalyzer } from './CoverageRiskAnalyzer'
 import { EvidenceViewer } from './shared'
 import {
   Calculator,
@@ -36,6 +37,7 @@ import {
   Bed,
   User,
   ShieldCheck,
+  ShieldAlert,
   ChevronRight,
   RotateCcw,
 } from 'lucide-react'
@@ -63,7 +65,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
   })
 
   const [activePreflightTab, setActivePreflightTab] = useState<
-    'ledger' | 'missing_info' | 'what_if' | 'timeline' | 'readiness' | 'quote' | 'export'
+    'ledger' | 'missing_info' | 'what_if' | 'timeline' | 'readiness' | 'quote' | 'export' | 'risk_analyzer'
   >('ledger')
 
   const [preflight, setPreflight] = useState<CoverageResult | null>(null)
@@ -469,6 +471,19 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
 
               <button
                 type="button"
+                onClick={() => setActivePreflightTab('risk_analyzer')}
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                  activePreflightTab === 'risk_analyzer'
+                    ? 'bg-[var(--card)] text-rose-400 border-t-2 border-rose-400'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <ShieldAlert size={13} />
+                Risk Analyzer
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActivePreflightTab('what_if')}
                 className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
                   activePreflightTab === 'what_if'
@@ -570,6 +585,13 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
                   scenario={scenario}
                   preflight={preflight}
                   policy={policyResult}
+                />
+              )}
+
+              {activePreflightTab === 'risk_analyzer' && (
+                <CoverageRiskAnalyzer
+                  policyRules={policyResult.rules}
+                  policyName={policyResult.overview?.plan_name}
                 />
               )}
             </div>
