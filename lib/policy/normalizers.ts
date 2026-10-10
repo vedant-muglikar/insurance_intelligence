@@ -29,8 +29,15 @@ export function parseCurrency(val: string | null | undefined): number | null {
     return isNaN(num) ? null : Math.round(num * 10000000)
   }
 
-  // Handle direct numeric matches (e.g. ₹50000, 25000)
-  const numMatch = clean.match(/(?:(?:rs\.?|inr|₹)\s*)?(\d+(?:\.\d+)?)/)
+  // An amount marked as rupees wins ("1% of Sum Insured = ₹5,000" is ₹5,000, not ₹1)
+  const marked = clean.match(/(?:rs\.?|inr|₹)\s*(\d+(?:\.\d+)?)/)
+  if (marked) {
+    const num = parseFloat(marked[1])
+    return isNaN(num) ? null : Math.round(num)
+  }
+
+  // Otherwise the first bare number that is not a percentage (e.g. 25000)
+  const numMatch = clean.match(/(?<![\d.])(\d+(?:\.\d+)?)(?![\d.]*\s*%)/)
   if (numMatch) {
     const num = parseFloat(numMatch[1])
     return isNaN(num) ? null : Math.round(num)
@@ -194,6 +201,20 @@ export const CANONICAL_PROCEDURES = [
   { key: 'dengue_treatment', label: 'Dengue Inpatient Treatment', aliases: ['dengue fever', 'platelet transfusion', 'dengue medical management'] },
   { key: 'chemotherapy', label: 'Chemotherapy Cycle', aliases: ['chemo', 'oncology chemo', 'cancer chemotherapy'] },
 ]
+
+/**
+ * The canonical procedure named anywhere in free text (a bill diagnosis or treatment name), matched on whole
+ * words, or null when none is recognisable. Stricter than getCanonicalProcedureKey, which never returns null.
+ */
+export function findCanonicalProcedureKey(text?: string | null): string | null {
+  if (!text) return null
+  const clean = text.toLowerCase()
+  for (const proc of CANONICAL_PROCEDURES) {
+    const names = [proc.key.replace(/_/g, ' '), proc.label.toLowerCase(), ...proc.aliases]
+    if (names.some((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(clean))) return proc.key
+  }
+  return null
+}
 
 export function getCanonicalProcedureKey(name: string): string {
   const clean = name.toLowerCase().trim()

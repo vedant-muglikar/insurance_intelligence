@@ -3,7 +3,8 @@
  *
  * Order of stages is fixed and follows the compiled rule precedence:
  *   0  version     which documents are in force on the treatment date, merged in precedence order
- *   1  waiting     a waiting period that has not elapsed makes the whole bill non-payable
+ *   1  waiting     a waiting period that has not elapsed (calendar months from the policy start) makes the whole bill non-payable
+ *   1b treatment   an exclusion clause naming the treatment itself makes the whole bill non-payable
  *   2  exclusion   items an exclusion clause covers become non-payable; conflicting or missing evidence is held
  *   3  room_rent   room cap per day, with proportionate reduction of associated charges when the clause says so
  *   4  sub_limit   capped groups of items, reduced pro rata
@@ -16,6 +17,8 @@
  */
 
 import type { HospitalBill, HospitalBillLineItem } from '@/lib/types/bill'
+import type { CompiledRule } from '@/lib/types/policy'
+import { addDaysToDate, addMonthsToDate } from '@/lib/policy/normalizers'
 import { keywordMatcher } from './matcher'
 import { decideOutcome } from './decide'
 import { selectVersion } from './versions'
@@ -43,6 +46,13 @@ export interface AdjudicationInput {
   availableSumInsured?: number | null
   /** Rupee rate per day of the room the policy entitles the patient to, when the policy names a category but no amount. */
   entitledRoomRatePerDay?: number | null
+  /**
+   * Canonical procedure key of the treatment (e.g. "cataract"). A waiting period or exclusion whose appliesTo names
+   * it covers every item of the bill. Sub-limits are not widened by it: they cap the items they name.
+   */
+  treatmentKey?: string | null
+  /** Pre-existing conditions the patient declared. A pre-existing-disease waiting period applies when any are declared. */
+  declaredPED?: string[] | null
   matcher?: ClauseMatcher
 }
 
@@ -77,14 +87,59 @@ function daysBetween(a: string, b: string): number {
   return Math.floor((Date.parse(b) - Date.parse(a)) / 86400000)
 }
 
+/** The date a waiting period ends: calendar months (or days) from the policy start. Null when the clause gives neither. */
+export function waitingCompletionDate(policyStart: string, period: NonNullable<CompiledRule['effectivePeriod']>): string | null {
+  if (period.months) return addMonthsToDate(policyStart, period.months)
+  if (period.days) return addDaysToDate(policyStart, period.days)
+  return null
+}
+
+export interface WaitingContext {
+  /** Diagnosis and treatment wording the clause is matched against */
+  text: string
+  accident: boolean
+  treatmentKey?: string | null
+  declaredPED?: string[] | null
+  matcher: ClauseMatcher
+}
+
+/** Whether a waiting-period clause applies to this treatment. The estimator's timeline uses the same test. */
+export function waitingApplies(m: MergedRule, ctx: WaitingContext): boolean {
+  const p = m.rule.effectivePeriod
+  if (!p) return false
+  if (p.type === 'initial') return !ctx.accident
+  if (ctx.treatmentKey && m.rule.appliesTo.includes(ctx.treatmentKey)) return true
+  if ((p.type === 'ped' || m.rule.appliesTo.includes('ped')) && ctx.declaredPED?.length) return true
+  return ctx.matcher.match({ text: ctx.text, category: 'surgery', rules: [m] }).length > 0
+}
+
+const ACCIDENT_WORDS = /accident|injur|trauma/i
+const IMPLANT_WORDS = /\b(implants?|prosthes[ie]s|stents?|bone cement|medical devices?)\b/i
+/** Charges a health policy pays by default; excluding one needs more than a single shared word */
+const CORE_CATEGORIES = new Set<string>(['room', 'icu', 'surgery', 'doctor', 'implant', 'diagnostics', 'medicines'])
+
+/** What waiting-period clauses are tested against: the diagnosis and the treatment items' wording. */
+export function waitingContext(input: AdjudicationInput): WaitingContext {
+  const text = [input.bill?.diagnosis, ...input.items.filter((i) => ['surgery', 'doctor', 'implant'].includes(i.category)).map((i) => i.description)]
+    .filter(Boolean)
+    .join(' ')
+  return {
+    text,
+    accident: ACCIDENT_WORDS.test(text),
+    treatmentKey: input.treatmentKey ?? null,
+    declaredPED: input.declaredPED,
+    matcher: input.matcher ?? keywordMatcher,
+  }
+}
+
 const ROOM_WORDS = /room|bed|ward|suite|accommodation|ccu|icu/i
 const NURSING_WORDS = /nursing|rmo|care|monitor/i
 
-function isRoomRent(i: HospitalBillLineItem): boolean {
+export function isRoomRent(i: HospitalBillLineItem): boolean {
   return (i.category === 'room' || i.category === 'icu') && ROOM_WORDS.test(i.description) && !NURSING_WORDS.test(i.description)
 }
 
-function roomDaysAndRate(i: HospitalBillLineItem): { days: number; rate: number } {
+export function roomDaysAndRate(i: HospitalBillLineItem): { days: number; rate: number } {
   if (i.quantity > 1 && Math.abs(i.quantity * i.unitPrice - i.amount) <= 1) return { days: i.quantity, rate: i.unitPrice }
   const m = /(\d+)\s*(?:days?|nights?)/i.exec(i.description)
   const days = m ? Math.max(1, parseInt(m[1], 10)) : 1
@@ -103,6 +158,8 @@ interface Work {
 export function adjudicate(input: AdjudicationInput): AdjudicationResult {
   const matcher = input.matcher ?? keywordMatcher
   const treatmentDate = input.treatmentDate ?? input.bill?.admissionDate ?? null
+  const treatmentKey = input.treatmentKey ?? null
+  const treatmentLabel = treatmentKey?.replace(/_/g, ' ') ?? ''
   const selection = selectVersion(input.versions, treatmentDate)
   const rules = selection.rules
   const warnings: string[] = [...selection.warnings]
@@ -163,8 +220,8 @@ export function adjudicate(input: AdjudicationInput): AdjudicationResult {
     stage: 'version',
     title: 'Policy documents in force',
     formula: treatmentDate
-      ? `Treatment date ${treatmentDate}. Applied: ${selection.candidates.filter((c) => c.inForce).map((c) => c.label).join(' + ') || 'none'}.`
-      : 'No treatment date. Base policy only.',
+      ? `Treatment date ${treatmentDate}. Applied: ${selection.candidates.filter((c) => c.inForce).map((c) => c.label).join(' + ') || 'none'}.${treatmentKey ? ` Treatment recognised as ${treatmentLabel}.` : ''}`
+      : `No treatment date. Base policy only.${treatmentKey ? ` Treatment recognised as ${treatmentLabel}.` : ''}`,
     totalBefore: claimed,
     deducted: 0,
     totalAfter: claimed,
@@ -173,25 +230,32 @@ export function adjudicate(input: AdjudicationInput): AdjudicationResult {
   // ── 1. waiting period ───────────────────────────────────────────────────────
   const waitingRules = rules.filter((m) => m.rule.ruleType === 'WAITING_PERIOD' && m.rule.effectivePeriod)
   if (waitingRules.length) {
-    const context = [input.bill?.diagnosis, ...input.items.filter((i) => ['surgery', 'doctor', 'implant'].includes(i.category)).map((i) => i.description)].filter(Boolean).join(' ')
-    const accident = /accident|injur|trauma/i.test(context)
+    const ctx = waitingContext(input)
     for (const m of waitingRules) {
-      const p = m.rule.effectivePeriod!
-      const requiredDays = p.days ?? Math.round((p.months ?? 0) * 30.4375)
-      if (!requiredDays) continue
-      const applies = p.type === 'initial' ? !accident : matcher.match({ text: context, category: 'surgery', rules: [m] }).length > 0
-      if (!applies) continue
+      if (!waitingApplies(m, ctx)) continue
       if (!input.policyStartDate || !treatmentDate) {
         warnings.push(`Waiting period "${m.rule.ruleName}" may apply to this treatment, but the policy start date or treatment date is missing, so it was not applied.`)
         continue
       }
+      const ends = waitingCompletionDate(input.policyStartDate, m.rule.effectivePeriod!)
+      if (!ends || treatmentDate >= ends) continue
       const elapsed = daysBetween(input.policyStartDate, treatmentDate)
-      if (elapsed >= requiredDays) continue
       const before = total()
       const ref = clauseRef(m)
-      const per = work.map((w) => ({ w, amount: deduct(w, 'waiting_period', w.payable, `Policy is ${elapsed} days old; ${m.rule.ruleName} needs ${requiredDays} days`, ref) }))
-      step('waiting_period', m.rule.ruleName, `${elapsed} days since policy start is less than the ${requiredDays} days required, so nothing is payable`, before, per, ref)
+      const per = work.map((w) => ({ w, amount: deduct(w, 'waiting_period', w.payable, `Policy is ${elapsed} days old; ${m.rule.ruleName} runs until ${ends}`, ref) }))
+      step('waiting_period', m.rule.ruleName, `Treatment on ${treatmentDate} is before this waiting period ends on ${ends}, so nothing is payable`, before, per, ref)
     }
+  }
+
+  // ── 1b. the treatment itself excluded ───────────────────────────────────────
+  const treatmentExclusion = treatmentKey
+    ? rules.find((m) => m.rule.ruleType === 'EXCLUSION' && m.rule.usability !== 'needs_human_review' && m.rule.appliesTo.includes(treatmentKey))
+    : undefined
+  if (treatmentExclusion) {
+    const before = total()
+    const ref = clauseRef(treatmentExclusion)
+    const per = work.map((w) => ({ w, amount: deduct(w, 'exclusion', w.payable, `The treatment (${treatmentLabel}) is excluded by "${treatmentExclusion.rule.ruleName}"`, ref) }))
+    step('exclusion', treatmentExclusion.rule.ruleName, `The treatment itself (${treatmentLabel}) is excluded, so nothing is payable`, before, per, ref)
   }
 
   // ── 2. exclusions, conflicts, missing evidence ──────────────────────────────
@@ -225,6 +289,13 @@ export function adjudicate(input: AdjudicationInput): AdjudicationResult {
         w.review.push(`Conflicting evidence: "${exclusion.rule.ruleName}" would exclude this item, but "${coverage.rule.ruleName}" would pay it. A reviewer must decide.`)
         per.push({ w, amount: deduct(w, 'review_hold', hold, 'Held for review: conflicting clauses', refs[0]) })
         for (const r of refs.slice(1)) w.deductions[0].clauses.push(r)
+      } else if (exclusion && !exclusion.verification && exclusion.score < 2 && CORE_CATEGORIES.has(w.item.category)) {
+        // A keyword match on one shared word ("disposable surgeon gowns" vs "Surgeon fee") is too weak to remove
+        // a core medical charge. It is not ignored either: a reviewer decides.
+        const ref = clauseRef(rules.find((r) => r.rule.id === exclusion.rule.id && r.versionId === exclusion.versionId)!)
+        w.held = w.payable
+        w.review.push(`"${exclusion.rule.ruleName}" shares only the word "${exclusion.matchedTerms[0]}" with this charge. A reviewer must decide whether it applies.`)
+        per.push({ w, amount: deduct(w, 'review_hold', w.payable, 'Held for review: weak match to an exclusion clause', ref) })
       } else if (exclusion) {
         const ref = clauseRef(rules.find((r) => r.rule.id === exclusion.rule.id && r.versionId === exclusion.versionId)!)
         per.push({ w, amount: deduct(w, 'exclusion', w.payable, `Excluded by "${exclusion.rule.ruleName}" (matched: ${exclusion.matchedTerms.join(', ')})`, ref) })
@@ -241,11 +312,15 @@ export function adjudicate(input: AdjudicationInput): AdjudicationResult {
 
   // ── 3. room rent ────────────────────────────────────────────────────────────
   {
-    const roomRule = rules.find((m) => m.rule.ruleType === 'ROOM_LIMIT' && m.rule.usability === 'executable')
+    // Policies often state the limit ("1% of Sum Insured per day") and the proportionate deduction in separate
+    // clauses: the cap comes from the clause that names an amount, the proration from any clause that declares it.
+    const roomRules = rules.filter((m) => m.rule.ruleType === 'ROOM_LIMIT' && m.rule.usability === 'executable' && !m.rule.appliesTo.includes('icu'))
+    const roomRule = roomRules.find((m) => (m.rule.effect.amount ?? 0) > 0 || !!m.rule.effect.percentage) ?? roomRules[0]
+    const prorationRule = roomRules.find((m) => m.rule.effect.action === 'proration')
     const roomItems = work.filter((w) => w.payable > 0 && isRoomRent(w.item))
     if (roomRule && roomItems.length) {
       const sumInsured = Math.min(...[input.availableSumInsured, rules.find((m) => m.rule.ruleType === 'SUM_INSURED')?.rule.effect.capAmount].filter((v): v is number => !!v && v > 0), Infinity)
-      const e = roomRule.rule.effect
+      const e = { ...roomRule.rule.effect, action: prorationRule ? 'proration' : roomRule.rule.effect.action }
       const cap = e.amount && e.amount > 0 ? e.amount : e.percentage && Number.isFinite(sumInsured) ? Math.round((sumInsured * e.percentage) / 100) : input.entitledRoomRatePerDay ?? null
       const ref = clauseRef(roomRule)
       const before = total()
@@ -284,7 +359,15 @@ export function adjudicate(input: AdjudicationInput): AdjudicationResult {
     const sumInsured = input.availableSumInsured ?? rules.find((r) => r.rule.ruleType === 'SUM_INSURED')?.rule.effect.capAmount ?? null
     const cap = e.capAmount ?? (e.percentage && sumInsured ? Math.round((sumInsured * e.percentage) / 100) : null)
     if (!cap) continue
-    const group = work.filter((w) => w.payable > 0 && w.matches.some((x) => x.rule.id === m.rule.id && x.versionId === m.versionId))
+    // A sub-limit caps the items it names. One that names an implant or device ("joint replacement implants incl.
+    // bone cement ₹50,000") caps implant items only, never the surgeon or theatre charges of the same treatment.
+    const implantScoped = IMPLANT_WORDS.test(m.text)
+    const group = work.filter(
+      (w) =>
+        w.payable > 0 &&
+        (!implantScoped || w.item.category === 'implant') &&
+        w.matches.some((x) => x.rule.id === m.rule.id && x.versionId === m.versionId),
+    )
     const groupTotal = group.reduce((a, w) => a + w.payable, 0)
     if (!group.length || groupTotal <= cap) continue
     const before = total()

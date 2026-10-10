@@ -8,6 +8,7 @@ import {
   QuoteLineItem,
 } from '@/lib/types/estimate'
 import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
+import { demoScenario, isDemoPolicy } from '@/lib/demo/preset'
 import { fetchMlCostPrediction, scenarioNeedsMlCost } from '@/lib/estimate/mlClient'
 import { CANONICAL_PROCEDURES, formatINR } from '@/lib/policy/normalizers'
 import { CostLedger } from './CostLedger'
@@ -65,7 +66,7 @@ interface EstimateFormProps {
 
 export function EstimateForm({ policyResult, initialScenario, onPreflightChange }: EstimateFormProps) {
   // Default scenario initialized with smart defaults
-  const [scenario, setScenario] = useState<TreatmentScenario>(() => initialScenario ?? {
+  const [scenario, setScenario] = useState<TreatmentScenario>(() => initialScenario ?? (isDemoPolicy(policyResult) ? demoScenario(policyResult) : {
     treatment: 'Total Knee Replacement',
     age: 58,
     city: 'Mumbai',
@@ -78,7 +79,7 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
     // Taken from the policy document; left empty (the form asks) when the PDF does not state one clearly.
     availableSumInsured: policyResult.overview.sum_insured_amount ?? undefined,
     isNetworkHospital: true,
-  })
+  }))
 
   const [activePreflightTab, setActivePreflightTab] = useState<
     'ledger' | 'missing_info' | 'what_if' | 'timeline' | 'readiness' | 'quote' | 'export' | 'risk_analyzer'
@@ -269,6 +270,27 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
               </div>
             </div>
 
+            {/* The allowed room's daily rate, only when the policy names a room category but no rupee limit */}
+            {(scenario.entitledRoomRatePerDay !== undefined ||
+              preflight?.missingInformation.some((m) => m.field === 'entitledRoomRatePerDay')) && (
+              <div>
+                <label className="block text-slate-400 text-[11px] mb-1" htmlFor="est-room-rate">
+                  Daily rate of the room your policy allows (₹)
+                </label>
+                <input
+                  id="est-room-rate"
+                  type="number"
+                  min="0"
+                  step="500"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  value={scenario.entitledRoomRatePerDay ?? ''}
+                  onChange={e => setScenario({ ...scenario, entitledRoomRatePerDay: parseInt(e.target.value) || undefined })}
+                  placeholder={`About ${preflight?.missingInformation.find((m) => m.field === 'entitledRoomRatePerDay')?.defaultValue ?? ''} (estimated)`}
+                />
+                <span className="block text-slate-500 text-[11px] mt-1">Ask the hospital what that room costs per day.</span>
+              </div>
+            )}
+
             {/* Stay Duration & Available SI */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
@@ -356,7 +378,14 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
               <div className="est-kpi est-kpi-main">
                 <span className="est-label">You would pay about</span>
                 <span className="est-value">{formatINR(preflight.patientShare.typical)}</span>
-                <span className="est-sub">{sharePct(preflight.patientShare.typical, preflight.treatmentCost.typical)}% of the bill</span>
+                <span className="est-sub">
+                  {sharePct(preflight.patientShare.typical, preflight.treatmentCost.typical)}% of the bill
+                  {preflight.patientShare.min !== preflight.patientShare.max &&
+                    ` · range ${formatINR(preflight.patientShare.min)} to ${formatINR(preflight.patientShare.max)}`}
+                </span>
+                {!!preflight.heldForReview && (
+                  <span className="est-sub">Includes {formatINR(preflight.heldForReview)} the insurer may still pay after review</span>
+                )}
               </div>
               <div className="est-kpi">
                 <span className="est-label">Insurer covers</span>
@@ -459,6 +488,16 @@ export function EstimateForm({ policyResult, initialScenario, onPreflightChange 
                       onSelectRule={() => setActivePreflightTab('ledger')}
                     />
                   </details>
+                  {preflight.assumptions.length > 0 && (
+                    <details className="sx-more">
+                      <summary>Assumptions in this estimate</summary>
+                      <ul>
+                        {preflight.assumptions.map((a, i) => (
+                          <li key={i}>{a}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                   {preflight.costModel && (
                     <details className="sx-more">
                       <summary>Where the bill estimate comes from</summary>

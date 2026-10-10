@@ -1,8 +1,16 @@
 /**
- * PolicyLens - Policy Rule Evaluation Engine (Blueprint Section 8)
- * Compiles policy rules into executable form, runs deterministic eligibility,
- * waiting periods (date math), exclusions, room caps, deductibles, co-pays,
- * and sums insured, emitting an auditable Clause-to-Rupee ledger.
+ * PolicyLens - Preflight Estimator (Blueprint Section 8)
+ *
+ * Two questions, two techniques:
+ *  - What will the hospital charge? A prediction: hospital quote, else the ML cost model (P10/P50/P90),
+ *    else the static benchmark (see ./cost).
+ *  - How much of that does the policy pay? A calculation: the predicted bill is turned into line items and run
+ *    through the same claim engine as the Claim Ledger (lib/claims/adjudicate), once for the low, typical and
+ *    high bill. There is no second copy of the policy arithmetic here, so the two features cannot disagree on
+ *    the same bill.
+ *
+ * This module adds what only a pre-admission estimate needs: the timeline of waiting periods, the questions
+ * that would change the answer, the room the policy allows, and the claim-readiness checklist.
  */
 
 import { buildCostBreakdown } from './breakdown'
@@ -16,23 +24,34 @@ import {
   MissingField,
   TimelineMilestone,
   ClaimReadinessItem,
+  QuoteLineItem,
 } from '../types/estimate'
+import type { HospitalBillLineItem } from '../types/bill'
 import { compilePolicyRules } from '../policy/compiler'
 import {
   parseCurrency,
-  parsePercentage,
   calculateDateDiffMonths,
   calculateDateDiffDays,
-  addMonthsToDate,
-  addDaysToDate,
-  formatDateIndian,
   formatINR,
   normalizeRoomCategory,
   ROOM_TIER_RANK,
+  findCanonicalProcedureKey,
   getCanonicalProcedureKey,
 } from '../policy/normalizers'
-import { estimateCostDetailed } from './cost'
+import { estimateCostDetailed, type DetailedCostResult } from './cost'
+import { getRoomMultiplier } from './dataset'
 import { matchTreatmentWithCandidates } from './matching'
+import {
+  adjudicate,
+  isRoomRent,
+  roomDaysAndRate,
+  waitingApplies,
+  waitingCompletionDate,
+  waitingContext,
+  type AdjudicationInput,
+} from '../claims/adjudicate'
+import { makeVersion, selectVersion } from '../claims/versions'
+import type { AdjudicationResult, DeductionStage } from '../claims/types'
 
 export interface PreflightEvaluationOptions {
   customCompiledRules?: CompiledRule[]
@@ -40,22 +59,122 @@ export interface PreflightEvaluationOptions {
   mlPrediction?: MlCostPrediction | null
 }
 
+// ─── Predicted bill → bill line items ─────────────────────────────────────────
+
+/**
+ * The cost model's lines as bill items. Room lines from a model or benchmark are labelled as room rent, the way
+ * a hospital bills them, so the room clause recognises them ("Room & Nursing" would be read as nursing care).
+ * A hospital's own quote keeps its wording.
+ */
+function toBillItems(cost: DetailedCostResult, scenario: TreatmentScenario): HospitalBillLineItem[] {
+  const fromQuote = cost.costSource === 'hospital_quote'
+  return cost.lineItems.map((li: QuoteLineItem) => {
+    const roomLine = !fromQuote && (li.category === 'room' || li.category === 'icu')
+    const days = cost.stayDurationDays
+    return {
+      id: li.id,
+      description: roomLine ? `Room rent (${scenario.roomType}) - ${days} day${days === 1 ? '' : 's'}` : li.description,
+      category: li.category,
+      quantity: roomLine ? days : li.quantity,
+      unitPrice: roomLine ? Math.round(li.amount / days) : li.unitPrice,
+      amount: li.amount,
+      confidence: li.confidence,
+    }
+  })
+}
+
+/** Rescales items to a new total in whole rupees; the parts add up exactly (largest remainder). */
+function scaleItems(items: HospitalBillLineItem[], total: number): HospitalBillLineItem[] {
+  const sum = items.reduce((a, i) => a + i.amount, 0)
+  if (sum <= 0 || total === sum) return items
+  const raw = items.map((i) => (i.amount * total) / sum)
+  const out = raw.map(Math.floor)
+  let rem = Math.round(total) - out.reduce((a, b) => a + b, 0)
+  const order = raw.map((r, i) => ({ i, f: r - out[i] })).sort((a, b) => b.f - a.f || a.i - b.i)
+  for (let k = 0; rem > 0 && k < order.length; k++, rem--) out[order[k].i]++
+  return items.map((i, k) => ({
+    ...i,
+    amount: out[k],
+    unitPrice: i.quantity > 1 ? Math.round(out[k] / i.quantity) : out[k],
+  }))
+}
+
+// ─── Claim-engine result → Clause-to-Rupee ledger lines ───────────────────────
+
+const STAGE_ORDER: DeductionStage[] = ['waiting_period', 'exclusion', 'review_hold', 'room_rent', 'sub_limit', 'deductible', 'copay', 'sum_insured']
+
+const STAGE_META: Record<DeductionStage, { ruleType: string; category: string; impact: DeductionLine['impact']; title: string }> = {
+  waiting_period: { ruleType: 'WAITING_PERIOD', category: 'Waiting Period', impact: 'denial', title: 'Waiting period' },
+  exclusion: { ruleType: 'EXCLUSION', category: 'Exclusion', impact: 'deduction', title: 'Exclusion' },
+  review_hold: { ruleType: 'REVIEW_HOLD', category: 'Held for review', impact: 'deduction', title: 'Held for review' },
+  room_rent: { ruleType: 'ROOM_LIMIT', category: 'Room Limit', impact: 'deduction', title: 'Room rent' },
+  sub_limit: { ruleType: 'SUB_LIMIT', category: 'Sub-limit', impact: 'cap', title: 'Sub-limit' },
+  deductible: { ruleType: 'DEDUCTIBLE', category: 'Deductible', impact: 'deduction', title: 'Deductible' },
+  copay: { ruleType: 'COPAY', category: 'Co-payment', impact: 'deduction', title: 'Co-payment' },
+  sum_insured: { ruleType: 'SUM_INSURED', category: 'Sum Insured', impact: 'cap', title: 'Sum insured' },
+}
+
+/** One line per stage and clause, in the order the engine applied them, with the running covered amount. */
+function toDeductionLines(result: AdjudicationResult): DeductionLine[] {
+  type Group = { stage: DeductionStage; amount: number; clause?: AdjudicationResult['items'][number]['deductions'][number]['clauses'][number]; parts: string[] }
+  const groups = new Map<string, Group>()
+  for (const it of result.items) {
+    for (const d of it.deductions) {
+      const clause = d.clauses[0]
+      const key = `${d.stage}:${clause?.ruleId ?? ''}`
+      const g = groups.get(key) ?? { stage: d.stage, amount: 0, clause, parts: [] }
+      g.amount += d.amount
+      g.parts.push(`${it.description} ${formatINR(d.amount)}`)
+      groups.set(key, g)
+    }
+  }
+
+  let running = result.totals.claimed
+  return [...groups.values()]
+    .filter((g) => g.amount > 0)
+    .sort((a, b) => STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage))
+    .map((g) => {
+      const meta = STAGE_META[g.stage]
+      const before = running
+      running -= g.amount
+      const step = result.trace.find((t) => t.stage === g.stage && (t.clause?.ruleId ?? '') === (g.clause?.ruleId ?? ''))
+      const items = g.parts.length > 3 ? [...g.parts.slice(0, 3), `${g.parts.length - 3} more`] : g.parts
+      const wholeClaim = g.amount === result.totals.claimed
+      return {
+        id: `ded_${g.stage}_${g.clause?.ruleId ?? 'none'}`,
+        ruleId: g.clause?.ruleId,
+        ruleName: g.clause?.ruleName ?? meta.title,
+        category: meta.category,
+        ruleType: meta.ruleType,
+        originalAmount: before,
+        deductionAmount: g.amount,
+        coveredAmountAfter: running,
+        evidence: g.clause
+          ? { page: g.clause.page, section: g.clause.section, quote: g.clause.quote }
+          : { page: null, quote: g.stage === 'review_hold' ? 'No policy clause clearly supports or excludes these charges.' : meta.title },
+        calculation: step?.formula ?? `${meta.title}: ${items.join(', ')}`,
+        impact: g.stage === 'exclusion' && wholeClaim ? 'denial' : meta.impact,
+      }
+    })
+}
+
+// ─── Evaluation ───────────────────────────────────────────────────────────────
+
 export function evaluatePolicyPreflight(
   scenario: TreatmentScenario,
   policy: PolicyAnalysisResult,
   options?: PreflightEvaluationOptions
 ): CoverageResult {
-  // 1. Get or compile executable rules
+  // 1. Executable rules and the treatment's identity
   const compiledRules = options?.customCompiledRules ||
     policy.compiled_rules ||
     compilePolicyRules(policy.rules, policy.pages)
+  const treatmentKey = findCanonicalProcedureKey(scenario.treatment) ?? getCanonicalProcedureKey(scenario.treatment)
 
-  // 2. Resolve treatment canonical identity
-  const canonicalTreatment = getCanonicalProcedureKey(scenario.treatment)
+  // 2. The predicted bill (prediction, not policy arithmetic)
   const matchedCandidate = matchTreatmentWithCandidates(scenario)
   const costDetails = estimateCostDetailed(scenario, matchedCandidate.bestMatch, options?.mlPrediction)
 
-  const ledger: DeductionLine[] = []
   const missingInformation: MissingField[] = []
   const assumptions: string[] = []
   if (costDetails.costSource === 'ml_model') {
@@ -64,11 +183,7 @@ export function evaluatePolicyPreflight(
   const milestones: TimelineMilestone[] = []
   const readinessChecklist: ClaimReadinessItem[] = []
 
-  let status: CoverageResult['status'] = 'eligible'
-  let waitingPeriodMet = true
-  let waitingPeriodDetails: CoverageResult['waitingPeriodDetails'] = undefined
-
-  // Sum Insured resolution
+  // Sum insured
   let totalSumInsured: number | null = null
   if (typeof policy.overview.sum_insured_amount === 'number') {
     totalSumInsured = policy.overview.sum_insured_amount
@@ -89,9 +204,6 @@ export function evaluatePolicyPreflight(
     })
   }
 
-  // ─── 1. ELIGIBILITY GATES & DATE ARITHMETIC ────────────────────────────────
-
-  // Check Policy Start / Continuity Date
   const hasStartDate = !!scenario.policyStartDate
   const admissionDateStr = scenario.proposedAdmissionDate || new Date().toISOString().split('T')[0]
 
@@ -104,80 +216,9 @@ export function evaluatePolicyPreflight(
       impact: 'blocks_estimate',
       suggestedInputType: 'date',
     })
-    status = 'cannot_determine'
     assumptions.push('Policy inception date is unknown; assuming initial and specific waiting periods might still be active.')
   }
 
-  // Evaluate Waiting Period Rules
-  const waitingRules = compiledRules.filter(r => r.ruleType === 'WAITING_PERIOD')
-  
-  for (const wRule of waitingRules) {
-    const isPEDRule = wRule.effectivePeriod?.type === 'ped' || wRule.appliesTo.includes('ped')
-    const isInitialRule = wRule.effectivePeriod?.type === 'initial' || (wRule.effectivePeriod?.days === 30)
-    const reqMonths = wRule.effectivePeriod?.months || (wRule.effectivePeriod?.days ? Math.round(wRule.effectivePeriod.days / 30) : 24)
-
-    let completionDate = ''
-    let isCompleted = false
-    let daysRemaining = 0
-
-    if (scenario.policyStartDate) {
-      if (wRule.effectivePeriod?.days && wRule.effectivePeriod.days <= 90) {
-        completionDate = addDaysToDate(scenario.policyStartDate, wRule.effectivePeriod.days)
-      } else {
-        completionDate = addMonthsToDate(scenario.policyStartDate, reqMonths)
-      }
-      const daysDiff = calculateDateDiffDays(admissionDateStr, completionDate)
-      isCompleted = daysDiff <= 0
-      daysRemaining = Math.max(0, daysDiff)
-    }
-
-    const milestoneTitle = isInitialRule
-      ? 'Initial 30-Day Waiting Period'
-      : isPEDRule
-      ? 'Pre-existing Disease (PED) Waiting Period'
-      : `Specific Illness Waiting Period (${wRule.ruleName})`
-
-    // Check if this waiting period applies to current treatment
-    const isApplicableToTreatment = Boolean(
-      isInitialRule ||
-      wRule.appliesTo.includes(canonicalTreatment) ||
-      wRule.appliesTo.includes('all') ||
-      (isPEDRule && scenario.declaredPED && scenario.declaredPED.length > 0)
-    )
-
-    milestones.push({
-      id: `ms_${wRule.id}`,
-      title: milestoneTitle,
-      durationText: wRule.effectivePeriod?.days && wRule.effectivePeriod.days <= 90
-        ? `${wRule.effectivePeriod.days} Days`
-        : `${reqMonths} Months`,
-      targetDate: completionDate || 'Unknown',
-      isCompleted,
-      isRelevantToTreatment: isApplicableToTreatment,
-      ruleEvidence: {
-        page: wRule.evidence.page,
-        quote: wRule.evidence.quote,
-        ruleName: wRule.ruleName,
-      },
-      status: !hasStartDate ? 'pending_start_date' : isCompleted ? 'met' : 'active_wait',
-      daysRemaining: !hasStartDate ? undefined : daysRemaining,
-    })
-
-    if (isApplicableToTreatment && hasStartDate && !isCompleted) {
-      waitingPeriodMet = false
-      status = 'not_eligible'
-      waitingPeriodDetails = {
-        requiredMonths: reqMonths,
-        elapsedMonths: calculateDateDiffMonths(scenario.policyStartDate!, admissionDateStr),
-        completionDate,
-        ruleEvidence: wRule.evidence.quote,
-        pageNumber: wRule.evidence.page,
-        isActive: true,
-      }
-    }
-  }
-
-  // Pre-existing Condition Declarations Check
   if (scenario.declaredPED === undefined) {
     missingInformation.push({
       id: 'mf_ped',
@@ -190,268 +231,131 @@ export function evaluatePolicyPreflight(
     })
   }
 
-  // ─── 2. EXCLUSION GATES ─────────────────────────────────────────────────────
+  // 3. The policy as the claim engine sees it. Only the base document: amendments are applied in the Claim Ledger.
+  const version = makeVersion({
+    id: 'base',
+    label: 'Your policy',
+    documentName: policy.overview.plan_name || 'Policy document',
+    result: { ...policy, compiled_rules: compiledRules },
+    kind: 'base',
+    effectiveFrom: null,
+  })
 
-  let isExcluded = false
-  const exclusionRules = compiledRules.filter(r => r.ruleType === 'EXCLUSION')
+  const baseItems = toBillItems(costDetails, scenario)
+  const engineInput = (items: HospitalBillLineItem[]): AdjudicationInput => ({
+    items,
+    bill: { diagnosis: scenario.treatment, admissionDate: admissionDateStr },
+    versions: [version],
+    treatmentDate: admissionDateStr,
+    patientAge: Number.isFinite(scenario.age) ? scenario.age : null,
+    policyStartDate: scenario.policyStartDate || null,
+    availableSumInsured: effectiveSumInsured,
+    entitledRoomRatePerDay: entitledRoomRate(items),
+    treatmentKey,
+    declaredPED: scenario.declaredPED ?? null,
+  })
 
-  for (const exRule of exclusionRules) {
-    const applies = exRule.appliesTo.includes(canonicalTreatment) ||
-      exRule.ruleName.toLowerCase().includes(scenario.treatment.toLowerCase())
+  // 4. Room the policy allows. When the clause names a category but no rupee limit, the engine needs the daily
+  //    rate of that category: the user's figure, the billed rate when the chosen room is within the entitlement,
+  //    or an estimate scaled from the billed rate by the room-tier price ratio.
+  const roomRule = compiledRules.find((r) => r.ruleType === 'ROOM_LIMIT' && r.usability === 'executable')
+  const siRuleCap = compiledRules.find((r) => r.ruleType === 'SUM_INSURED')?.effect.capAmount
+  const roomCapInRupees = !!roomRule && (
+    (roomRule.effect.amount ?? 0) > 0 ||
+    (!!roomRule.effect.percentage && !!(effectiveSumInsured || siRuleCap))
+  )
+  const selectedRoom = normalizeRoomCategory(scenario.roomType)
+  const eligibleRoom = normalizeRoomCategory(
+    (roomRule?.conditions.find((c) => c.type === 'room_category')?.value as string) || 'single-private',
+  )
+  const userRoomRate = Number(scenario.entitledRoomRatePerDay)
+  const aboveEntitlement = ROOM_TIER_RANK[selectedRoom] > ROOM_TIER_RANK[eligibleRoom]
+  let estimatedRoomRate: number | null = null
 
-    if (applies) {
-      isExcluded = true
-      status = 'not_eligible'
-      ledger.push({
-        id: `ded_ex_${exRule.id}`,
-        ruleId: exRule.id,
-        ruleName: exRule.ruleName,
-        category: 'Exclusion',
-        ruleType: 'EXCLUSION',
-        originalAmount: costDetails.avg,
-        deductionAmount: costDetails.avg,
-        coveredAmountAfter: 0,
-        evidence: exRule.evidence,
-        calculation: `Complete denial: procedure '${scenario.treatment}' matches exclusion clause '${exRule.ruleName}'`,
-        impact: 'denial',
+  function entitledRoomRate(items: HospitalBillLineItem[]): number | null {
+    if (!roomRule || roomCapInRupees) return null
+    if (userRoomRate > 0) return userRoomRate
+    const room = items.find(isRoomRent)
+    if (!room) return null
+    const { rate } = roomDaysAndRate(room)
+    if (!aboveEntitlement) return rate
+    return Math.round((rate * getRoomMultiplier(eligibleRoom)) / getRoomMultiplier(selectedRoom))
+  }
+
+  if (roomRule && !roomCapInRupees && aboveEntitlement && !(userRoomRate > 0)) {
+    estimatedRoomRate = entitledRoomRate(baseItems)
+    if (estimatedRoomRate) {
+      assumptions.push(
+        `Your policy allows a ${eligibleRoom} room but names no rupee limit. The room-rent deduction assumes that room costs about ${formatINR(estimatedRoomRate)} a day at this hospital; enter the hospital's actual rate to make it exact.`,
+      )
+      missingInformation.push({
+        id: 'mf_room_rate',
+        field: 'entitledRoomRatePerDay',
+        label: `Daily rate of a ${eligibleRoom} room at this hospital`,
+        whyItMatters: `You chose a ${selectedRoom} room, above the ${eligibleRoom} room your policy allows. What you pay depends on the difference between the two daily rates.`,
+        relatedRuleId: roomRule.id,
+        relatedClauseQuote: roomRule.evidence.quote,
+        pageNumber: roomRule.evidence.page,
+        impact: 'changes_room_deduction',
+        suggestedInputType: 'number',
+        defaultValue: estimatedRoomRate,
       })
-      break
     }
   }
 
-  // ─── 3. DETERMINISTIC COVERAGE & DEDUCTION RUN ──────────────────────────────
+  // 5. Run the claim engine on the low, typical and high bill
+  const typicalInput = engineInput(scaleItems(baseItems, costDetails.avg))
+  const typical = adjudicate(typicalInput)
+  const low = adjudicate(engineInput(scaleItems(baseItems, costDetails.min)))
+  const high = adjudicate(engineInput(scaleItems(baseItems, costDetails.max)))
+  for (const w of typical.warnings) if (!assumptions.includes(w)) assumptions.push(w)
 
-  const initialAmount = costDetails.avg
-  let runningCovered = isExcluded || !waitingPeriodMet ? 0 : initialAmount
-  let runningMin = isExcluded || !waitingPeriodMet ? 0 : costDetails.min
-  let runningMax = isExcluded || !waitingPeriodMet ? 0 : costDetails.max
+  // 6. Waiting-period timeline, using the engine's own applicability test and calendar
+  const ctx = waitingContext(typicalInput)
+  const merged = selectVersion([version], admissionDateStr).rules
+  for (const m of merged) {
+    const wRule = m.rule
+    const p = wRule.effectivePeriod
+    if (wRule.ruleType !== 'WAITING_PERIOD' || !p) continue
+    const isInitial = p.type === 'initial'
+    const isPED = p.type === 'ped' || wRule.appliesTo.includes('ped')
+    const completionDate = hasStartDate ? waitingCompletionDate(scenario.policyStartDate!, p) ?? '' : ''
+    const isCompleted = !!completionDate && admissionDateStr >= completionDate
 
-  if (isExcluded) {
-    // Already in ledger
-  } else if (!waitingPeriodMet && waitingPeriodDetails) {
-    ledger.push({
-      id: 'ded_waiting_period',
-      ruleName: 'Waiting Period Active',
-      category: 'Waiting Period',
-      ruleType: 'WAITING_PERIOD',
-      originalAmount: initialAmount,
-      deductionAmount: initialAmount,
-      coveredAmountAfter: 0,
-      evidence: {
-        page: waitingPeriodDetails.pageNumber ?? null,
-        quote: waitingPeriodDetails.ruleEvidence || 'Waiting period active for proposed admission date.',
-      },
-      calculation: `Claim inadmissible: Admission date (${formatDateIndian(admissionDateStr)}) is before waiting period completion (${formatDateIndian(waitingPeriodDetails.completionDate)})`,
-      impact: 'denial',
+    milestones.push({
+      id: `ms_${wRule.id}`,
+      title: isInitial
+        ? 'Initial 30-Day Waiting Period'
+        : isPED
+          ? 'Pre-existing Disease (PED) Waiting Period'
+          : `Specific Illness Waiting Period (${wRule.ruleName})`,
+      durationText: p.months ? `${p.months} Months` : `${p.days} Days`,
+      targetDate: completionDate || 'Unknown',
+      isCompleted,
+      isRelevantToTreatment: waitingApplies(m, ctx),
+      ruleEvidence: { page: wRule.evidence.page, quote: wRule.evidence.quote, ruleName: wRule.ruleName },
+      status: !hasStartDate ? 'pending_start_date' : isCompleted ? 'met' : 'active_wait',
+      daysRemaining: !hasStartDate || !completionDate ? undefined : Math.max(0, calculateDateDiffDays(admissionDateStr, completionDate)),
     })
-  } else {
-    // ─── 3A. ROOM RENT CAP & PRORATION ────────────────────────────────────────
-    const roomRules = compiledRules.filter(r => r.ruleType === 'ROOM_LIMIT')
-    const selectedRoom = normalizeRoomCategory(scenario.roomType)
+  }
 
-    for (const rRule of roomRules) {
-      const eligibleRoomStr = rRule.conditions.find(c => c.type === 'room_category')?.value as string || 'single-private'
-      const eligibleRoom = normalizeRoomCategory(eligibleRoomStr)
-      const selectedRank = ROOM_TIER_RANK[selectedRoom]
-      const eligibleRank = ROOM_TIER_RANK[eligibleRoom]
-
-      // Check daily room cap in rupees
-      let dailyRoomCap: number | null = null
-      if (rRule.effect.amount) {
-        dailyRoomCap = rRule.effect.amount
-      } else if (rRule.effect.percentage && totalSumInsured) {
-        // e.g. 1% of Sum Insured per day
-        dailyRoomCap = Math.round((totalSumInsured * rRule.effect.percentage) / 100)
-      }
-
-      const stayDays = costDetails.stayDurationDays
-      const totalRoomBilled = costDetails.components.room
-      const dailyRoomBilled = Math.round(totalRoomBilled / stayDays)
-
-      let roomDeduction = 0
-      let explanation = ''
-
-      if (dailyRoomCap && dailyRoomBilled > dailyRoomCap) {
-        if (rRule.effect.action === 'proration') {
-          // Proportionate deduction applies to room and associated medical expenses
-          const prorationRatio = dailyRoomCap / dailyRoomBilled
-          const associatedCharges = costDetails.components.doctor + costDetails.components.surgery
-          const associatedDeduction = Math.round(associatedCharges * (1 - prorationRatio))
-          const roomExcess = (dailyRoomBilled - dailyRoomCap) * stayDays
-          roomDeduction = roomExcess + associatedDeduction
-
-          explanation = `Proportionate deduction: Room cap ₹${dailyRoomCap.toLocaleString('en-IN')}/day vs billed ₹${dailyRoomBilled.toLocaleString('en-IN')}/day (${Math.round(prorationRatio * 100)}% admissible ratio). Excess room ₹${roomExcess.toLocaleString('en-IN')} + proportionate surgery/doctor deduction ₹${associatedDeduction.toLocaleString('en-IN')}.`
-        } else {
-          // Direct room excess deduction
-          roomDeduction = (dailyRoomBilled - dailyRoomCap) * stayDays
-          explanation = `Room cap of ₹${dailyRoomCap.toLocaleString('en-IN')}/day exceeded by ₹${(dailyRoomBilled - dailyRoomCap).toLocaleString('en-IN')}/day x ${stayDays} days.`
-        }
-      } else if (selectedRank > eligibleRank) {
-        // Room tier exceeded
-        const estimatedExcess = Math.round(totalRoomBilled * 0.40)
-        roomDeduction = estimatedExcess
-        explanation = `Selected room (${scenario.roomType}) exceeds policy eligible tier (${eligibleRoom}). Excess room fee deducted.`
-      }
-
-      if (roomDeduction > 0) {
-        const actualDed = Math.min(runningCovered, roomDeduction)
-        runningCovered -= actualDed
-        runningMin = Math.max(0, runningMin - actualDed)
-        runningMax = Math.max(0, runningMax - actualDed)
-
-        ledger.push({
-          id: `ded_room_${rRule.id}`,
-          ruleId: rRule.id,
-          ruleName: rRule.ruleName,
-          category: 'Room Limit',
-          ruleType: 'ROOM_LIMIT',
-          originalAmount: runningCovered + actualDed,
-          deductionAmount: actualDed,
-          coveredAmountAfter: runningCovered,
-          evidence: rRule.evidence,
-          calculation: explanation,
-          impact: 'deduction',
-        })
-      }
-    }
-
-    // ─── 3B. SPECIFIC SUB-LIMITS ──────────────────────────────────────────────
-    const subLimitRules = compiledRules.filter(r => r.ruleType === 'SUB_LIMIT')
-
-    for (const sRule of subLimitRules) {
-      const applies = sRule.appliesTo.includes(canonicalTreatment) ||
-        sRule.ruleName.toLowerCase().includes(scenario.treatment.toLowerCase())
-
-      if (applies) {
-        const capAmount = sRule.effect.capAmount ||
-          (sRule.effect.percentage && totalSumInsured ? Math.round((totalSumInsured * sRule.effect.percentage) / 100) : null)
-
-        if (capAmount && runningCovered > capAmount) {
-          const deduction = runningCovered - capAmount
-          runningCovered = capAmount
-          runningMax = Math.min(runningMax, capAmount)
-          runningMin = Math.min(runningMin, capAmount)
-
-          ledger.push({
-            id: `ded_sublimit_${sRule.id}`,
-            ruleId: sRule.id,
-            ruleName: sRule.ruleName,
-            category: 'Sub-limit',
-            ruleType: 'SUB_LIMIT',
-            originalAmount: runningCovered + deduction,
-            deductionAmount: deduction,
-            coveredAmountAfter: runningCovered,
-            evidence: sRule.evidence,
-            calculation: `Sub-limit cap of ₹${capAmount.toLocaleString('en-IN')} enforced for '${scenario.treatment}'.`,
-            impact: 'cap',
-          })
-        }
-      }
-    }
-
-    // ─── 3C. POLICY DEDUCTIBLE ────────────────────────────────────────────────
-    const deductibleRules = compiledRules.filter(r => r.ruleType === 'DEDUCTIBLE')
-
-    for (const dRule of deductibleRules) {
-      const dedAmount = dRule.effect.amount
-      if (dedAmount && dedAmount > 0 && runningCovered > 0) {
-        const actualDed = Math.min(runningCovered, dedAmount)
-        runningCovered -= actualDed
-        runningMin = Math.max(0, runningMin - actualDed)
-        runningMax = Math.max(0, runningMax - actualDed)
-
-        ledger.push({
-          id: `ded_deductible_${dRule.id}`,
-          ruleId: dRule.id,
-          ruleName: dRule.ruleName,
-          category: 'Deductible',
-          ruleType: 'DEDUCTIBLE',
-          originalAmount: runningCovered + actualDed,
-          deductionAmount: actualDed,
-          coveredAmountAfter: runningCovered,
-          evidence: dRule.evidence,
-          calculation: `Policy deductible of ₹${dedAmount.toLocaleString('en-IN')} applied against bill amount.`,
-          impact: 'deduction',
-        })
-      }
-    }
-
-    // ─── 3D. CO-PAYMENT ───────────────────────────────────────────────────────
-    const coPayRules = compiledRules.filter(r => r.ruleType === 'COPAY')
-
-    for (const cRule of coPayRules) {
-      const coPayPct = cRule.effect.percentage
-      if (coPayPct && coPayPct > 0 && runningCovered > 0) {
-        // Check age condition if present
-        const ageCondition = cRule.conditions.find(c => c.type === 'age')
-        let conditionMet = true
-
-        if (ageCondition && ageCondition.value) {
-          if (scenario.age === undefined) {
-            missingInformation.push({
-              id: 'mf_patient_age',
-              field: 'age',
-              label: 'Patient Age',
-              whyItMatters: `Co-pay clause specifies ${coPayPct}% deduction for age ${ageCondition.value}+.`,
-              impact: 'changes_copay',
-              suggestedInputType: 'number',
-              defaultValue: 30,
-            })
-            conditionMet = false
-          } else {
-            conditionMet = scenario.age >= ageCondition.value
-          }
-        }
-
-        if (conditionMet) {
-          const deduction = Math.round(runningCovered * (coPayPct / 100))
-          runningCovered -= deduction
-          runningMin = Math.max(0, Math.round(runningMin * (1 - coPayPct / 100)))
-          runningMax = Math.max(0, Math.round(runningMax * (1 - coPayPct / 100)))
-
-          ledger.push({
-            id: `ded_copay_${cRule.id}`,
-            ruleId: cRule.id,
-            ruleName: cRule.ruleName,
-            category: 'Co-payment',
-            ruleType: 'COPAY',
-            originalAmount: runningCovered + deduction,
-            deductionAmount: deduction,
-            coveredAmountAfter: runningCovered,
-            evidence: cRule.evidence,
-            calculation: `${coPayPct}% co-pay on admissible amount ₹${(runningCovered + deduction).toLocaleString('en-IN')}${ageCondition ? ` (Patient age ${scenario.age} >= ${ageCondition.value})` : ''}`,
-            impact: 'deduction',
-          })
-        }
-      }
-    }
-
-    // ─── 3E. SUM INSURED CEILING ──────────────────────────────────────────────
-    if (effectiveSumInsured && effectiveSumInsured > 0 && runningCovered > effectiveSumInsured) {
-      const deduction = runningCovered - effectiveSumInsured
-      runningCovered = effectiveSumInsured
-      runningMax = Math.min(runningMax, effectiveSumInsured)
-      runningMin = Math.min(runningMin, effectiveSumInsured)
-
-      ledger.push({
-        id: 'ded_sum_insured_ceiling',
-        ruleName: 'Sum Insured Ceiling',
-        category: 'Sum Insured',
-        ruleType: 'SUM_INSURED',
-        originalAmount: runningCovered + deduction,
-        deductionAmount: deduction,
-        coveredAmountAfter: runningCovered,
-        evidence: {
-          page: null,
-          quote: `Available sum insured capped at ₹${effectiveSumInsured.toLocaleString('en-IN')}.`,
-        },
-        calculation: `Covered amount limited to available policy sum insured of ₹${effectiveSumInsured.toLocaleString('en-IN')}`,
-        impact: 'cap',
-      })
+  const waitingStep = typical.trace.find((t) => t.stage === 'waiting_period' && t.deducted > 0)
+  const waitingPeriodMet = !typical.totals.byStage.waiting_period
+  let waitingPeriodDetails: CoverageResult['waitingPeriodDetails'] = undefined
+  if (!waitingPeriodMet && waitingStep?.clause) {
+    const fired = compiledRules.find((r) => r.id === waitingStep.clause!.ruleId)
+    const p = fired?.effectivePeriod
+    waitingPeriodDetails = {
+      requiredMonths: p?.months ?? Math.round((p?.days ?? 0) / 30),
+      elapsedMonths: calculateDateDiffMonths(scenario.policyStartDate!, admissionDateStr),
+      completionDate: p ? waitingCompletionDate(scenario.policyStartDate!, p) ?? undefined : undefined,
+      ruleEvidence: waitingStep.clause.quote,
+      pageNumber: waitingStep.clause.page,
+      isActive: true,
     }
   }
 
-  // ─── 4. CLAIM READINESS CHECKLIST (Blueprint Section 11) ───────────────────
+  // ─── Claim readiness checklist (Blueprint Section 11) ─────────────────────
   const claimRules = compiledRules.filter(r => r.ruleType === 'CLAIM_REQUIREMENT')
 
   readinessChecklist.push({
@@ -490,22 +394,28 @@ export function evaluatePolicyPreflight(
     })
   }
 
-  // Calculate evidence coverage (% of impactful rules with verified evidence)
+  // Evidence coverage (% of impactful rules with verified evidence)
   const impactfulRules = compiledRules.filter(r => r.usability === 'executable')
   const verifiedCount = impactfulRules.filter(r => r.verification === 'verified').length
   const evidenceCoverage = impactfulRules.length > 0
     ? Math.round((verifiedCount / impactfulRules.length) * 100)
     : 100
 
-  // Calculate out of pocket amounts
-  const oopAvg = Math.max(0, costDetails.avg - runningCovered)
-  const oopMin = Math.max(0, costDetails.min - runningMax)
-  const oopMax = Math.max(0, costDetails.max - runningMin)
+  // 7. Money: the engine's payable amounts at the three bill sizes
+  const runs = [low, typical, high]
+  const payable = runs.map((r) => r.totals.payable)
+  const youPay = runs.map((r) => r.totals.patientPays)
+
+  const fullyDenied =
+    typical.totals.claimed > 0 &&
+    typical.totals.payable === 0 &&
+    (!!typical.totals.byStage.waiting_period || typical.totals.byStage.exclusion === typical.totals.claimed)
 
   const finalStatus: CoverageResult['status'] =
-    status === 'cannot_determine' ? 'cannot_determine' :
-    !waitingPeriodMet || isExcluded ? 'not_eligible' :
-    runningCovered > 0 && oopAvg > 0 ? 'conditional' :
+    !hasStartDate ? 'cannot_determine' :
+    fullyDenied ? 'not_eligible' :
+    typical.totals.payable === 0 ? 'cannot_determine' :
+    typical.totals.patientPays > 0 ? 'conditional' :
     'eligible'
 
   const costConfidence: 'high' | 'medium' | 'low' =
@@ -516,7 +426,7 @@ export function evaluatePolicyPreflight(
     : costDetails.costSource === 'benchmark' ? 'medium' : 'low'
 
   const coverageConfidence: 'high' | 'medium' | 'low' =
-    evidenceCoverage >= 75 && missingInformation.length === 0 ? 'high' :
+    evidenceCoverage >= 75 && missingInformation.length === 0 && typical.totals.heldForReview === 0 ? 'high' :
     missingInformation.length > 0 ? 'low' : 'medium'
 
   const overallConfidence: 'high' | 'medium' | 'low' =
@@ -531,18 +441,18 @@ export function evaluatePolicyPreflight(
       max: costDetails.max,
     },
     potentiallyCovered: {
-      min: runningMin,
-      typical: runningCovered,
-      max: runningMax,
+      min: Math.min(...payable),
+      typical: typical.totals.payable,
+      max: Math.max(...payable),
     },
     patientShare: {
-      min: oopMin,
-      typical: oopAvg,
-      max: oopMax,
+      min: Math.min(...youPay),
+      typical: typical.totals.patientPays,
+      max: Math.max(...youPay),
     },
     costSource: costDetails.costSource,
     costModel: costDetails.costModel,
-    ledger,
+    ledger: toDeductionLines(typical),
     missingInformation,
     assumptions,
     evidenceCoverage,
@@ -561,6 +471,8 @@ export function evaluatePolicyPreflight(
     }),
     readinessChecklist,
     milestones,
+    heldForReview: typical.totals.heldForReview,
+    itemLedger: typical.items,
   }
 }
 

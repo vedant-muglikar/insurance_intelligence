@@ -89,7 +89,8 @@ async function runAnalysis(
     return {
       overview: { ...saved.overview, total_pages: totalPages },
       rules: saved.rules,
-      compiled_rules: saved.compiledRules.length ? saved.compiledRules : compilePolicyRules(saved.rules, saved.pages),
+      // Compiled rules are derived data: rebuild them so a compiler fix reaches policies analysed before it
+      compiled_rules: compilePolicyRules(saved.rules, saved.pages),
       plan_template_id: saved.planTemplateId,
       cache: { hit: true, matchedBy: saved.matchedBy, uin: uinInfo.uin },
       pages: saved.pages,

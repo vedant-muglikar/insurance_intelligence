@@ -9,6 +9,7 @@ import { keywordMatcher, stem, tokens } from '../lib/claims/matcher'
 import { SAMPLE_CLAIM_BILLS, sampleVersions } from '../lib/claims/samples'
 import { extractEffectiveDate, makeVersion, parseDateToken, selectVersion } from '../lib/claims/versions'
 import { compilePolicyRules } from '../lib/policy/compiler'
+import { findCanonicalProcedureKey } from '../lib/policy/normalizers'
 import type { ExtractedPage, PolicyAnalysisResult, PolicyRule } from '../lib/types/policy'
 import type { HospitalBillLineItem } from '../lib/types/bill'
 
@@ -225,6 +226,92 @@ section('9. Missing inputs are flagged, never guessed')
   check('a patient under the age threshold pays no co-pay', young.totals.byStage.copay === undefined)
   const rate = adjudicate({ items: knee.bill.lineItems, versions: [base], treatmentDate: '2026-02-10', patientAge: 64, entitledRoomRatePerDay: 6000, policyStartDate: knee.policyStartDate })
   check('with the entitled room rate supplied the base room clause applies', rate.totals.byStage.room_rent === 8000, rate.totals.byStage)
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+section('9b. Treatment-level rules (the treatment the bill is for)')
+{
+  check('treatment recognised from a free-text diagnosis', findCanonicalProcedureKey(knee.bill.diagnosis) === 'knee_replacement' && findCanonicalProcedureKey(cataract.bill.diagnosis) === 'cataract')
+  check('aliases match whole words only', findCanonicalProcedureKey('Antibiotic injection, violation of protocol') === null)
+
+  // Sub-limits cap the items they name; knowing the treatment does not widen them to the whole claim.
+  const keyed = adjudicate({ items: cataract.bill.lineItems, bill: cataract.bill, versions: [base, amendment], treatmentDate: '2026-02-10', patientAge: cataract.patientAge, policyStartDate: cataract.policyStartDate, treatmentKey: findCanonicalProcedureKey(cataract.bill.diagnosis) })
+  check('knowing the treatment does not widen a sub-limit: still 29,200, payable 33,200', keyed.checks.ok && keyed.totals.byStage.sub_limit === 29200 && keyed.totals.payable === 33200, keyed.totals)
+
+  const rules: PolicyRule[] = [
+    pr('x1', { category: 'exclusion', rule_name: 'Cataract surgery exclusion', value: 'Excluded', description: 'Cataract surgery is not covered under this plan.', status: 'not_covered' }),
+    pr('p1', { category: 'waiting_period', rule_name: 'Pre-existing disease waiting period', value: '36 months', description: 'Pre-existing diseases are covered after 36 months of continuous coverage.', status: 'conditionally_covered' }),
+  ]
+  const v = makeVersion({ id: 'b', documentName: 'p.pdf', kind: 'base', effectiveFrom: '2020-01-01', result: result(rules, [page(1, 'p')]) })
+  const excl = adjudicate({ items: cataract.bill.lineItems, bill: cataract.bill, versions: [v], treatmentDate: '2026-05-20', policyStartDate: '2020-01-01', treatmentKey: 'cataract' })
+  check('an exclusion naming the treatment makes every item non-payable', excl.checks.ok && excl.totals.payable === 0 && excl.items.every((i) => i.deductions[0]?.stage === 'exclusion'), excl.totals)
+
+  const pedItems = [item('a', 'Hernia repair surgery', 'surgery', 50000)]
+  const pedNone = adjudicate({ items: pedItems, versions: [v], treatmentDate: '2026-05-20', policyStartDate: '2025-01-01' })
+  const pedDeclared = adjudicate({ items: pedItems, versions: [v], treatmentDate: '2026-05-20', policyStartDate: '2025-01-01', declaredPED: ['Diabetes'] })
+  check('PED waiting period applies only when a pre-existing condition is declared', pedNone.totals.byStage.waiting_period === undefined && pedDeclared.totals.payable === 0, [pedNone.totals.byStage, pedDeclared.totals])
+
+  // Waiting periods count calendar months, as the Estimator's timeline does: 24 months from 1 Jan 2024 end on 1 Jan 2026.
+  const jr = [pr('w1', { category: 'waiting_period', rule_name: 'Joint replacement 24-month waiting period', value: '24 months', description: 'Joint replacement is covered only after 24 months of continuous coverage.', status: 'conditionally_covered' })]
+  const vj = makeVersion({ id: 'b', documentName: 'p.pdf', kind: 'base', effectiveFrom: '2020-01-01', result: result(jr, [page(1, 'p')]) })
+  const knees = [item('a', 'Knee replacement surgery charges', 'surgery', 90000)]
+  const dayBefore = adjudicate({ items: knees, versions: [vj], treatmentDate: '2025-12-31', policyStartDate: '2024-01-01' })
+  const onTheDay = adjudicate({ items: knees, versions: [vj], treatmentDate: '2026-01-01', policyStartDate: '2024-01-01' })
+  check('waiting period: one day before the 24th month ends nothing is payable', dayBefore.totals.payable === 0)
+  check('waiting period: on the day it ends the claim is payable', onTheDay.totals.payable === 90000, onTheDay.totals)
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+section("9c. An insurer's own worked example (Suraksha Comprehensive, Annexure V)")
+{
+  // Clauses phrased the way the AI extracts them from the schedule: the room limit mentions "% of Sum Insured",
+  // the proportionate deduction comes as its own clause, and three sub-limits arrive as one line.
+  const rules: PolicyRule[] = [
+    pr('rr', { category: 'room_rent', rule_name: 'Room Rent Limit', value: '1% of Basic Sum Insured = ₹5,000.00 per day', description: 'Room rent is limited to 1% of the Basic Sum Insured per day for a single standard room. Deluxe rooms or suites are not eligible.', status: 'conditionally_covered' }),
+    pr('icu', { category: 'icu_limit', rule_name: 'ICU Charges Limit', value: '2% of Basic Sum Insured = ₹10,000.00 per day', description: 'ICU charges are limited to 2% of the Basic Sum Insured per day.', status: 'conditionally_covered' }),
+    pr('pd', { category: 'sub_limit', rule_name: 'Proportionate Deduction', value: 'Applies to Associated Medical Expenses', description: 'Applies to Associated Medical Expenses if a room costing more than the eligible limit is occupied. Factor = eligible room rent ÷ actual room rent', status: 'conditionally_covered' }),
+    pr('sl', { category: 'sub_limit', rule_name: 'Treatment Sub-limits', value: 'Cataract ₹25,000 per eye, Joint replacement ₹50,000, Robotic surgery ₹50,000', description: 'Sub-limits per policy year for specific treatments and procedures.', evidence_text: 'Sub-limits (per policy year): Cataract ₹25,000 per eye | Joint replacement implants incl. bone cement ₹50,000 | Robotic surgery ₹50,000 | other modern treatments as per table', status: 'conditionally_covered' }),
+    pr('cp', { category: 'co_payment', rule_name: 'Senior Citizen Co-payment', value: '20% of every admissible claim', description: '20% co-payment applies to every admissible claim where the Insured Person is aged 60 years or above on the date of admission.', status: 'conditionally_covered' }),
+    pr('bonus', { category: 'coverage', rule_name: 'Cumulative Bonus', value: '50% of Basic Sum Insured per claim-free year up to 100%', description: 'Cumulative bonus increases the Sum Insured for claim-free years.', status: 'covered' }),
+    pr('x34', { category: 'exclusion', rule_name: 'Non-Medical and Administrative Charges', value: 'Not payable', description: 'Hospital registration, admission kit, file-opening, documentation and similar administrative charges are not payable.', status: 'not_covered' }),
+    pr('xa4', { category: 'exclusion', rule_name: 'Annexure IV items not payable', value: 'Not payable', description: 'PPE kits, disposable surgeon gowns and similar protective wear are not payable.', status: 'not_covered' }),
+  ]
+  const compiled = compilePolicyRules(rules, [page(1, 'p')])
+  const by = (id: string) => compiled.filter((c) => c.id === id || c.id.startsWith(`${id}__`))
+  check('room limit stays a room limit: ₹5,000 a day, not a ₹1 sum-insured cap', by('rr')[0].ruleType === 'ROOM_LIMIT' && by('rr')[0].effect.amount === 5000 && !compiled.some((c) => c.ruleType === 'SUM_INSURED'), by('rr')[0])
+  check('the ICU limit is not used as the room-rent limit', by('icu')[0].appliesTo.includes('icu') && by('icu')[0].usability !== 'executable')
+  check('a proportionate-deduction clause filed as a sub-limit is a room clause', by('pd')[0].ruleType === 'ROOM_LIMIT' && by('pd')[0].effect.action === 'proration')
+  check('three sub-limits in one line become three rules', by('sl').map((c) => c.effect.capAmount).join(',') === '25000,50000,50000', by('sl').map((c) => [c.ruleName, c.effect.capAmount]))
+  check('co-pay keeps its "aged 60 years or above" condition', by('cp')[0].conditions.some((c) => c.type === 'age' && c.value === 60), by('cp')[0].conditions)
+
+  const v = makeVersion({ id: 'b', documentName: 'suraksha.pdf', kind: 'base', effectiveFrom: '2026-01-12', result: result(rules, [page(1, 'p')]) })
+  const bill = [
+    item('r', 'Room rent (3 days x ₹8,000)', 'room', 24000, 3),
+    item('n', 'Nursing charges', 'room', 4500),
+    item('s', 'Surgeon fee', 'doctor', 40000),
+    item('a', 'Anaesthetist fee', 'doctor', 12000),
+    item('o', 'Operation theatre charges', 'surgery', 15000),
+    item('i', 'Joint implant', 'implant', 70000),
+    item('p', 'Pharmacy and consumables', 'medicines', 12000),
+    item('d', 'Diagnostics', 'diagnostics', 8000),
+    item('k', 'Admission kit', 'other', 800),
+    item('ppe', 'PPE kit', 'consumables', 1200),
+  ]
+  const r = adjudicate({ items: bill, versions: [v], treatmentDate: '2026-10-02', patientAge: 65, policyStartDate: '2023-01-12', availableSumInsured: 500000 })
+  check('worked example: valid ledger', r.checks.ok, r.checks.messages)
+  check('joint implant 70,000 capped at 50,000; surgeon and theatre untouched by the sub-limit', r.totals.byStage.sub_limit === 20000 && r.items.find((x) => x.id === 'o')!.deductions.every((d) => d.stage !== 'sub_limit'), r.totals.byStage)
+  check('admission kit and PPE kit not payable', r.items.filter((x) => x.id === 'k' || x.id === 'ppe').every((x) => x.payable === 0), r.items.filter((x) => x.id === 'k' || x.id === 'ppe'))
+  // Annexure IV says "disposable surgeon gowns": one shared word is not enough to exclude the surgeon's fee
+  const surgeon = r.items.find((x) => x.id === 's')!
+  check('a one-word match ("surgeon" gowns) never silently excludes the surgeon fee: held for review', surgeon.status === 'review' && surgeon.deductions[0].stage === 'review_hold', surgeon)
+  check('with the surgeon fee held, everything else follows the illustration', r.checks.ok && r.totals.payable + r.totals.heldForReview > 0)
+
+  // The illustration itself, once the reviewer allows the surgeon fee (Annexure IV worded without the shared word)
+  const allowed = rules.map((x) => (x.id === 'xa4' ? { ...x, description: 'PPE kits, disposable gowns and similar protective wear are not payable.' } : x))
+  const va = makeVersion({ id: 'b', documentName: 'suraksha.pdf', kind: 'base', effectiveFrom: '2026-01-12', result: result(allowed, [page(1, 'p')]) })
+  const ra = adjudicate({ items: bill, versions: [va], treatmentDate: '2026-10-02', patientAge: 65, policyStartDate: '2023-01-12', availableSumInsured: 500000 })
+  check('room rent 24,000 → 15,000 and associated expenses × 0.625: 35,813 removed', ra.totals.byStage.room_rent === 9000 + 26813, ra.totals.byStage)
+  check("payable ₹1,03,750, exactly as in the insurer's own illustration", ra.checks.ok && ra.totals.payable === 103750 && ra.totals.patientPays === 83750, ra.totals)
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

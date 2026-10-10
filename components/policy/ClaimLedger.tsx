@@ -7,7 +7,8 @@ import { SAMPLE_CLAIM_BILLS, SAMPLE_BASE_EFFECTIVE, sampleVersions } from '@/lib
 import { extractEffectiveDate, makeVersion } from '@/lib/claims/versions'
 import type { AdjudicationResult, LedgerItem, PolicyVersion } from '@/lib/claims/types'
 import { analyzePolicyUpload } from '@/lib/client/analyzePolicyUpload'
-import { formatINR } from '@/lib/policy/normalizers'
+import { findCanonicalProcedureKey, formatINR } from '@/lib/policy/normalizers'
+import { DEMO_CASE, isDemoPolicy } from '@/lib/demo/preset'
 import type { HospitalBill, HospitalBillLineItem } from '@/lib/types/bill'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
 
@@ -44,10 +45,12 @@ function isSample(policy: PolicyAnalysisResult): boolean {
 
 export function ClaimLedger({ policy, fileName, incomingBill }: Props) {
   const sample = isSample(policy)
+  // Demo policy: open with the same patient and bill as the Estimator (lib/demo/preset.ts)
+  const demo = isDemoPolicy(policy)
   const samples = useMemo(() => (sample ? sampleVersions() : null), [sample])
 
   // ── policy versions ────────────────────────────────────────────────────────
-  const [baseDate, setBaseDate] = useState<string>(() => (sample ? SAMPLE_BASE_EFFECTIVE : extractEffectiveDate(policy.pages).date ?? ''))
+  const [baseDate, setBaseDate] = useState<string>(() => (sample ? SAMPLE_BASE_EFFECTIVE : demo ? DEMO_CASE.policyEffectiveFrom : extractEffectiveDate(policy.pages).date ?? ''))
   const base = useMemo<PolicyVersion>(
     () =>
       makeVersion({
@@ -102,7 +105,7 @@ export function ClaimLedger({ policy, fileName, incomingBill }: Props) {
     return out
   }, [incomingBill])
   const [uploaded, setUploaded] = useState<Source | null>(null)
-  const [sourceId, setSourceId] = useState<string>(() => (incomingBill ? 'chat' : sample ? SAMPLE_CLAIM_BILLS[0].id : ''))
+  const [sourceId, setSourceId] = useState<string>(() => (incomingBill ? 'chat' : sample ? SAMPLE_CLAIM_BILLS[0].id : demo ? DEMO_CASE.billId : ''))
   const all = uploaded ? [uploaded, ...sources] : sources
   const source = all.find((s) => s.id === sourceId) ?? all[0] ?? null
   const [billError, setBillError] = useState<string | null>(null)
@@ -132,8 +135,8 @@ export function ClaimLedger({ policy, fileName, incomingBill }: Props) {
   // ── inputs ─────────────────────────────────────────────────────────────────
   const sampleClaim = SAMPLE_CLAIM_BILLS.find((c) => c.id === source?.id)
   const [treatmentDate, setTreatmentDate] = useState<string>(() => sampleClaim?.treatmentDate ?? incomingBill?.admissionDate ?? '')
-  const [age, setAge] = useState<string>(() => (sampleClaim ? String(sampleClaim.patientAge) : ''))
-  const [policyStart, setPolicyStart] = useState<string>(() => sampleClaim?.policyStartDate ?? '')
+  const [age, setAge] = useState<string>(() => (demo ? String(DEMO_CASE.patientAge) : sampleClaim ? String(sampleClaim.patientAge) : ''))
+  const [policyStart, setPolicyStart] = useState<string>(() => (demo ? DEMO_CASE.policyStartDate : sampleClaim?.policyStartDate ?? ''))
   const [availableSI, setAvailableSI] = useState<string>(() => (policy.overview.sum_insured_amount ? String(policy.overview.sum_insured_amount) : ''))
   const [roomRate, setRoomRate] = useState<string>('')
   const [items, setItems] = useState<Record<string, number>>({})
@@ -145,8 +148,8 @@ export function ClaimLedger({ policy, fileName, incomingBill }: Props) {
     const c = SAMPLE_CLAIM_BILLS.find((x) => x.id === id)
     if (c) {
       setTreatmentDate(c.treatmentDate)
-      setAge(String(c.patientAge))
-      setPolicyStart(c.policyStartDate)
+      setAge(String(demo ? DEMO_CASE.patientAge : c.patientAge))
+      setPolicyStart(demo ? DEMO_CASE.policyStartDate : c.policyStartDate)
     } else {
       const s = all.find((x) => x.id === id)
       if (s?.bill.admissionDate) setTreatmentDate(s.bill.admissionDate)
@@ -167,6 +170,8 @@ export function ClaimLedger({ policy, fileName, incomingBill }: Props) {
       policyStartDate: policyStart || null,
       availableSumInsured: availableSI ? Number(availableSI) : null,
       entitledRoomRatePerDay: roomRate ? Number(roomRate) : null,
+      // Same treatment-level rules as the Estimator: a clause naming this treatment applies to the whole claim
+      treatmentKey: findCanonicalProcedureKey(source?.bill.diagnosis),
     }),
     [liveItems, source, treatmentDate, age, policyStart, availableSI, roomRate],
   )

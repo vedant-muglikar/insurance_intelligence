@@ -1,4 +1,5 @@
 import { PolicyAnalysisResult, PolicyRule, CompiledRule } from './policy'
+import type { LedgerItem } from '../claims/types'
 
 export interface PatientProfile {
   age: number
@@ -26,6 +27,8 @@ export interface TreatmentScenario {
   availableSumInsured?: number
   isNetworkHospital?: boolean
   quoteLineItems?: QuoteLineItem[]
+  /** Hospital's daily rate for the room category the policy allows, when the policy names a category but no rupee limit */
+  entitledRoomRatePerDay?: number
 }
 
 export interface CostComponents {
@@ -256,6 +259,10 @@ export interface CoverageResult {
   costBreakdown?: CostBreakdown
   readinessChecklist?: ClaimReadinessItem[]
   milestones?: TimelineMilestone[]
+  /** Part of the typical patient share that is only held back because a reviewer must decide (counted in patientShare) */
+  heldForReview?: number
+  /** Item-by-item result of the claim engine for the typical bill, the same engine the Claim Ledger uses */
+  itemLedger?: LedgerItem[]
 }
 
 // Legacy structures maintained for backward compatibility

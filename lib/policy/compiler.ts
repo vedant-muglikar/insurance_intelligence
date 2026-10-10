@@ -37,13 +37,50 @@ export function compilePolicyRules(
     }
   }
 
-  for (const raw of rawRules) {
+  for (const raw of rawRules.flatMap(splitSubLimits)) {
     const rule = compileSingleRule(raw, pageMap)
     compiled.push(rule)
   }
 
   // Sort by precedence (lower number applied first in pipeline)
   return compiled.sort((a, b) => a.precedence - b.precedence)
+}
+
+/** Categories that name a specific rule type. Anything else ("coverage", "general") is classified by its wording. */
+const SPECIFIC_CATEGORIES = new Set<string>([
+  'exclusion', 'waiting_period', 'deductible', 'co_payment', 'room_rent', 'icu_limit', 'sub_limit', 'eligibility', 'claim_requirement', 'sum_insured',
+])
+
+const RUPEES = /(?:₹|rs\.?|inr)\s*[\d,]+(?:\.\d+)?/i
+
+/** Parts of a list like "Cataract ₹25,000 per eye | Joint replacement implants ₹50,000" that each carry a rupee amount */
+function amountSegments(text: string | undefined, separator: RegExp): string[] {
+  if (!text) return []
+  const body = text.replace(/^[^:|]{0,60}:\s*/, '') // drop a "Sub-limits (per policy year):" lead-in
+  return body.split(separator).map((s) => s.trim()).filter((s) => RUPEES.test(s))
+}
+
+/**
+ * One extracted clause sometimes lists several sub-limits ("Cataract ₹25,000 | Joint replacement implants ₹50,000").
+ * Each becomes its own rule, worded from the verbatim evidence where possible, so each amount caps only what it names.
+ */
+function splitSubLimits(raw: PolicyRule): PolicyRule[] {
+  if (raw.category !== 'sub_limit') return [raw]
+  const fromEvidence = amountSegments(raw.evidence_text, /\s*[|;]\s*/)
+  const fromValue = amountSegments(raw.value, /\s*[|;]\s*|,\s+(?=[A-Za-z])/)
+  const parts = fromEvidence.length >= 2 ? fromEvidence : fromValue
+  if (parts.length < 2) return [raw]
+  return parts.map((part, k) => {
+    const label = part.split(RUPEES)[0].replace(/[\s:–-]+$/, '').trim() || `${raw.rule_name} ${k + 1}`
+    return {
+      ...raw,
+      id: `${raw.id}__${k + 1}`,
+      rule_name: `${label} sub-limit`,
+      value: part,
+      description: `${label}: ${part.slice(label.length).trim()}`,
+      conditions: [],
+    }
+  })
 }
 
 function compileSingleRule(
@@ -81,8 +118,23 @@ function compileSingleRule(
     }
   }
 
+  // The extracted category decides the rule type. Keyword checks only classify generic clauses
+  // ("coverage", "general"): a room-rent clause that mentions "1% of Sum Insured" is still a room-rent clause.
+  const cat = raw.category
+  const generic = !SPECIFIC_CATEGORIES.has(cat)
+  const prorationClause = /proportionate|pro-?rata|proration/.test(allText) && allText.includes('room')
+  const is = {
+    waiting: cat === 'waiting_period' || (generic && allText.includes('waiting period')),
+    exclusion: cat === 'exclusion' || (generic && raw.status === 'not_covered'),
+    sumInsured: cat === 'sum_insured' || (generic && name.includes('sum insured')),
+    room: cat === 'room_rent' || cat === 'icu_limit' || prorationClause || (generic && (allText.includes('room rent') || allText.includes('room category'))),
+    subLimit: cat === 'sub_limit' || (generic && (allText.includes('sub limit') || allText.includes('sub-limit') || allText.includes('capping'))),
+    deductible: cat === 'deductible' || (generic && allText.includes('deductible')),
+    copay: cat === 'co_payment' || (generic && (allText.includes('co-pay') || allText.includes('copay'))),
+  }
+
   // 1. WAITING PERIOD (Precedence: 10 - checked first)
-  if (raw.category === 'waiting_period' || allText.includes('waiting period')) {
+  if (is.waiting) {
     ruleType = 'WAITING_PERIOD'
     precedence = 10
     const dur = parseDuration(raw.value) || parseDuration(allText)
@@ -121,7 +173,7 @@ function compileSingleRule(
   }
 
   // 2. EXCLUSION (Precedence: 15)
-  else if (raw.category === 'exclusion' || raw.status === 'not_covered') {
+  else if (is.exclusion) {
     ruleType = 'EXCLUSION'
     precedence = 15
     effect = {
@@ -137,7 +189,7 @@ function compileSingleRule(
   }
 
   // 3. SUM INSURED (Precedence: 20)
-  else if (raw.category === 'sum_insured' || allText.includes('sum insured')) {
+  else if (is.sumInsured) {
     ruleType = 'SUM_INSURED'
     precedence = 90 // Upper ceiling
     const currency = parseCurrency(raw.value) || parseCurrency(raw.description)
@@ -153,7 +205,7 @@ function compileSingleRule(
   }
 
   // 4. ROOM LIMIT & PRORATION (Precedence: 30)
-  else if (raw.category === 'room_rent' || raw.category === 'icu_limit' || allText.includes('room rent') || allText.includes('room category')) {
+  else if (is.room) {
     ruleType = 'ROOM_LIMIT'
     precedence = 30
     const currency = parseCurrency(raw.value) || parseCurrency(raw.description)
@@ -187,16 +239,27 @@ function compileSingleRule(
       description: `Eligible room category capped at ${roomCat}${pct ? ` or ${pct}% of Sum Insured` : ''}`,
     })
     usability = 'executable'
+
+    // An ICU limit is a separate per-day cap on ICU charges, not the room-rent limit. Shown, not yet computed.
+    if (cat === 'icu_limit' || /\bicu\b|intensive care/.test(name)) {
+      appliesTo.splice(0, appliesTo.length, 'icu')
+      effect = { ...effect, action: 'cap', description: `ICU charges limited to ${currency ? `₹${currency.toLocaleString('en-IN')}` : pct ? `${pct}% of Sum Insured` : 'the stated amount'} per day.` }
+      usability = 'explanatory_only'
+    }
   }
 
   // 5. SUB LIMIT (Precedence: 40)
-  else if (raw.category === 'sub_limit' || allText.includes('sub limit') || allText.includes('capping')) {
+  else if (is.subLimit) {
     ruleType = 'SUB_LIMIT'
     precedence = 40
     const currency = parseCurrency(raw.value) || parseCurrency(raw.description)
     const pct = parsePercentage(raw.value) || parsePercentage(raw.description)
+    // Several different amounts that could not be split into separate sub-limits: never pick one at random
+    const amounts = new Set((`${raw.value} ${raw.description}`.match(new RegExp(RUPEES.source, 'gi')) ?? []).map((a) => parseCurrency(a)))
 
-    if (currency || pct) {
+    if (amounts.size > 1) {
+      usability = 'needs_human_review'
+    } else if (currency || pct) {
       effect = {
         action: 'cap',
         capAmount: currency || undefined,
@@ -211,7 +274,7 @@ function compileSingleRule(
   }
 
   // 6. DEDUCTIBLE (Precedence: 50)
-  else if (raw.category === 'deductible' || allText.includes('deductible')) {
+  else if (is.deductible) {
     ruleType = 'DEDUCTIBLE'
     precedence = 50
     const currency = parseCurrency(raw.value) || parseCurrency(raw.description)
@@ -227,13 +290,17 @@ function compileSingleRule(
   }
 
   // 7. CO-PAYMENT (Precedence: 60)
-  else if (raw.category === 'co_payment' || allText.includes('co-pay') || allText.includes('copay')) {
+  else if (is.copay) {
     ruleType = 'COPAY'
     precedence = 60
     const pct = parsePercentage(raw.value) || parsePercentage(raw.description)
 
     // Age conditioned co-pay? E.g., "for age above 60"
-    const ageMatch = allText.match(/(?:age|senior citizen|above)\s*(?:above|over|>=)?\s*(\d{2})/i)
+    // "aged 60 years or above", "60 years and above", "age 60+", "above 60"
+    const ageMatch =
+      allText.match(/\baged?\s+(?:of\s+)?(\d{2})\b/i) ||
+      allText.match(/\b(\d{2})\s*(?:years?|yrs?)?\s*(?:of age\s*)?(?:or|and)\s*(?:above|over|older|more)\b/i) ||
+      allText.match(/(?:age|senior citizen|above)\s*(?:above|over|>=)?\s*(\d{2})/i)
     if (ageMatch) {
       const ageThreshold = parseInt(ageMatch[1], 10)
       conditions.push({
