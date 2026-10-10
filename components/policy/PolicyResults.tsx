@@ -8,15 +8,18 @@ import {
   ChatCircleDots,
   ListChecks,
   MagnifyingGlass,
+  MapPin,
   Receipt,
   Scales,
   ShieldCheck,
+  Sparkle,
   UploadSimple,
   Warning,
 } from '@phosphor-icons/react'
 import { RuleCard, EvidenceViewer } from './shared'
 import { PolicyQA, useChatState } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
+import { HospitalsNearby } from '../hospitals/HospitalsNearby'
 import { ClaimDispute } from './ClaimDispute'
 import { ClaimLedger } from './ClaimLedger'
 import type { HospitalBill } from '@/lib/types/bill'
@@ -33,15 +36,20 @@ import type { CoverageResult, TreatmentScenario } from '@/lib/types/estimate'
 
 // ─── Views ────────────────────────────────────────────────────────────────────
 
-type View = 'policy' | 'estimate' | 'checklist' | 'ledger' | 'ask' | 'claims'
+type View = 'policy' | 'estimate' | 'hospitals' | 'checklist' | 'ledger' | 'ask' | 'claims'
 
-const VIEWS: { id: View; label: string; title: string; sub: string; Icon: any }[] = [
+/**
+ * `short` replaces a long label in the phone's bottom bar; screen readers still get the full label.
+ * `soon` marks a section that is an early preview: it sits last, with a "Soon" badge and a coming-soon note.
+ */
+const VIEWS: { id: View; label: string; short?: string; soon?: boolean; title: string; sub: string; Icon: any }[] = [
   { id: 'policy', label: 'Overview', title: 'Policy overview', sub: 'What your policy covers, limits and excludes.', Icon: ShieldCheck },
   { id: 'estimate', label: 'Estimator', title: 'Cost estimator', sub: 'Plan a hospital stay and see what you would pay.', Icon: Calculator },
   { id: 'checklist', label: 'Checklist', title: 'Preparation checklist', sub: 'Tasks to finish before admission, taken from your policy.', Icon: ListChecks },
-  { id: 'ledger', label: 'Claim ledger', title: 'Claim ledger', sub: 'Item by item: what is payable, what is deducted, and which clause says so.', Icon: Receipt },
+  { id: 'ledger', label: 'Claim ledger', short: 'Ledger', title: 'Claim ledger', sub: 'Item by item: what is payable, what is deducted, and which clause says so.', Icon: Receipt },
   { id: 'ask', label: 'Ask AI', title: 'Ask your policy', sub: 'Questions in text or voice, and bill checks.', Icon: ChatCircleDots },
   { id: 'claims', label: 'Disputes', title: 'Claim disputes', sub: 'Build a reply to a rejected claim from your policy.', Icon: Scales },
+  { id: 'hospitals', label: 'Hospitals', soon: true, title: 'Hospitals near you', sub: 'Hospitals around you, and what your stay would cost at each type of hospital.', Icon: MapPin },
 ]
 
 type RuleGroup = 'covered' | 'not' | 'waiting' | 'limits' | 'who' | 'steps'
@@ -261,7 +269,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
 
         <p className="db-side-label">Workspace</p>
         <nav className="db-nav" role="tablist" aria-label="Sections" aria-orientation="vertical">
-          {VIEWS.map(({ id, label, Icon }, i) => (
+          {VIEWS.map(({ id, label, short, soon, Icon }, i) => (
             <button
               key={id}
               type="button"
@@ -273,7 +281,17 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
               onKeyDown={(e) => onNavKey(e, i)}
             >
               <Icon size={20} weight={view === id ? 'fill' : 'regular'} aria-hidden />
-              <span>{label}</span>
+              {short ? (
+                <>
+                  <span className="db-nav-full">{label}</span>
+                  <span className="db-nav-short" aria-hidden="true">
+                    {short}
+                  </span>
+                </>
+              ) : (
+                <span>{label}</span>
+              )}
+              {soon && <b className="db-nav-soon">Soon</b>}
             </button>
           ))}
         </nav>
@@ -309,7 +327,10 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
 
         <main className={`db-content db-view-${view}`} key={view}>
           <div className="db-head">
-            <h1>{current.title}</h1>
+            <h1>
+              {current.title}
+              {current.soon && <span className="db-soon-tag">Coming soon</span>}
+            </h1>
             <p>{current.sub}</p>
           </div>
 
@@ -322,6 +343,18 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
                 setEstimator((prev) => ({ scenario, preflight, userEdited: userEdited || !!prev?.userEdited }))
               }
             />
+          )}
+          {view === 'hospitals' && (
+            <div className="db-stack">
+              <p className="db-soon-note" role="note">
+                <Sparkle size={20} weight="fill" aria-hidden />
+                <span>
+                  <b>Coming soon.</b> This is an early preview: finding hospitals near you and comparing costs by type of hospital already
+                  work. Checking which hospitals give cashless treatment under your policy is on the way.
+                </span>
+              </p>
+              <HospitalsNearby policy={result} scenario={estimator?.scenario ?? null} onOpenEstimator={() => go('estimate')} />
+            </div>
           )}
           {view === 'checklist' && (
             <div className="db-stack">

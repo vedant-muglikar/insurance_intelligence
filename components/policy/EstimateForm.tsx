@@ -8,7 +8,7 @@ import {
   QuoteLineItem,
 } from '@/lib/types/estimate'
 import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
-import { demoScenario, isDemoPolicy } from '@/lib/demo/preset'
+import { defaultScenario } from '@/lib/estimate/defaults'
 import { fetchMlCostPrediction, scenarioNeedsMlCost } from '@/lib/estimate/mlClient'
 import { CANONICAL_PROCEDURES, formatINR } from '@/lib/policy/normalizers'
 import { CostLedger } from './CostLedger'
@@ -65,21 +65,8 @@ interface EstimateFormProps {
 }
 
 export function EstimateForm({ policyResult, initialScenario, onPreflightChange }: EstimateFormProps) {
-  // Default scenario initialized with smart defaults
-  const [scenario, setScenario] = useState<TreatmentScenario>(() => initialScenario ?? (isDemoPolicy(policyResult) ? demoScenario(policyResult) : {
-    treatment: 'Total Knee Replacement',
-    age: 58,
-    city: 'Mumbai',
-    hospitalType: 'private',
-    roomType: 'single-private',
-    stayDurationDays: 4,
-    policyStartDate: '2023-01-15',
-    proposedAdmissionDate: new Date().toISOString().split('T')[0],
-    declaredPED: [],
-    // Taken from the policy document; left empty (the form asks) when the PDF does not state one clearly.
-    availableSumInsured: policyResult.overview.sum_insured_amount ?? undefined,
-    isNetworkHospital: true,
-  }))
+  // Default scenario initialized with smart defaults (shared with the Hospitals tab)
+  const [scenario, setScenario] = useState<TreatmentScenario>(() => initialScenario ?? defaultScenario(policyResult))
 
   const [activePreflightTab, setActivePreflightTab] = useState<
     'ledger' | 'missing_info' | 'what_if' | 'timeline' | 'readiness' | 'quote' | 'export' | 'risk_analyzer'

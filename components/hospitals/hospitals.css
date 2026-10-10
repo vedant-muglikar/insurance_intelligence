@@ -1,0 +1,374 @@
+/* Hospitals near you: search, price-by-type cards, map and list. Builds on the db-* primitives in app/tool.css. */
+
+.hn {
+  --hn-public: var(--ok);
+  --hn-private: var(--brand);
+  --hn-corporate: var(--plum);
+}
+
+/* ── search row ─────────────────────────────────────── */
+.hn-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.hn-or {
+  color: var(--subtle);
+  font-size: 14px;
+}
+.hn-query {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hn-query input,
+.hn-radius-pick select,
+.hn-type-pick select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--sunk);
+  color: var(--text);
+  font-size: 14.5px;
+}
+.hn-radius-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--subtle);
+  font-size: 13.5px;
+}
+.hn-radius-pick select {
+  width: auto;
+}
+.hn-error {
+  margin-top: 14px;
+}
+.hn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.hn-wait {
+  margin: 0;
+  padding: 18px 0 4px;
+  color: var(--subtle);
+}
+
+/* ── type dot, used everywhere a type is shown ───────── */
+.hn-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hn-private);
+}
+.hn-dot[data-type='public'] {
+  background: var(--hn-public);
+}
+.hn-dot[data-type='corporate'] {
+  background: var(--hn-corporate);
+}
+
+/* ── price by type ──────────────────────────────────── */
+.hn-types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.hn-type {
+  --tone: var(--hn-private);
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.hn-type[data-type='public'] {
+  --tone: var(--hn-public);
+}
+.hn-type[data-type='corporate'] {
+  --tone: var(--hn-corporate);
+}
+.hn-type:hover {
+  border-color: var(--border3);
+}
+.hn-type[aria-pressed='true'] {
+  border-color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 8%, var(--card));
+}
+.hn-type-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+}
+.hn-type-count {
+  margin-left: auto;
+  color: var(--subtle);
+  font-size: 13px;
+  font-weight: 500;
+}
+.hn-type-label {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.hn-type-value {
+  font-family: var(--font-mono);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  letter-spacing: -0.03em;
+}
+.hn-type-sub {
+  color: var(--subtle);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ── map + list ─────────────────────────────────────── */
+.hn-tools {
+  display: flex;
+  gap: 8px;
+}
+.hn-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.hn-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.hn-filter[aria-pressed='true'] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.hn-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.hn-map {
+  position: relative;
+  z-index: 0; /* keep Leaflet's panes under the top bar and dropdowns */
+  isolation: isolate;
+  height: 320px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card2);
+}
+.hn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.hn-none {
+  padding: 24px 16px;
+  color: var(--subtle);
+  text-align: center;
+}
+.hn-item + .hn-item {
+  border-top: 1px solid var(--border);
+}
+.hn-item[data-open] {
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+}
+.hn-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hn-item-main:hover {
+  background: color-mix(in srgb, var(--card2) 70%, transparent);
+}
+.hn-item-main:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.hn-item-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.hn-item-text b {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hn-item-text span {
+  color: var(--subtle);
+  font-size: 13px;
+}
+.hn-item-price {
+  display: grid;
+  justify-items: end;
+  flex: none;
+}
+.hn-item-price b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.hn-item-price small {
+  color: var(--subtle);
+  font-size: 12px;
+}
+.hn-item-more {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px 36px;
+}
+.hn-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.hn-figures dt {
+  color: var(--subtle);
+  font-size: 12.5px;
+}
+.hn-figures dd {
+  display: grid;
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+.hn-figures dd small {
+  color: var(--subtle);
+  font-family: inherit;
+  font-size: 11.5px;
+}
+.hn-ok {
+  color: var(--ok-ink);
+}
+.hn-type-pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 220px);
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--subtle);
+  font-size: 13px;
+}
+.hn-type-pick select {
+  min-height: 36px;
+}
+.hn-type-pick small {
+  grid-column: 2;
+  font-size: 12px;
+}
+.hn-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.hn-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.hn-links a:hover {
+  text-decoration: underline;
+}
+
+/* ── map pins (SVG paths drawn by Leaflet) ──────────── */
+.hn-map .hn-radius {
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+  fill: var(--brand);
+  fill-opacity: 0.05;
+}
+.hn-map .hn-you {
+  stroke: #fff;
+  stroke-width: 3;
+  fill: var(--deny);
+  fill-opacity: 1;
+}
+.hn-map .hn-pin {
+  stroke: #fff;
+  stroke-width: 2;
+  fill: var(--hn-private);
+  fill-opacity: 0.95;
+  cursor: pointer;
+}
+.hn-map .hn-pin--public {
+  fill: var(--hn-public);
+}
+.hn-map .hn-pin--corporate {
+  fill: var(--hn-corporate);
+}
+.hn-map .hn-pin.is-selected {
+  stroke: var(--text);
+  stroke-width: 3;
+}
+.hn-map .leaflet-container {
+  font-family: inherit;
+}
+/* Darker map tiles in the dark theme */
+:root[data-theme='dark'] .hn-map .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+
+@media (min-width: 1100px) {
+  .hn-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  }
+  .hn-map {
+    height: 520px;
+  }
+}
+@media (max-width: 720px) {
+  .hn-types {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-item-more {
+    padding-left: 14px;
+  }
+}

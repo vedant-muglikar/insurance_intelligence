@@ -1411,6 +1411,98 @@
     height: calc(100dvh - 270px);
   }
 }
+.db-nav-short {
+  display: none;
+}
+
+/* ── "coming soon" sections (VIEWS[].soon) ───────────── */
+.db-nav-soon,
+.db-soon-tag {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn-ink);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.db-nav-soon {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.db-soon-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+.db-soon-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed color-mix(in srgb, var(--warn) 55%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--warn) 8%, var(--card));
+  color: var(--text);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.db-soon-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warn);
+}
+@media (max-width: 1023px) {
+  /* In the bottom bar the badge sits in the item's top-right corner, inside the screen even for the last item */
+  .db-nav-item {
+    position: relative;
+  }
+  .db-nav-soon {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    margin: 0;
+    padding: 1px 4px;
+    font-size: 7.5px;
+    letter-spacing: 0.02em;
+  }
+}
+/* Seven sections in a phone's bottom bar: smaller labels on one line, short forms for long ones */
+@media (max-width: 480px) {
+  .db-nav {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  .db-nav-item {
+    min-width: 0;
+    padding: 6px 0;
+    font-size: 10.5px;
+    letter-spacing: -0.01em;
+  }
+  .db-nav-item > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .db-nav-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .db-nav-short {
+    display: block;
+  }
+}
 @media (max-width: 720px) {
   .est-kpis {
     grid-template-columns: minmax(0, 1fr);
