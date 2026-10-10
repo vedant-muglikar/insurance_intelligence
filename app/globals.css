@@ -12,7 +12,6 @@
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: repeating-linear-gradient(0deg, transparent 0 31px, var(--paper-grain) 31px 32px);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 15px;
@@ -50,7 +49,7 @@ button {
   align-items: center;
   justify-content: center;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--brand-hi), var(--brand));
+  background: var(--brand);
   color: var(--on-brand);
   box-shadow: 0 0 24px var(--emerald-dim);
 }
@@ -211,9 +210,7 @@ button {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
-  background-size: 32px 32px;
-  opacity: 0.35;
+  background: none;
 }
 
 .us-topbar {
@@ -801,7 +798,7 @@ button {
 .processing-progress-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--ok), var(--ok));
+  background: var(--ok);
   transition: width .6s ease;
   box-shadow: 0 0 12px color-mix(in srgb, var(--ok) 31%, transparent);
 }
@@ -1064,9 +1061,10 @@ button {
 ───────────────────────────────────────────────────────────────────────────── */
 .evidence-panel {
   position: fixed;
-  inset-y: 0;
+  top: 0;
+  bottom: 0;
   right: 0;
-  z-index: 40;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1116,7 +1114,7 @@ button {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--card2);
-  font-size: 1px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -1611,7 +1609,7 @@ button {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--glow) 0%, var(--bg) 70%);
+  background: var(--bg);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1759,7 +1757,7 @@ button {
 }
 
 .radar-sweep {
-  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 22%, transparent), transparent 65%);
+  background: transparent;
   animation: ledger-breathe 3.2s ease-in-out infinite;
 }
 
@@ -2111,17 +2109,17 @@ button {
 
 .ba-metric-card--alert {
   border-color: color-mix(in srgb, var(--deny) 35%, transparent);
-  background: linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--deny) 8%, transparent) 100%);
+  background: color-mix(in srgb, var(--deny) 8%, var(--card));
 }
 
 .ba-metric-card--warning {
   border-color: color-mix(in srgb, var(--warn) 35%, transparent);
-  background: linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--warn) 8%, transparent) 100%);
+  background: color-mix(in srgb, var(--warn) 8%, var(--card));
 }
 
 .ba-metric-card--success {
   border-color: color-mix(in srgb, var(--ok) 35%, transparent);
-  background: linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--ok) 8%, transparent) 100%);
+  background: color-mix(in srgb, var(--ok) 8%, var(--card));
 }
 
 .ba-metric-label {

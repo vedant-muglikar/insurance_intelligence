@@ -212,6 +212,22 @@ export interface MoneyRange {
   max: number
 }
 
+export interface CostBreakdownRow {
+  key: string
+  label: string
+  amount: number
+  sharePct: number
+  why: string
+}
+
+export interface CostBreakdown {
+  rows: CostBreakdownRow[]
+  total: number
+  /** True when the parts were scaled so they add up to the typical total. */
+  scaled: boolean
+  note: string
+}
+
 export interface CoverageResult {
   status: 'eligible' | 'conditional' | 'not_eligible' | 'cannot_determine'
   treatmentCost: MoneyRange
@@ -236,6 +252,8 @@ export interface CoverageResult {
     isActive: boolean
   }
   lineItems?: QuoteLineItem[]
+  /** How the typical treatment cost splits into room, theatre, doctor fees, medicines, supplies and so on. */
+  costBreakdown?: CostBreakdown
   readinessChecklist?: ClaimReadinessItem[]
   milestones?: TimelineMilestone[]
 }

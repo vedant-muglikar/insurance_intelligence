@@ -120,7 +120,7 @@ export function ClauseFlowVisualizer({
             </div>
 
             {/* Patient Share */}
-            <div className="flex-1 md:w-36 p-3 rounded-xl bg-gradient-to-b from-amber-950/40 to-slate-900 border border-amber-500/50 text-center shadow-lg">
+            <div className="flex-1 md:w-36 p-3 rounded-xl bg-slate-900 border border-amber-500/50 text-center shadow-lg">
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
                 Patient Share
               </span>

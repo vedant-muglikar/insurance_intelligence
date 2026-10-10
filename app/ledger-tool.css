@@ -4,9 +4,7 @@
   position: relative;
   border: 1px solid var(--border3);
   border-radius: 10px;
-  background:
-    linear-gradient(90deg, transparent 0 15px, var(--rule) 15px 16px, transparent 16px 19px, var(--rule) 19px 20px, transparent 20px),
-    var(--card);
+  background: var(--card);
   box-shadow: var(--shadow);
 }
 .pl-statement {

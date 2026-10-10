@@ -5,6 +5,7 @@
  * and sums insured, emitting an auditable Clause-to-Rupee ledger.
  */
 
+import { buildCostBreakdown } from './breakdown'
 import { PolicyAnalysisResult, CompiledRule } from '../types/policy'
 import {
   TreatmentScenario,
@@ -551,6 +552,13 @@ export function evaluatePolicyPreflight(
     waitingPeriodMet,
     waitingPeriodDetails,
     lineItems: costDetails.lineItems,
+    costBreakdown: buildCostBreakdown({
+      components: costDetails.components,
+      total: costDetails.avg,
+      stayDays: costDetails.stayDurationDays,
+      scenario,
+      source: costDetails.costSource,
+    }),
     readinessChecklist,
     milestones,
   }
