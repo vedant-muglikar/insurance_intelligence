@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx tests/acceptance_tests.ts && tsx tests/ocr_tests.ts && tsx tests/checklist_tests.ts",
+    "test": "tsx tests/acceptance_tests.ts && tsx tests/ocr_tests.ts && tsx tests/checklist_tests.ts && tsx tests/notifications_tests.ts",
+    "test:notifications": "tsx tests/notifications_tests.ts",
     "test:ocr": "tsx tests/ocr_tests.ts",
     "fixtures:generate": "tsx tests/fixtures/generatePolicyPdfs.ts",
     "test:checklist": "tsx tests/checklist_tests.ts"

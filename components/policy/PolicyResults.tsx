@@ -23,6 +23,8 @@ import { Brand } from '../ui/Brand'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
 import { TranslateButton } from '../ui/TranslateButton'
+import { NotificationBell } from '../notifications/NotificationBell'
+import { getPolicyKey } from '@/lib/checklist/policyKey'
 import { ExtractionQuality } from './ExtractionQuality'
 import { PreparationChecklist } from './checklist/PreparationChecklist'
 import { toChecklistScenario, toPreflightSignals } from './checklist/useChecklist'
@@ -213,6 +215,14 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     window.scrollTo({ top: 0 })
   }
 
+  // Notifications for this policy jump to the checklist (and the task, when there is one)
+  const policyKey = useMemo(() => getPolicyKey(result), [result])
+  const [taskFocus, setTaskFocus] = useState<{ taskKey: string; nonce: number } | null>(null)
+  const openTask = (taskKey: string | null) => {
+    setTaskFocus(taskKey ? { taskKey, nonce: Date.now() } : null)
+    go('checklist')
+  }
+
   const onDockKey = (e: React.KeyboardEvent, i: number) => {
     const next = e.key === 'ArrowRight' ? (i + 1) % VIEWS.length : e.key === 'ArrowLeft' ? (i - 1 + VIEWS.length) % VIEWS.length : null
     if (next === null) return
@@ -232,6 +242,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           </button>
           <TranslateButton />
           <ThemeToggle />
+          <NotificationBell currentPolicyKey={policyKey} onOpenTask={openTask} />
           <UserMenu />
         </div>
       </header>
@@ -262,6 +273,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
               preflight={checklistPreflight}
               onOpenEstimator={() => go('estimate')}
               onViewClause={setActiveRule}
+              focusRequest={taskFocus}
             />
           </div>
         )}

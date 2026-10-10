@@ -6,6 +6,7 @@ import { UserMenu } from '@/components/ui/UserMenu'
 import { Brand } from '@/components/ui/Brand'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { TranslateButton } from '@/components/ui/TranslateButton'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { SAMPLE_POLICIES } from '@/lib/policy/samplePolicies'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
 
@@ -61,6 +62,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
         <div className="sx-top-actions">
           <TranslateButton />
           <ThemeToggle />
+          <NotificationBell />
           <UserMenu />
         </div>
       </header>

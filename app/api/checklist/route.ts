@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getChecklistContext, NO_STORE, toErrorResponse, checklistError } from '@/lib/checklist/http'
 import { loadChecklist, syncChecklist, type SyncChecklistInput } from '@/lib/checklist/service'
+import { SupabaseNotificationRepository } from '@/lib/notifications/repository'
+import { recordChecklistSync } from '@/lib/notifications/service'
 
 export const runtime = 'nodejs'
 
@@ -32,7 +34,9 @@ export async function POST(request: NextRequest) {
     } catch {
       return checklistError(400, 'invalid', 'Invalid JSON body.')
     }
+    const before = typeof body?.policyKey === 'string' ? await ctx.repo.findChecklist(ctx.userId, body.policyKey) : null
     const data = await syncChecklist(ctx.repo, ctx.userId, body)
+    await recordChecklistSync(new SupabaseNotificationRepository(ctx.db), ctx.userId, data, !before)
     return NextResponse.json({ success: true, data }, { headers: NO_STORE })
   } catch (err) {
     return toErrorResponse(err, 'sync')

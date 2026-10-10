@@ -13,6 +13,7 @@ import type {
 import { generateChecklist, type ChecklistGenerationInput } from '@/lib/checklist/generator'
 import { applyLocalMerge } from '@/lib/checklist/state'
 import { getPolicyKey } from '@/lib/checklist/policyKey'
+import { requestNotificationsRefresh } from '@/lib/notifications/events'
 
 export type ChecklistMode = 'cloud' | 'local'
 
@@ -57,7 +58,8 @@ export function toPreflightSignals(r: CoverageResult | null | undefined): Checkl
 const sameScenario = (a?: ChecklistScenario | null, b?: ChecklistScenario | null) =>
   JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 
-const LOCAL_PREFIX = 'claimlens:checklist:'
+/** localStorage key prefix for device-only checklists (also read by the notification bell) */
+export const LOCAL_PREFIX = 'claimlens:checklist:'
 
 function readLocal(policyKey: string): ChecklistState | null {
   try {
@@ -213,6 +215,11 @@ export function useChecklist({ result, fileName, scenario, preflight }: UseCheck
   useEffect(() => {
     void load()
   }, [load])
+
+  // Due dates and completion feed the notification bell
+  useEffect(() => {
+    if (state) requestNotificationsRefresh()
+  }, [state])
 
   /** Re-run generation with the current policy data and scenario, keeping progress */
   const regenerate = useCallback(

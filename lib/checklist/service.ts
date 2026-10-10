@@ -86,6 +86,16 @@ export async function loadChecklist(
   return checklist ? buildState(repo, userId, checklist) : null
 }
 
+/** Every checklist the user has, most recently updated first (capped, for notifications) */
+export async function loadAllChecklists(
+  repo: ChecklistRepository,
+  userId: string,
+  limit = 20,
+): Promise<ChecklistState[]> {
+  const checklists = await repo.listChecklists(userId, limit)
+  return Promise.all(checklists.map((c) => buildState(repo, userId, c)))
+}
+
 export interface SyncChecklistInput {
   policyKey: string
   insurer?: string | null

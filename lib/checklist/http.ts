@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { ChecklistStorageUnavailableError, SupabaseChecklistRepository, type ChecklistRepository } from './repository'
 import { ChecklistInputError } from './service'
@@ -17,7 +18,7 @@ export function checklistError(status: number, code: ChecklistErrorCode, error: 
  * on the server (the client falls back to device-only storage instead).
  */
 export async function getChecklistContext(): Promise<
-  { repo: ChecklistRepository; userId: string } | NextResponse
+  { repo: ChecklistRepository; userId: string; db: SupabaseClient } | NextResponse
 > {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return checklistError(503, 'storage_unavailable', 'Supabase is not configured, so checklists cannot be saved to the database.')
@@ -26,7 +27,7 @@ export async function getChecklistContext(): Promise<
     const supabase = await createClient()
     const { data } = await supabase.auth.getUser()
     if (!data.user) return checklistError(401, 'unauthenticated', 'Sign in to save your checklist.')
-    return { repo: new SupabaseChecklistRepository(supabase), userId: data.user.id }
+    return { repo: new SupabaseChecklistRepository(supabase), userId: data.user.id, db: supabase }
   } catch {
     return checklistError(401, 'unauthenticated', 'Sign in to save your checklist.')
   }

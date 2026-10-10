@@ -68,6 +68,8 @@ export interface TaskPatch {
 export interface ChecklistRepository {
   findChecklist(userId: string, policyKey: string): Promise<ChecklistRow | null>
   getChecklistById(userId: string, id: string): Promise<ChecklistRow | null>
+  /** Most recently updated first */
+  listChecklists(userId: string, limit: number): Promise<ChecklistRow[]>
   upsertChecklist(userId: string, input: ChecklistUpsert): Promise<ChecklistRow>
   listTasks(userId: string, checklistId: string): Promise<TaskRow[]>
   /** Inserts or updates definitions only — never touches status, due date or completion */
@@ -100,10 +102,15 @@ export class ChecklistStorageUnavailableError extends Error {
 
 const MISSING_RELATION_CODES = new Set(['PGRST205', 'PGRST202', '42P01', '42883'])
 
+/** PostgREST / Postgres error codes meaning the table or function does not exist (migration not applied) */
+export function isMissingRelationError(error: { code?: string } | null | undefined): boolean {
+  return !!error?.code && MISSING_RELATION_CODES.has(error.code)
+}
+
 function check<T>(result: { data: T; error: any }): T {
   if (result.error) {
     const code = result.error.code as string | undefined
-    if (code && MISSING_RELATION_CODES.has(code)) throw new ChecklistStorageUnavailableError(code)
+    if (isMissingRelationError(result.error)) throw new ChecklistStorageUnavailableError(code)
     throw new Error(result.error.message || 'Database request failed')
   }
   return result.data
@@ -127,6 +134,17 @@ export class SupabaseChecklistRepository implements ChecklistRepository {
     return check(
       await this.db.from('policy_checklists').select('*').eq('user_id', userId).eq('id', id).maybeSingle(),
     ) as ChecklistRow | null
+  }
+
+  async listChecklists(userId: string, limit: number) {
+    return (check(
+      await this.db
+        .from('policy_checklists')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(limit),
+    ) ?? []) as ChecklistRow[]
   }
 
   async upsertChecklist(userId: string, input: ChecklistUpsert) {

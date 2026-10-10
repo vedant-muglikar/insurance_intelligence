@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -37,6 +37,8 @@ interface PreparationChecklistProps {
   preflight: ChecklistPreflightSignals | null
   onOpenEstimator: () => void
   onViewClause: (rule: PolicyRule) => void
+  /** Open and scroll to this task once the checklist has loaded (from a notification) */
+  focusRequest?: { taskKey: string; nonce: number } | null
 }
 
 export function PreparationChecklist({
@@ -46,6 +48,7 @@ export function PreparationChecklist({
   preflight,
   onOpenEstimator,
   onViewClause,
+  focusRequest,
 }: PreparationChecklistProps) {
   const cl = useChecklist({ result, fileName, scenario, preflight })
   const [stage, setStage] = useState<ChecklistStage>('before')
@@ -71,6 +74,15 @@ export function PreparationChecklist({
       document.getElementById(`task-${task.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
     )
   }
+
+  const loadedId = cl.state?.checklist.id
+  useEffect(() => {
+    if (!focusRequest || !loadedId) return
+    const task = cl.state?.tasks.find((t) => t.key === focusRequest.taskKey)
+    if (task) focusTask(task)
+    // Only when a new request arrives or the checklist finishes loading, not on every task change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRequest, loadedId])
 
   // ── Missing policy data ─────────────────────────────────────────────────
   if (result.rules.length === 0) {

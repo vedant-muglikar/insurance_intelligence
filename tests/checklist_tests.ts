@@ -130,6 +130,12 @@ class MemoryRepo implements ChecklistRepository {
   async getChecklistById(userId: string, id: string) {
     return this.checklists.find((c) => c.user_id === userId && c.id === id) ?? null
   }
+  async listChecklists(userId: string, limit: number) {
+    return this.checklists
+      .filter((c) => c.user_id === userId)
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+      .slice(0, limit)
+  }
   async upsertChecklist(userId: string, input: any) {
     let row = await this.findChecklist(userId, input.policy_key)
     if (row) {
