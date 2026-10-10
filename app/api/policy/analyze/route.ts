@@ -7,7 +7,28 @@ import { getOcrConfig } from '@/lib/ocr/config'
 import { extractPolicyWithAI, validateAndEnrichRules } from '@/lib/ai/extractor'
 import { compilePolicyRules } from '@/lib/policy/compiler'
 import { createClient } from '@/utils/supabase/server'
-import type { AnalysisProgressEvent, PolicyAnalysisResult } from '@/lib/types/policy'
+import { extractUin, documentHash } from '@/lib/policy/identity'
+import { resolveSumInsured } from '@/lib/policy/sumInsured'
+import { findSavedAnalysis, saveAnalysis } from '@/lib/policy/store'
+import { formatINR } from '@/lib/policy/normalizers'
+import type { AnalysisProgressEvent, PolicyAnalysisResult, PolicyRule } from '@/lib/types/policy'
+
+function statsFor(rules: PolicyRule[]): NonNullable<PolicyAnalysisResult['extraction_stats']> {
+  const n = (f: (r: PolicyRule) => boolean) => rules.filter(f).length
+  return {
+    total_rules: rules.length,
+    coverage_count: n((r) => r.category === 'coverage'),
+    exclusion_count: n((r) => r.category === 'exclusion'),
+    waiting_period_count: n((r) => r.category === 'waiting_period'),
+    limit_count: n((r) => ['room_rent', 'icu_limit', 'sub_limit', 'deductible', 'co_payment'].includes(r.category)),
+    eligibility_count: n((r) => r.category === 'eligibility'),
+    claim_requirement_count: n((r) => r.category === 'claim_requirement'),
+    high_confidence: n((r) => r.confidence === 'high'),
+    medium_confidence: n((r) => r.confidence === 'medium'),
+    low_confidence: n((r) => r.confidence === 'low'),
+    validated_count: n((r) => !!r.evidence_validated),
+  }
+}
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // seconds — OCR of scanned pages + long AI calls
@@ -54,58 +75,85 @@ async function runAnalysis(
   }
 
   const totalPages = pages.length
-  // Kept for backwards compatibility: true when OCR could not fully recover the document
   const scannedPdfWarning =
     report.pages_needing_rescan.length > 0 || report.failed_pages > 0 || (report.ocr_engine === null && detectScannedPdf(pages))
 
-  // ── 2. AI extraction (unchanged pipeline; OCR pages carry provenance notes) ─
+  // ── 2. Identify the document: UIN (product version) and text hash ─────────
+  const uinInfo = extractUin(pages)
+  const hash = documentHash(pages)
+
+  // ── 3. Check verified policy cache (avoid redundant extraction) ──────────
+  const saved = await findSavedAnalysis({ uin: uinInfo.uin, hash, pages })
+  if (saved) {
+    emit({ type: 'stage', stage: 'complete', message: 'Loaded from verified policy cache', progress: 100 })
+    return {
+      overview: { ...saved.overview, total_pages: totalPages },
+      rules: saved.rules,
+      compiled_rules: saved.compiledRules.length ? saved.compiledRules : compilePolicyRules(saved.rules, saved.pages),
+      plan_template_id: saved.planTemplateId,
+      cache: { hit: true, matchedBy: saved.matchedBy, uin: uinInfo.uin },
+      pages: saved.pages,
+      total_pages: totalPages,
+      scanned_pdf_warning: scannedPdfWarning,
+      extraction_report: report,
+      document_hash: hash,
+      extraction_stats: statsFor(saved.rules),
+      processing_time_ms: Date.now() - startTime,
+    }
+  }
+
+  // ── 4. AI extraction (OCR pages carry provenance notes) ───────────────────
   emit({ type: 'stage', stage: 'ai_analysis', message: 'Extracting coverage, limits and exclusions with AI…', progress: 70 })
   const aiResult = await extractPolicyWithAI(pages)
   if (signal.aborted) throw Object.assign(new Error('Extraction cancelled.'), { name: 'AbortError' })
 
-  // ── 3. Validate evidence & enrich rules (incl. OCR safeguards) ──────────
+  // ── 5. Validate evidence & enrich rules ───────────────────────────────────
   emit({ type: 'stage', stage: 'evidence_validation', message: 'Cross-checking citations against page text…', progress: 92 })
   const rules = validateAndEnrichRules(aiResult.rules || [], pages)
+  const stats = statsFor(rules)
 
-  // ── 4. Compute extraction stats ─────────────────────────────────────────
-  const stats = {
-    total_rules: rules.length,
-    coverage_count: rules.filter((r) => r.category === 'coverage').length,
-    exclusion_count: rules.filter((r) => r.category === 'exclusion').length,
-    waiting_period_count: rules.filter((r) => r.category === 'waiting_period').length,
-    limit_count: rules.filter(
-      (r) =>
-        r.category === 'room_rent' ||
-        r.category === 'icu_limit' ||
-        r.category === 'sub_limit' ||
-        r.category === 'deductible' ||
-        r.category === 'co_payment',
-    ).length,
-    eligibility_count: rules.filter((r) => r.category === 'eligibility').length,
-    claim_requirement_count: rules.filter((r) => r.category === 'claim_requirement').length,
-    high_confidence: rules.filter((r) => r.confidence === 'high').length,
-    medium_confidence: rules.filter((r) => r.confidence === 'medium').length,
-    low_confidence: rules.filter((r) => r.confidence === 'low').length,
-    validated_count: rules.filter((r) => r.evidence_validated).length,
+  // ── 6. Deterministically compile into executable rules (Blueprint F2) ─────
+  const compiled_rules = compilePolicyRules(rules, pages)
+
+  // ── 7. Coverage amount and UIN verified against document text ─────────────
+  const llmOverview = aiResult.overview as typeof aiResult.overview & { sum_insured_amount?: number | null; uin?: string }
+  const si = resolveSumInsured(pages, llmOverview.sum_insured_amount, llmOverview.sum_insured)
+  const finalUin = extractUin(pages, llmOverview.uin).uin
+  const overview = {
+    ...aiResult.overview,
+    sum_insured: llmOverview.sum_insured || (si.amount ? formatINR(si.amount) : ''),
+    sum_insured_amount: si.amount,
+    sum_insured_source: si.source,
+    uin: finalUin ?? undefined,
+    total_pages: totalPages,
   }
 
-  // ── 5. Deterministically compile into executable rules (Blueprint F2) ───
-  const compiled_rules = compilePolicyRules(rules, pages)
+  // ── 8. Save for future cache hits ─────────────────────────────────────────
+  const confidence =
+    rules.length === 0 ? 'low' : stats.high_confidence / rules.length >= 0.6 ? 'high' : stats.high_confidence / rules.length >= 0.3 ? 'medium' : 'low'
+  const planTemplateId = await saveAnalysis({
+    uin: finalUin,
+    hash,
+    overview,
+    rules,
+    compiledRules: compiled_rules,
+    pages,
+    confidence,
+  })
 
   emit({ type: 'stage', stage: 'complete', message: 'Analysis complete', progress: 100 })
 
   return {
-    overview: {
-      ...aiResult.overview,
-      total_pages: totalPages,
-    },
+    overview,
     rules,
     compiled_rules,
+    plan_template_id: planTemplateId,
+    cache: { hit: false, matchedBy: null, uin: finalUin },
     pages,
     total_pages: totalPages,
     scanned_pdf_warning: scannedPdfWarning,
     extraction_report: report,
-    document_hash: createHash('sha256').update(new Uint8Array(buffer)).digest('hex'),
+    document_hash: hash,
     extraction_stats: stats,
     processing_time_ms: Date.now() - startTime,
   }
@@ -133,7 +181,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // ── Validate upload before doing any heavy work ──────────────────────────
+  // ── Validate upload before doing heavy work ──────────────────────────────
   let buffer: ArrayBuffer
   try {
     const formData = await request.formData()

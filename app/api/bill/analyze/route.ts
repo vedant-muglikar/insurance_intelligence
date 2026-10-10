@@ -9,6 +9,21 @@ import type { HospitalBill, HospitalBillLineItem, BillLineCategory, BillPaymentS
 
 export const maxDuration = 120
 
+const MAX_BILL_BYTES = 12 * 1024 * 1024
+
+interface BillMedia {
+  mimeType: string
+  data: string // base64
+}
+
+function guessImageType(name: string): string {
+  if (name.endsWith('.png')) return 'image/png'
+  if (name.endsWith('.webp')) return 'image/webp'
+  if (name.endsWith('.heic')) return 'image/heic'
+  if (name.endsWith('.heif')) return 'image/heif'
+  return 'image/jpeg'
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -18,70 +33,66 @@ export async function POST(request: NextRequest) {
     let textContent = rawTextOverride || ''
     let totalPages: number | undefined
 
-    if (file) {
-      // Only block truly non-PDF binary files; accept .pdf
-      const isPdf =
-        file.name.toLowerCase().endsWith('.pdf') ||
-        file.type.includes('pdf') ||
-        file.type === 'application/octet-stream'
+    let media: BillMedia | undefined
 
-      if (!isPdf) {
+    if (file) {
+      const name = file.name.toLowerCase()
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|heic|heif)$/.test(name)
+      const isPdf = name.endsWith('.pdf') || file.type.includes('pdf')
+
+      if (!isPdf && !isImage) {
         return NextResponse.json(
-          { success: false, error: 'Please upload the hospital bill as a PDF (scanned PDFs are supported).' },
+          { success: false, error: 'Please upload the bill as a PDF (scanned PDFs supported) or a photo (JPG, PNG, WebP).' },
           { status: 400 }
         )
+      }
+      if (file.size > MAX_BILL_BYTES) {
+        return NextResponse.json({ success: false, error: 'That file is over 12 MB. Try a smaller photo or PDF.' }, { status: 400 })
       }
 
       const buffer = await file.arrayBuffer()
-      if (!hasPdfHeader(new Uint8Array(buffer))) {
-        return NextResponse.json(
-          { success: false, error: 'This file is not a valid PDF document.' },
-          { status: 400 }
-        )
-      }
-      let pages: ExtractedPage[] = []
 
-      try {
-        // Text layer for digital bills, OCR for scanned ones
-        pages = (await extractPagesHybrid(buffer, { signal: request.signal })).pages
-      } catch (e) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: e instanceof PdfInputError
-              ? e.message
-              : 'Could not read this PDF. It may be password-protected or corrupted.',
-          },
-          { status: 422 }
-        )
-      }
+      if (isImage) {
+        // A photo has no text layer: the multimodal model reads it directly
+        media = { mimeType: file.type || guessImageType(name), data: Buffer.from(buffer).toString('base64') }
+        totalPages = 1
+      } else {
+        if (!hasPdfHeader(new Uint8Array(buffer))) {
+          return NextResponse.json(
+            { success: false, error: 'This file is not a valid PDF document.' },
+            { status: 400 }
+          )
+        }
+        let pages: ExtractedPage[] = []
 
-      if (pages.length === 0 || pages.every(p => p.char_count < 20)) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'No readable text was found in this bill, even with OCR. ' +
-              'Please upload a clearer scan, or type in the bill amounts manually.',
-          },
-          { status: 422 }
-        )
-      }
+        try {
+          // Text layer for digital bills, OCR for scanned ones
+          pages = (await extractPagesHybrid(buffer, { signal: request.signal })).pages
+        } catch (e) {
+          pages = []
+        }
 
-      totalPages = pages.length
-      textContent = pages
-        .map(p => formatPageForPrompt(p))
-        .join('\n\n')
+        if (pages.length === 0 || pages.every(p => p.char_count < 20)) {
+          // Scanned PDF fallback: hand the PDF directly to multimodal model
+          media = { mimeType: 'application/pdf', data: Buffer.from(buffer).toString('base64') }
+          totalPages = 1
+        } else {
+          totalPages = pages.length
+          textContent = pages
+            .map(p => formatPageForPrompt(p))
+            .join('\n\n')
+        }
+      }
     }
 
-    if (!textContent || textContent.trim().length < 10) {
+    if (!media && (!textContent || textContent.trim().length < 10)) {
       return NextResponse.json(
         { success: false, error: 'No bill content provided.' },
         { status: 400 }
       )
     }
 
-    const bill = await extractBillWithAI(textContent, totalPages)
+    const bill = await extractBillWithAI(textContent, totalPages, media)
 
     return NextResponse.json({ success: true, data: bill })
   } catch (err: any) {
@@ -95,8 +106,11 @@ export async function POST(request: NextRequest) {
 
 // ─── AI extraction ───────────────────────────────────────────────────────────
 
-async function extractBillWithAI(text: string, totalPages?: number): Promise<HospitalBill> {
+async function extractBillWithAI(text: string, totalPages?: number, media?: BillMedia): Promise<HospitalBill> {
   const warnings: string[] = []
+  if (!media && text.length > 40000) {
+    warnings.push('This bill is very long, so only the first 40,000 characters were read. Charges after that may be missing.')
+  }
   const apiKey =
     process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.OPENAI_API_KEY
 
@@ -131,6 +145,8 @@ IMPORTANT RULES:
 - For sourcePage, provide the page number (integer) where each line item appears.
 - Preserve the original bill description exactly in "description".
 - Set confidence: "high" if amount is clearly readable, "medium" if inferred, "low" if uncertain.
+- Copy numbers exactly as printed. NEVER estimate, round, infer or invent a charge, amount, date or name. If something is unreadable or missing, use null for header fields or confidence "low" for a line, and leave out anything you cannot actually see.
+- If the same row appears twice in the bill, list it twice; do not merge or deduplicate rows.
 - Some pages may come from OCR of a scanned bill. A token followed by [?] was read with low OCR confidence: never correct or guess it — set that item's confidence to "low".
 
 Return ONLY valid JSON matching this schema exactly:
@@ -182,12 +198,17 @@ Return ONLY valid JSON matching this schema exactly:
                     contents: [
                       {
                         role: 'user',
-                        parts: [{ text: `${systemPrompt}\n\nHospital Bill Text:\n${text.slice(0, 40000)}` }],
+                        parts: media
+                          ? [
+                              { text: `${systemPrompt}\n\nThe hospital bill is attached as an ${media.mimeType === 'application/pdf' ? 'PDF' : 'image'}.` },
+                              { inlineData: { mimeType: media.mimeType, data: media.data } },
+                            ]
+                          : [{ text: `${systemPrompt}\n\nHospital Bill Text:\n${text.slice(0, 40000)}` }],
                       },
                     ],
                     generationConfig: {
-                      temperature: 0.1,
-                      maxOutputTokens: 4096,
+                      temperature: 0,
+                      maxOutputTokens: 8192,
                       responseMimeType: 'application/json',
                     },
                   }),
@@ -214,7 +235,17 @@ Return ONLY valid JSON matching this schema exactly:
             model: 'gpt-4o',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Hospital Bill Text:\n${text.slice(0, 40000)}` },
+              {
+                role: 'user',
+                content: media
+                  ? media.mimeType.startsWith('image/')
+                    ? [
+                        { type: 'text', text: 'Hospital bill image attached.' },
+                        { type: 'image_url', image_url: { url: `data:${media.mimeType};base64,${media.data}` } },
+                      ]
+                    : 'A scanned PDF was uploaded but cannot be read without Gemini.'
+                  : `Hospital Bill Text:\n${text.slice(0, 40000)}`,
+              },
             ],
             temperature: 0.1,
             response_format: { type: 'json_object' },
@@ -235,7 +266,8 @@ Return ONLY valid JSON matching this schema exactly:
           .trim()
 
         const parsed = JSON.parse(cleaned)
-        return buildBillFromAIParsed(parsed, warnings, totalPages, 'ai')
+        const built = buildBillFromAIParsed(parsed, warnings, totalPages, media ? 'vision' : 'ai')
+        return media ? addPhotoWarning(built) : groundAgainstSource(built, text)
       }
     } catch (e: any) {
       console.warn('[bill/analyze] AI extraction failed, falling back:', e.message)
@@ -245,8 +277,66 @@ Return ONLY valid JSON matching this schema exactly:
     warnings.push('No AI API key configured. Using heuristic extraction — results may be less accurate.')
   }
 
-  // Heuristic fallback
+  // Heuristic fallback (needs text; a photo or scanned PDF cannot be parsed without the model)
+  if (media) {
+    throw new Error('Could not read this bill automatically. Try a clearer, well-lit photo or a text-based PDF.')
+  }
   return fallbackBillParser(text, warnings, totalPages)
+}
+
+// ─── Anti-hallucination checks ───────────────────────────────────────────────
+
+/** Whole-rupee figures printed anywhere in the source text. */
+function figuresPrinted(text: string): Set<number> {
+  const out = new Set<number>()
+  for (const m of text.matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
+    const v = parseFloat(m[0].replace(/,/g, ''))
+    if (Number.isFinite(v)) out.add(Math.round(v))
+  }
+  return out
+}
+
+/**
+ * The model reads the bill, but it must not be trusted to have copied it faithfully. Every extracted line is
+ * checked against the PDF's own text: its amount must be printed there, and its description should be too.
+ * Lines that fail are kept (never silently dropped) but marked low confidence and counted in a warning.
+ */
+function groundAgainstSource(bill: HospitalBill, text: string): HospitalBill {
+  const figures = figuresPrinted(text)
+  const haystack = text.toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+  let amountMissing = 0
+  let descMissing = 0
+
+  for (const item of bill.lineItems) {
+    const amountOk = figures.has(Math.round(item.amount))
+    const tokens = (item.description || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .split(' ')
+      .filter((t) => t.length > 3)
+    const found = tokens.filter((t) => haystack.includes(t)).length
+    const descOk = tokens.length === 0 || found / tokens.length >= 0.5
+
+    if (!amountOk) amountMissing++
+    if (!descOk) descMissing++
+    if (!amountOk || !descOk) item.confidence = 'low'
+  }
+
+  if (amountMissing > 0) {
+    bill.warnings.push(`${amountMissing} charge${amountMissing > 1 ? 's' : ''} had an amount that could not be found in the bill text. Marked low confidence: please check ${amountMissing > 1 ? 'them' : 'it'}.`)
+  }
+  if (descMissing > 0) {
+    bill.warnings.push(`${descMissing} charge${descMissing > 1 ? 's' : ''} had a description that does not appear in the bill text. Marked low confidence.`)
+  }
+  if (amountMissing + descMissing > 0) bill.parsingConfidence = 'low'
+  return bill
+}
+
+/** A photo cannot be cross-checked against a text layer, so say so and rely on the arithmetic checks. */
+function addPhotoWarning(bill: HospitalBill): HospitalBill {
+  bill.warnings.unshift('Read from a photo or scan. Digits can be misread, so please check the amounts against your bill.')
+  if (bill.parsingConfidence === 'high') bill.parsingConfidence = 'medium'
+  return bill
 }
 
 // ─── Build structured HospitalBill from AI JSON ──────────────────────────────
@@ -255,7 +345,7 @@ function buildBillFromAIParsed(
   parsed: any,
   warnings: string[],
   totalPages: number | undefined,
-  method: 'ai' | 'heuristic' | 'mixed'
+  method: 'ai' | 'heuristic' | 'mixed' | 'vision'
 ): HospitalBill {
   const lineItems: HospitalBillLineItem[] = (parsed.lineItems || []).map(
     (item: any, idx: number) => {
@@ -273,7 +363,7 @@ function buildBillFromAIParsed(
         sourcePage: Number(item.sourcePage) || undefined,
         originalText: item.description || undefined,
         originalAmount: amt,
-        confidence: (item.confidence || 'high') as 'high' | 'medium' | 'low',
+        confidence: (item.confidence || 'medium') as 'high' | 'medium' | 'low',
         isUserEdited: false,
       } satisfies HospitalBillLineItem
     }

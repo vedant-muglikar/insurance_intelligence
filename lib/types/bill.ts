@@ -86,6 +86,6 @@ export interface HospitalBill {
   warnings: string[]      // non-fatal extraction issues
 
   // Parsing quality
-  extractionMethod: 'ai' | 'heuristic' | 'mixed'
+  extractionMethod: 'ai' | 'heuristic' | 'mixed' | 'vision'
   parsingConfidence: 'high' | 'medium' | 'low'
 }

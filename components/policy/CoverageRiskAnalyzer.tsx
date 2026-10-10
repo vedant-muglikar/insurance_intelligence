@@ -19,6 +19,7 @@ import {
   BadgeAlert,
   FileText,
   ChevronUp,
+  ChevronDown,
   Sparkles,
   UploadCloud,
   Loader2,

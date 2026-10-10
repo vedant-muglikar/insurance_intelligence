@@ -1,21 +1,10 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { ArrowRight, CheckCircle, FilePdf, UploadSimple, Warning, X } from '@phosphor-icons/react'
 import { UserMenu } from '@/components/ui/UserMenu'
 import { Brand } from '@/components/ui/Brand'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import {
-  CloudUpload,
-  FileCheck2,
-  X,
-  AlertTriangle,
-  Shield,
-  Clock,
-  FileSearch,
-  ArrowRight,
-  Sparkles,
-  Zap,
-} from 'lucide-react'
 import { SAMPLE_POLICIES } from '@/lib/policy/samplePolicies'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
 
@@ -24,10 +13,9 @@ interface UploadScreenProps {
   onLoadSample?: (sample: PolicyAnalysisResult, fileName: string) => void
 }
 
-const TRUST_ITEMS = [
-  { icon: Shield, label: 'Every rupee cited', sub: 'Page & section evidence cross-verified' },
-  { icon: Clock, label: 'Under 60 seconds', sub: 'From 50-page PDF to auditable preflight' },
-  { icon: FileSearch, label: 'Deterministic Engine', sub: 'Waiting period math & room proration run in code' },
+const SAMPLES = [
+  { key: 'hdfc_optima', file: 'HDFC_ERGO_Optima_Secure.pdf', name: 'HDFC ERGO Optima', meta: '₹5L cover' },
+  { key: 'star_health', file: 'Star_Comprehensive_Health.pdf', name: 'Star Health Comprehensive', meta: '₹10L cover' },
 ]
 
 export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
@@ -39,11 +27,11 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
   const handleFile = async (f: File) => {
     setError(null)
     if (!f.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are supported.')
+      setError('Only PDF files work.')
       return
     }
     if (f.size > 100 * 1024 * 1024) {
-      setError('File exceeds 100 MB.')
+      setError('That file is over 100 MB.')
       return
     }
     // Same magic-header check the server performs, so renamed files fail fast
@@ -62,190 +50,112 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
     if (f) handleFile(f)
   }, [])
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragging(true)
-  }
-  const onDragLeave = () => setDragging(false)
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  const handleSelectSample = (key: string, name: string) => {
-    const sample = SAMPLE_POLICIES[key]
-    if (sample && onLoadSample) {
-      onLoadSample(sample, name)
-    }
-  }
+  const formatSize = (bytes: number) =>
+    bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 
   return (
-    <div className="us-root relative overflow-hidden">
-      {/* ── Top bar ── */}
-      <div className="us-topbar">
-        <Brand />
-        <div className="us-topbar-actions">
+    <div className="sx-upload">
+      <header className="sx-top">
+        <Brand size={36} />
+        <div className="sx-top-actions">
           <ThemeToggle />
           <UserMenu />
         </div>
-      </div>
+      </header>
 
-      {/* ── Main layout: left context / right upload ── */}
-      <div className="us-main">
+      <main className="sx-upload-main">
+        <h1 className="sx-upload-title">Let&rsquo;s read your policy.</h1>
+        <p className="sx-upload-sub">Add the PDF. Know what you will pay.</p>
 
-        {/* LEFT — context panel */}
-        <div className="us-left">
-          <div className="us-left-inner">
-            <h1 className="us-left-headline">
-              Upload your policy.<br />
-              Audit every clause.
-            </h1>
-            <p className="us-left-body">
-              Drop any Indian health insurance PDF. Our policy compiler extracts coverage,
-              waiting periods, and sub-limits into executable code — giving you a Clause-to-Rupee
-              preflight before hospital admission.
-            </p>
+        <div
+          className={`sx-drop ${dragging ? 'is-drag' : ''} ${file ? 'is-ready' : ''}`}
+          onDrop={onDrop}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onClick={() => !file && inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          aria-label="Choose your policy PDF"
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && !file && inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) handleFile(f)
+            }}
+          />
+          {file ? (
+            <div className="sx-drop-file">
+              <FilePdf size={34} weight="duotone" aria-hidden />
+              <div>
+                <strong>{file.name}</strong>
+                <span>{formatSize(file.size)}</span>
+              </div>
+              <button
+                type="button"
+                className="sx-drop-x"
+                aria-label="Remove file"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setFile(null)
+                }}
+              >
+                <X size={18} weight="bold" aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <div className="sx-drop-empty">
+              <span className="sx-drop-icon" aria-hidden>
+                <UploadSimple size={30} weight="bold" />
+              </span>
+              <strong>{dragging ? 'Drop it here' : 'Tap to choose your PDF'}</strong>
+              <span>or drag it in</span>
+            </div>
+          )}
+        </div>
 
-            <div className="us-trust-list">
-              {TRUST_ITEMS.map(({ icon: Icon, label, sub }) => (
-                <div key={label} className="us-trust-item">
-                  <div className="us-trust-icon">
-                    <Icon size={15} />
-                  </div>
-                  <div>
-                    <div className="us-trust-label">{label}</div>
-                    <div className="us-trust-sub">{sub}</div>
-                  </div>
-                </div>
+        {error && (
+          <p className="sx-note sx-note-warn" role="alert">
+            <Warning size={18} weight="bold" aria-hidden /> {error}
+          </p>
+        )}
+
+        <button type="button" className="sx-go" disabled={!file} onClick={() => file && onAnalyze(file)}>
+          Read my policy
+          <ArrowRight size={22} weight="bold" aria-hidden />
+        </button>
+
+        {onLoadSample && (
+          <div className="sx-samples">
+            <p>No PDF handy? Try a sample.</p>
+            <div>
+              {SAMPLES.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  className="sx-sample"
+                  onClick={() => SAMPLE_POLICIES[s.key] && onLoadSample(SAMPLE_POLICIES[s.key], s.file)}
+                >
+                  <CheckCircle size={20} weight="duotone" aria-hidden />
+                  <span>
+                    <strong>{s.name}</strong>
+                    <small>{s.meta}</small>
+                  </span>
+                </button>
               ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* RIGHT — upload panel */}
-        <div className="us-right">
-          <div className="us-panel glass-panel">
-            <div className="us-panel-header">
-              <span className="us-panel-title">Upload Policy Document</span>
-              <span className="us-panel-sub">Digital or scanned PDF, up to 100 MB</span>
-            </div>
-
-            {/* Drop zone with animated scanning effect */}
-            <div
-              className={`us-zone relative overflow-hidden transition-all duration-300 ${
-                dragging ? 'us-zone-drag border-emerald-400 bg-emerald-950/20 scale-[1.01]' : ''
-              } ${file ? 'us-zone-ready' : ''}`}
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onClick={() => !file && inputRef.current?.click()}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
-            >
-              {/* Subtle radar sweep on idle */}
-              {!file && <div className="radar-sweep absolute inset-0 pointer-events-none opacity-20" />}
-
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-              />
-
-              {file ? (
-                <div className="us-zone-file relative z-10">
-                  <FileCheck2 size={24} className="us-zone-file-icon text-emerald-400" />
-                  <div className="us-zone-file-info">
-                    <div className="us-zone-file-name font-semibold">{file.name}</div>
-                    <div className="us-zone-file-size text-emerald-400">{formatSize(file.size)} · Ready to analyze</div>
-                  </div>
-                  <button
-                    className="us-zone-remove"
-                    onClick={(e) => { e.stopPropagation(); setFile(null) }}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="us-zone-empty relative z-10">
-                  <div className={`us-zone-icon ${dragging ? 'us-zone-icon-drag scale-110' : ''}`}>
-                    <CloudUpload size={24} />
-                  </div>
-                  <div className="us-zone-text font-medium">
-                    {dragging ? 'Drop PDF here' : 'Drag & drop your policy PDF or click to browse'}
-                  </div>
-                  <div className="us-zone-hint">Digital and scanned PDFs supported — scanned pages are read with OCR, with page citations preserved</div>
-                </div>
-              )}
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="us-error">
-                <AlertTriangle size={13} />
-                {error}
-              </div>
-            )}
-
-            {/* CTA */}
-            <button
-              className="us-cta sheen-wrapper font-semibold"
-              disabled={!file}
-              onClick={() => file && onAnalyze(file)}
-            >
-              <Sparkles size={15} />
-              Analyze Policy & Compile Rules
-              <ArrowRight size={15} className="us-cta-arrow" />
-            </button>
-
-            {/* Instant Demo Presets for Hackathon Testing */}
-            {onLoadSample && (
-              <div className="pt-3 border-t border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="font-semibold text-slate-300 flex items-center gap-1">
-                    <Zap size={12} className="text-amber-400" />
-                    Instant Demo Presets (1-Click Test):
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectSample('hdfc_optima', 'HDFC_ERGO_Optima_Secure.pdf')}
-                    className="text-left p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 transition-colors text-xs space-y-0.5 group"
-                  >
-                    <span className="font-semibold text-slate-200 group-hover:text-emerald-300 block truncate">
-                      HDFC ERGO Optima Secure
-                    </span>
-                    <span className="text-[11px] text-slate-400 block">
-                      ₹5L SI · 24M Joint Wait · 20% Senior Co-pay
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSelectSample('star_health', 'Star_Comprehensive_Health.pdf')}
-                    className="text-left p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 transition-colors text-xs space-y-0.5 group"
-                  >
-                    <span className="font-semibold text-slate-200 group-hover:text-emerald-300 block truncate">
-                      Star Health Comprehensive
-                    </span>
-                    <span className="text-[11px] text-slate-400 block">
-                      ₹10L SI · 36M PED Wait · Suite Proration
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <p className="us-disclaimer">
-              Strict client privacy: Documents are parsed in temporary memory and never persisted or shared.
-            </p>
-          </div>
-        </div>
-      </div>
+        <p className="sx-foot">Your PDF is read in memory and never stored.</p>
+      </main>
     </div>
   )
 }

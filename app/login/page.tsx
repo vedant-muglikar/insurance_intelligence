@@ -7,8 +7,8 @@ import { LoginForm } from './login-form'
 import './login.css'
 
 export const metadata = {
-  title: 'Sign in - PolicyLens',
-  description: 'Sign in to PolicyLens to run a coverage preflight before your hospital admission.',
+  title: 'Sign in - BimaSetu',
+  description: 'Sign in to BimaSetu to run a coverage preflight before your hospital admission.',
 }
 
 export default async function LoginPage({
@@ -22,8 +22,8 @@ export default async function LoginPage({
 
   return (
     <main className="lg">
-      <section className="lg-show" aria-label="What PolicyLens does">
-        <Brand label="PolicyLens home" />
+      <section className="lg-show" aria-label="What BimaSetu does">
+        <Brand label="BimaSetu home" />
 
         <div className="lg-show-copy">
           <h2 className="lg-show-title">Know what you will pay before you are admitted.</h2>
@@ -49,7 +49,7 @@ export default async function LoginPage({
 
       <section className="lg-panel">
         <div className="lg-panel-top">
-          <Brand label="PolicyLens home" size={30} />
+          <Brand label="BimaSetu home" size={30} />
           <ThemeToggle />
         </div>
         <div className="lg-panel-inner">

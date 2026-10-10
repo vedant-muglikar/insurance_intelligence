@@ -163,7 +163,7 @@ export function LoginForm({ message, status }: { message?: string; status: 'erro
       </form>
 
       <p className="lg-switch-hint">
-        {mode === 'signin' ? 'New to PolicyLens?' : 'Already have an account?'}{' '}
+        {mode === 'signin' ? 'New to BimaSetu?' : 'Already have an account?'}{' '}
         <button type="button" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}>
           {mode === 'signin' ? 'Create an account' : 'Sign in'}
         </button>

@@ -1,4 +1,4 @@
-# 🛡️ PolicyLens
+# 🛡️ BimaSetu
 ### Policy-to-Patient Insurance Coverage & Treatment Cost Intelligence
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.3_(Turbopack)-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
@@ -14,7 +14,7 @@
 
 Over **70% of health insurance policyholders in India** face surprise out-of-pocket expenses at the hospital billing desk. Complex policy wording, hidden sub-limits, proportionate room rent deductions, waiting period date traps, and age-conditioned co-pays leave patients and families blindsided during critical healthcare events.
 
-**PolicyLens** bridges the gap between insurer contracts and hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
+**BimaSetu** bridges the gap between insurer contracts and hospital billing. It ingests complex health insurance policy PDFs and hospital estimates, extracts coverage clauses with exact page-level citations, compiles them into strongly-typed executable rules, and performs **pre-admission preflight simulations** with complete **Clause-to-Rupee traceability**.
 
 ---
 
@@ -22,7 +22,7 @@ Over **70% of health insurance policyholders in India** face surprise out-of-poc
 
 > **"Language models are exceptional at reading comprehension and entity extraction, but catastrophic at financial arithmetic and calendar boundary calculations."**
 
-PolicyLens strictly enforces an architectural boundary:
+BimaSetu strictly enforces an architectural boundary:
 1. **AI Extraction Layer**: Large Language Models (Google Gemini 2.5 Flash with OpenAI GPT-4o-mini fallback) extract clauses and verbatim textual quotes.
 2. **Provenance Verification**: Text citations are cross-checked against exact character spans in the source PDF.
 3. **Deterministic Compiler**: Extracts are transformed into typed executable rule sets with conditions, room categories, percentages, and rupee thresholds.
@@ -139,7 +139,7 @@ flowchart TD
 
 ## 🏥 Indian Surgical Cost Benchmark Matrix
 
-When a hospital quotation is not yet available, PolicyLens utilizes a localized cost matrix calibrated across Tier 1, Tier 2, and Tier 3 Indian cities with hospital category multipliers (Public, Private, Corporate):
+When a hospital quotation is not yet available, BimaSetu utilizes a localized cost matrix calibrated across Tier 1, Tier 2, and Tier 3 Indian cities with hospital category multipliers (Public, Private, Corporate):
 
 | Procedure | Canonical Key | Tier 1 Typical | Tier 2 Typical | Tier 3 Typical | Typical Stay |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -164,7 +164,7 @@ When a hospital quotation is not yet available, PolicyLens utilizes a localized 
 
 ## 🧪 Automated Acceptance Tests
 
-PolicyLens includes an automated test suite verifying all core requirements from the PolicyLens Blueprint:
+BimaSetu includes an automated test suite verifying all core requirements from the BimaSetu Blueprint:
 
 ```bash
 npm test
@@ -295,7 +295,7 @@ insurance_intelligence/
 │   │   ├── LiquidEther.tsx      # Three.js WebGL fluid dynamics canvas
 │   │   ├── loader-4.tsx         # Multi-ring cybernetic spinner
 │   │   └── onboard-card.tsx     # Animated multi-stage step indicator
-│   ├── landing-page.tsx         # PolicyLens product landing page
+│   ├── landing-page.tsx         # BimaSetu product landing page
 │   └── policy-lens.tsx          # Main state machine (upload -> processing -> results)
 ├── lib/
 │   ├── ai/
@@ -357,3 +357,14 @@ insurance_intelligence/
 
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
+## Saved policy analyses (Supabase)
+
+Uploads are identified by the policy's IRDAI **UIN** (which includes the product version) and a hash of the text.
+If the same wording was analysed before, its rules are loaded from `plan_templates`, `compiled_rules` and
+`extracted_pages` instead of calling the LLM, and the chatbot reads its context from those pages.
+
+1. Run `supabase/migrations/20261010000000_policy_cache.sql` once in the Supabase SQL editor.
+2. Set `SUPABASE_SERVICE_ROLE_KEY` (server only) in `.env.local`.
+
+Matching never uses the policy name. A saved analysis is reused only on an exact document-hash match, or an exact UIN
+match plus at least 80% text similarity. Without the key the app works as before and runs the LLM on every upload.

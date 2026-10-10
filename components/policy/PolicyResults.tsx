@@ -3,318 +3,182 @@
 import type { PolicyAnalysisResult, PolicyCategory, PolicyRule } from '@/lib/types/policy'
 import { useMemo, useState } from 'react'
 import {
-  AlertTriangle,
-  ArrowLeft,
-  BarChart3,
-  FileSearch,
-  Search,
+  ArrowRight,
+  Calculator,
+  ChatCircleDots,
+  ListChecks,
+  MagnifyingGlass,
+  Receipt,
+  Scales,
   ShieldCheck,
-  Sparkles,
-  Clock3,
-  Filter,
-  ChevronRight,
-} from 'lucide-react'
-import { RuleCard, EvidenceViewer, StatusBadge } from './shared'
-import { PolicyQA } from './PolicyQA'
+  UploadSimple,
+  Warning,
+} from '@phosphor-icons/react'
+import { RuleCard, EvidenceViewer } from './shared'
+import { PolicyQA, useChatState } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
-import { BillAudit } from './BillAudit'
 import { ClaimDispute } from './ClaimDispute'
+import { BillAudit } from './BillAudit'
+import { Brand } from '../ui/Brand'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
 import { ExtractionQuality } from './ExtractionQuality'
 import { PreparationChecklist } from './checklist/PreparationChecklist'
 import { toChecklistScenario, toPreflightSignals } from './checklist/useChecklist'
 import type { CoverageResult, TreatmentScenario } from '@/lib/types/estimate'
-import GooeyNav from '../ui/GooeyNav'
 
+// ─── Views & Navigation ───────────────────────────────────────────────────────
 
-// ─── Tab types ────────────────────────────────────────────────────────────────
+type View = 'policy' | 'estimate' | 'checklist' | 'bill_audit' | 'ask' | 'claims'
 
-type Tab =
-  | 'Overview'
-  | 'Preflight Estimator'
-  | 'Checklist'
-  | 'Coverage'
-  | 'Exclusions'
-  | 'Waiting Periods'
-  | 'Limits'
-  | 'Eligibility'
-  | 'Claim Requirements'
-  | 'Ask Policy'
-  | 'Claim Dispute'
-  | 'Bill Audit'
-
-const TABS: Tab[] = [
-  'Overview',
-  'Preflight Estimator',
-  'Checklist',
-  'Coverage',
-  'Exclusions',
-  'Waiting Periods',
-  'Limits',
-  'Eligibility',
-  'Claim Requirements',
-  'Ask Policy',
-  'Claim Dispute',
-  'Bill Audit',
+const VIEWS: { id: View; label: string; Icon: any }[] = [
+  { id: 'policy', label: 'Policy', Icon: ShieldCheck },
+  { id: 'estimate', label: 'Estimate', Icon: Calculator },
+  { id: 'checklist', label: 'Checklist', Icon: ListChecks },
+  { id: 'bill_audit', label: 'Bill Audit', Icon: Receipt },
+  { id: 'ask', label: 'Ask & Voice', Icon: ChatCircleDots },
+  { id: 'claims', label: 'Dispute', Icon: Scales },
 ]
 
-const TAB_CATEGORIES: Record<Tab, PolicyCategory[]> = {
-  Overview: [],
-  'Preflight Estimator': [],
-  Checklist: [],
-  Coverage: ['coverage'],
-  Exclusions: ['exclusion'],
-  'Waiting Periods': ['waiting_period'],
-  Limits: ['room_rent', 'icu_limit', 'sub_limit', 'deductible', 'co_payment'],
-  Eligibility: ['eligibility'],
-  'Claim Requirements': ['claim_requirement'],
-  'Ask Policy': [],
-  'Claim Dispute': [],
-  'Bill Audit': [],
-}
+type RuleGroup = 'covered' | 'not' | 'waiting' | 'limits' | 'who' | 'steps'
 
-// ─── Overview tab ─────────────────────────────────────────────────────────────
+const RULE_GROUPS: { id: RuleGroup; label: string; cats: PolicyCategory[] }[] = [
+  { id: 'covered', label: 'Covered', cats: ['coverage'] },
+  { id: 'not', label: 'Not covered', cats: ['exclusion'] },
+  { id: 'waiting', label: 'Waiting', cats: ['waiting_period'] },
+  { id: 'limits', label: 'Limits', cats: ['room_rent', 'icu_limit', 'sub_limit', 'deductible', 'co_payment'] },
+  { id: 'who', label: 'Who qualifies', cats: ['eligibility'] },
+  { id: 'steps', label: 'Claim steps', cats: ['claim_requirement'] },
+]
 
-function OverviewTab({
+// ─── Policy view: the facts, one big action, then the rules ───────────────────
+
+function PolicyView({
   result,
-  setTab,
+  onEstimate,
   onEvidence,
 }: {
   result: PolicyAnalysisResult
-  setTab: (t: Tab) => void
+  onEstimate: () => void
   onEvidence: (rule: PolicyRule) => void
 }) {
-  const { overview, extraction_stats, rules } = result
-  const topRules = rules.slice(0, 4)
+  const { overview } = result
+  const [group, setGroup] = useState<RuleGroup>(
+    () => RULE_GROUPS.find((g) => result.rules.some((r) => g.cats.includes(r.category)))?.id ?? 'covered',
+  )
+  const [query, setQuery] = useState('')
 
-  const summaryItems = [
-    { label: 'Insurer', value: overview.insurer || '—' },
-    { label: 'Plan', value: overview.plan_name || '—' },
-    { label: 'Sum Insured', value: overview.sum_insured || '—' },
-    { label: 'Policy Type', value: overview.policy_type || '—' },
-    { label: 'Total Pages', value: `${result.total_pages}` },
-  ]
-
-  const statCards = [
-    {
-      label: 'Coverage rules',
-      value: extraction_stats.coverage_count,
-      icon: ShieldCheck,
-      tone: 'green',
-    },
-    {
-      label: 'Exclusions',
-      value: extraction_stats.exclusion_count,
-      icon: AlertTriangle,
-      tone: 'amber',
-    },
-    {
-      label: 'Waiting periods',
-      value: extraction_stats.waiting_period_count,
-      icon: Clock3,
-      tone: 'blue',
-    },
-    {
-      label: 'Limits',
-      value: extraction_stats.limit_count,
-      icon: BarChart3,
-      tone: 'purple',
-    },
-  ]
+  const inGroup = (g: RuleGroup) => result.rules.filter((r) => RULE_GROUPS.find((x) => x.id === g)!.cats.includes(r.category))
+  const q = query.trim().toLowerCase()
+  const rules = inGroup(group).filter(
+    (r) => !q || r.rule_name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.value.toLowerCase().includes(q),
+  )
 
   return (
-    <div className="tab-content">
-      {/* Per-page text-layer / OCR report */}
+    <div className="sx-stack">
+      {/* OCR & Document Quality Report (if available) */}
       {result.extraction_report && (
         <ExtractionQuality report={result.extraction_report} pages={result.pages} />
       )}
 
-      {/* Scanned PDF warning (results without a per-page report) */}
       {result.scanned_pdf_warning && !result.extraction_report && (
-        <div className="scanned-warning">
-          <AlertTriangle size={16} className="shrink-0 text-amber-400" />
-          <div>
-            <div className="font-medium text-amber-200">Scanned PDF detected</div>
-            <p className="mt-0.5 text-xs text-slate-400">
-              This document appears to be a scanned image. Text extraction may be
-              incomplete. Consider using a text-based PDF for best results.
-            </p>
-          </div>
-        </div>
+        <p className="sx-note sx-note-warn">
+          <Warning size={18} weight="bold" aria-hidden /> Scanned PDF. Some text may be missing.
+        </p>
       )}
 
-      {/* Policy summary strip */}
-      <div className="overview-summary">
-        {summaryItems.map((item) => (
-          <div key={item.label} className="overview-summary-item">
-            <div className="overview-summary-label">{item.label}</div>
-            <div className="overview-summary-value">{item.value}</div>
+      <header className="sx-hero">
+        <h1 className="sx-title">{overview.plan_name || 'Your policy'}</h1>
+        {overview.insurer && <p className="sx-sub">{overview.insurer}</p>}
+        <dl className="sx-facts">
+          <div className="sx-fact sx-fact-lead">
+            <dt>Sum insured</dt>
+            <dd className="sx-figure">{overview.sum_insured || 'Not found'}</dd>
           </div>
-        ))}
-      </div>
-
-      {/* Hero Preflight Callout Banner (Blueprint Section 1) */}
-      <div className="p-4 rounded-xl bg-[var(--card2)] border border-emerald-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-              PolicyLens Core Preflight
-            </span>
-            <span className="text-xs text-slate-400">· Pre-admission intelligence</span>
-          </div>
-          <h3 className="text-sm font-semibold text-white">
-            Evaluate Hospital Treatment Scenario with Clause-to-Rupee Traceability
-          </h3>
-          <p className="text-xs text-slate-400">
-            Check waiting periods, room eligibility, exclusions, sub-limits, and get an evidence-audited OOP estimate before hospital admission.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setTab('Preflight Estimator')}
-          className="bg-[var(--brand)] hover:bg-[var(--brand-hi)] text-[var(--on-brand)] font-semibold text-xs px-4 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors shrink-0"
-        >
-          <span>Launch Preflight</span>
-          <ChevronRight size={14} />
-        </button>
-      </div>
-
-      {/* Stat cards */}
-      <div className="overview-stats">
-        {statCards.map((s) => {
-          const Icon = s.icon
-          return (
-            <button
-              key={s.label}
-              className="overview-stat-card"
-              onClick={() => setTab(s.label === 'Coverage rules' ? 'Coverage' : s.label === 'Exclusions' ? 'Exclusions' : s.label === 'Waiting periods' ? 'Waiting Periods' : 'Limits')}
-            >
-              <div className={`icon-box tone-${s.tone}`}>
-                <Icon size={15} />
-              </div>
-              <div className="overview-stat-value">{s.value}</div>
-              <div className="overview-stat-label">{s.label}</div>
-              <ChevronRight size={13} className="ml-auto text-slate-600" />
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Recent rules */}
-      <div className="overview-recent">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">Key rules extracted</h2>
-            <p className="section-sub">A sample from your policy analysis</p>
-          </div>
-          <button
-            className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-            onClick={() => setTab('Coverage')}
-          >
-            View all <ChevronRight size={13} />
-          </button>
-        </div>
-        <div className="rules-list">
-          {topRules.map((rule, i) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
-          ))}
-        </div>
-      </div>
-
-      {/* AI extraction stats */}
-      <div className="ai-summary-card">
-        <div className="flex items-center gap-3">
-          <div className="icon-box tone-purple">
-            <Sparkles size={15} />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">
-              AI Extraction Summary
-            </h3>
-            <p className="text-xs text-slate-500">
-              Structured from {result.total_pages} pages · processed in{' '}
-              {(result.processing_time_ms / 1000).toFixed(1)}s
-            </p>
-          </div>
-        </div>
-        <div className="ai-summary-grid">
-          {[
-            ['Total rules', extraction_stats.total_rules],
-            ['Coverage', extraction_stats.coverage_count],
-            ['Exclusions', extraction_stats.exclusion_count],
-            ['Waiting periods', extraction_stats.waiting_period_count],
-            ['Limits', extraction_stats.limit_count],
-            ['Eligibility', extraction_stats.eligibility_count],
-            ['Claim requirements', extraction_stats.claim_requirement_count],
-            ['Validated evidence', extraction_stats.validated_count],
-          ].map(([label, value]) => (
-            <div key={String(label)}>
-              <div className="ai-summary-val">{value}</div>
-              <div className="ai-summary-label">{label}</div>
+          {overview.policy_type && (
+            <div className="sx-fact">
+              <dt>Type</dt>
+              <dd>{overview.policy_type}</dd>
             </div>
+          )}
+          <div className="sx-fact">
+            <dt>Read</dt>
+            <dd>{result.total_pages} pages</dd>
+          </div>
+          {overview.uin && (
+            <div className="sx-fact">
+              <dt>UIN</dt>
+              <dd className="sx-uin">{overview.uin}</dd>
+            </div>
+          )}
+        </dl>
+      </header>
+
+      <button type="button" className="sx-cta" onClick={onEstimate}>
+        <span className="sx-cta-icon" aria-hidden>
+          <Calculator size={26} weight="bold" />
+        </span>
+        <span className="sx-cta-text">
+          <strong>What will I pay?</strong>
+          <span>Plan a hospital stay</span>
+        </span>
+        <ArrowRight size={22} weight="bold" aria-hidden />
+      </button>
+
+      <section className="sx-rules" aria-label="Your policy rules">
+        <h2 className="sx-h2">Your rules</h2>
+        <div className="sx-chips" role="tablist" aria-label="Rule type">
+          {RULE_GROUPS.filter((g) => inGroup(g.id).length > 0).map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              role="tab"
+              aria-selected={group === g.id}
+              className="sx-chip"
+              onClick={() => setGroup(g.id)}
+            >
+              {g.label}
+              <b>{inGroup(g.id).length}</b>
+            </button>
           ))}
         </div>
-        <div className="ai-summary-note">
-          AI extraction is an interpretation. Verify rules against the original
-          policy wording before making decisions.
-        </div>
-      </div>
+
+        {inGroup(group).length > 5 && (
+          <label className="sx-search">
+            <MagnifyingGlass size={18} weight="bold" aria-hidden />
+            <input placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search rules" />
+          </label>
+        )}
+
+        {rules.length === 0 ? (
+          <p className="sx-empty">Nothing here for this policy.</p>
+        ) : (
+          <div className="rules-list">
+            {rules.map((rule, i) => (
+              <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <p className="sx-foot">
+        {result.cache?.hit ? 'Loaded from a saved copy of this policy.' : `Read by AI in ${(result.processing_time_ms / 1000).toFixed(0)}s.`} Check the original wording before you decide.
+      </p>
     </div>
   )
 }
 
-// ─── Rules tab (generic) ──────────────────────────────────────────────────────
+// ─── Claims view: Dispute helper ──────────────────────────────────────────────
 
-function RulesTab({
-  rules,
-  tab,
-  onEvidence,
-}: {
-  rules: PolicyRule[]
-  tab: Tab
-  onEvidence: (rule: PolicyRule) => void
-}) {
-  const [query, setQuery] = useState('')
-
-  const filtered = rules.filter(
-    (r) =>
-      r.rule_name.toLowerCase().includes(query.toLowerCase()) ||
-      r.description.toLowerCase().includes(query.toLowerCase()) ||
-      r.value.toLowerCase().includes(query.toLowerCase()),
-  )
-
+function ClaimsView({ result }: { result: PolicyAnalysisResult }) {
   return (
-    <div className="tab-content">
-      <div className="tab-toolbar">
-        <div className="search-field">
-          <Search size={14} />
-          <input
-            placeholder={`Search ${tab.toLowerCase()}...`}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <span className="result-count">{filtered.length} rules</span>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="empty-state">
-          <FileSearch size={28} className="text-slate-600" />
-          <p>No {tab.toLowerCase()} found in this policy.</p>
-        </div>
-      ) : (
-        <div className="rules-list">
-          {filtered.map((rule, i) => (
-            <RuleCard key={rule.id} rule={rule} onEvidence={onEvidence} index={i} />
-          ))}
-        </div>
-      )}
+    <div className="sx-stack">
+      <ClaimDispute pages={result.pages} />
     </div>
   )
 }
 
-// ─── Main results view ────────────────────────────────────────────────────────
+// ─── Shell ────────────────────────────────────────────────────────────────────
 
 interface PolicyResultsProps {
   result: PolicyAnalysisResult
@@ -323,14 +187,17 @@ interface PolicyResultsProps {
 }
 
 export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps) {
-  const [tab, setTab] = useState<Tab>('Overview')
+  const [view, setView] = useState<View>('policy')
   const [activeRule, setActiveRule] = useState<PolicyRule | null>(null)
+  const chat = useChatState() // held here so the chat survives switching tabs
+
   // Preflight scenario lives here so it survives tab switches and can personalise the checklist
   const [estimator, setEstimator] = useState<{
     scenario: TreatmentScenario
     preflight: CoverageResult
     userEdited: boolean
   } | null>(null)
+
   const checklistScenario = useMemo(
     () => (estimator?.userEdited ? toChecklistScenario(estimator.scenario) : null),
     [estimator],
@@ -340,96 +207,42 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
     [estimator],
   )
 
-  const getRulesForTab = (t: Tab): PolicyRule[] => {
-    const cats = TAB_CATEGORIES[t]
-    if (!cats || cats.length === 0) return result.rules
-    return result.rules.filter((r) => cats.includes(r.category))
+  const go = (v: View) => {
+    setView(v)
+    window.scrollTo({ top: 0 })
   }
 
-  const TAB_LABEL: Partial<Record<Tab, string>> = {
-    'Ask Policy': 'Ask',
-    'Preflight Estimator': 'Preflight',
-    'Claim Dispute': 'Dispute',
-    'Bill Audit': 'Bill Audit',
-  }
-  const tabCount = (t: Tab) =>
-    t === 'Overview' ||
-    t === 'Ask Policy' ||
-    t === 'Preflight Estimator' ||
-    t === 'Checklist' ||
-    t === 'Claim Dispute' ||
-    t === 'Bill Audit'
-      ? null
-      : getRulesForTab(t).length
-
-  const onTabKey = (e: React.KeyboardEvent, i: number) => {
-    const next = e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i - 1 + TABS.length) % TABS.length : null
+  const onDockKey = (e: React.KeyboardEvent, i: number) => {
+    const next = e.key === 'ArrowRight' ? (i + 1) % VIEWS.length : e.key === 'ArrowLeft' ? (i - 1 + VIEWS.length) % VIEWS.length : null
     if (next === null) return
     e.preventDefault()
-    setTab(TABS[next])
+    go(VIEWS[next].id)
     ;(e.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus()
   }
 
   return (
-    <div className="results-wrapper">
-      {/* Top bar */}
-      <div className="results-topbar">
-        <button className="back-btn" onClick={onReset}>
-          <ArrowLeft size={15} />
-          New analysis
-        </button>
-
-        <div className="results-policy-info">
-          <div className="results-policy-name">{result.overview.plan_name || fileName}</div>
-          <div className="results-policy-meta">
-            <span>{result.overview.insurer}</span>
-            <span>·</span>
-            <span>{result.total_pages} pages</span>
-            <span>·</span>
-            <StatusBadge status="covered" />
-          </div>
-        </div>
-        <div className="results-actions">
+    <div className="sx-app">
+      <header className="sx-top">
+        <Brand size={36} />
+        <div className="sx-top-actions">
+          <button type="button" className="sx-new" onClick={onReset}>
+            <UploadSimple size={18} weight="bold" aria-hidden />
+            <span>New policy</span>
+          </button>
           <ThemeToggle />
           <UserMenu />
         </div>
-      </div>
+      </header>
 
-      {/* Tabs */}
-      <div className="results-tabs-bar">
-        <div className="tabs-scroll" role="tablist" aria-label="Policy sections">
-          {TABS.map((t, i) => {
-            const count = tabCount(t)
-            return (
-              <button
-                key={t}
-                role="tab"
-                aria-selected={tab === t}
-                tabIndex={tab === t ? 0 : -1}
-                className={`tab-button ${tab === t ? 'tab-active' : ''}`}
-                onClick={() => setTab(t)}
-                onKeyDown={(e) => onTabKey(e, i)}
-                type="button"
-              >
-                {TAB_LABEL[t] ?? t}
-                {count !== null && <span className="tab-count">{count}</span>}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Content */}
-      <main className="results-main">
-        {tab === 'Overview' ? (
-          <OverviewTab
+      <main className={`sx-main sx-view-${view}`} key={view}>
+        {view === 'policy' && (
+          <PolicyView
             result={result}
-            setTab={setTab}
+            onEstimate={() => go('estimate')}
             onEvidence={setActiveRule}
           />
-        ) : tab === 'Ask Policy' ? (
-          <PolicyQA pages={result.pages} />
-        ) : tab === 'Preflight Estimator' ? (
+        )}
+        {view === 'estimate' && (
           <EstimateForm
             policyResult={result}
             initialScenario={estimator?.scenario}
@@ -437,39 +250,61 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
               setEstimator((prev) => ({ scenario, preflight, userEdited: userEdited || !!prev?.userEdited }))
             }
           />
-        ) : tab === 'Checklist' ? (
-          <PreparationChecklist
-            result={result}
-            fileName={fileName}
-            scenario={checklistScenario}
-            preflight={checklistPreflight}
-            onOpenEstimator={() => setTab('Preflight Estimator')}
-            onViewClause={setActiveRule}
-          />
-        ) : tab === 'Claim Dispute' ? (
-          <ClaimDispute pages={result.pages} />
-        ) : tab === 'Bill Audit' ? (
-          <BillAudit
-            policyRules={result.rules}
-            policyName={
-              result.overview?.plan_name
-                ? `${result.overview.insurer || ''} ${result.overview.plan_name}`.trim()
-                : undefined
-            }
-          />
-        ) : (
-          <RulesTab
-            rules={getRulesForTab(tab)}
-            tab={tab}
-            onEvidence={setActiveRule}
+        )}
+        {view === 'checklist' && (
+          <div className="sx-stack">
+            <PreparationChecklist
+              result={result}
+              fileName={fileName}
+              scenario={checklistScenario}
+              preflight={checklistPreflight}
+              onOpenEstimator={() => go('estimate')}
+              onViewClause={setActiveRule}
+            />
+          </div>
+        )}
+        {view === 'bill_audit' && (
+          <div className="sx-stack">
+            <BillAudit
+              policyRules={result.rules}
+              policyName={
+                result.overview?.plan_name
+                  ? `${result.overview.insurer || ''} ${result.overview.plan_name}`.trim()
+                  : undefined
+              }
+            />
+          </div>
+        )}
+        {view === 'ask' && (
+          <PolicyQA
+            pages={result.pages}
+            planTemplateId={result.plan_template_id}
+            rules={result.rules}
+            chat={chat}
           />
         )}
+        {view === 'claims' && <ClaimsView result={result} />}
       </main>
 
-      {/* Evidence viewer */}
-      {activeRule && (
-        <EvidenceViewer rule={activeRule} onClose={() => setActiveRule(null)} />
-      )}
+      <nav className="sx-dock" role="tablist" aria-label="Sections">
+        {VIEWS.map(({ id, label, Icon }, i) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={view === id}
+            tabIndex={view === id ? 0 : -1}
+            className="sx-dock-btn"
+            onClick={() => go(id)}
+            onKeyDown={(e) => onDockKey(e, i)}
+          >
+            <Icon size={24} weight={view === id ? 'fill' : 'bold'} aria-hidden />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {activeRule && <EvidenceViewer rule={activeRule} onClose={() => setActiveRule(null)} />}
     </div>
   )
 }

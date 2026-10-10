@@ -125,6 +125,9 @@ export interface PolicyOverview {
   insurer: string
   plan_name: string
   sum_insured: string
+  /** Base sum insured in rupees, read from the document (null when the PDF does not state one clearly). */
+  sum_insured_amount?: number | null
+  sum_insured_source?: 'document' | 'document_scan' | null
   policy_type: string
   total_pages: number
   uin?: string
@@ -244,6 +247,9 @@ export interface PolicyAnalysisResult {
   overview: PolicyOverview
   rules: PolicyRule[]
   compiled_rules?: CompiledRule[]
+  /** Id of the saved analysis in Supabase, when saving is enabled. The chatbot reads pages from it. */
+  plan_template_id?: string | null
+  cache?: { hit: boolean; matchedBy: 'hash' | 'uin' | null; uin: string | null }
   pages: ExtractedPage[]
   total_pages: number
   scanned_pdf_warning: boolean

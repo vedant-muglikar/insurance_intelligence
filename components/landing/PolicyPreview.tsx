@@ -138,7 +138,7 @@ export default function PolicyPreview({ compact = false }: { compact?: boolean }
         </div>
       </div>
 
-      <figcaption className="pp-note">Bundled sample policy run through the PolicyLens estimate engine. Not a real policy.</figcaption>
+      <figcaption className="pp-note">Bundled sample policy run through the BimaSetu estimate engine. Not a real policy.</figcaption>
     </figure>
   )
 }

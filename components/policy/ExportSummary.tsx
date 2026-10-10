@@ -19,7 +19,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
 
   const handleDownloadJSON = () => {
     const payload = {
-      product: 'PolicyLens Pre-admission Preflight',
+      product: 'BimaSetu Pre-admission Preflight',
       timestamp: new Date().toISOString(),
       policy: {
         insurer: policy.overview.insurer,
@@ -45,7 +45,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `PolicyLens_Preflight_${scenario.treatment.replace(/\s+/g, '_')}.json`
+    a.download = `BimaSetu_Preflight_${scenario.treatment.replace(/\s+/g, '_')}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -195,7 +195,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
 
         {/* Disclaimer per blueprint */}
         <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-          <strong>Important Preflight Notice:</strong> PolicyLens provides an explainable pre-admission preflight estimate based strictly on policy evidence clauses and scenario parameters. It does not constitute pre-authorization or claim guarantee; final authorization remains subject to insurer and Third Party Administrator (TPA) medical audit.
+          <strong>Important Preflight Notice:</strong> BimaSetu provides an explainable pre-admission preflight estimate based strictly on policy evidence clauses and scenario parameters. It does not constitute pre-authorization or claim guarantee; final authorization remains subject to insurer and Third Party Administrator (TPA) medical audit.
         </div>
       </div>
     </div>
