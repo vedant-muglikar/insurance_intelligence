@@ -155,11 +155,7 @@ export function PreparationChecklist({
           </button>
         </div>
       )}
-      {cl.mode === 'local' && (
-        <Banner tone="var(--warn)" icon={<HardDrive size={15} />}>
-          <strong>Progress is stored in this browser only.</strong> {cl.localReason} Document attachments need a signed-in account with checklist storage set up.
-        </Banner>
-      )}
+
       <ScenarioBanner
         scenario={scenario}
         storedScenario={storedScenario}
