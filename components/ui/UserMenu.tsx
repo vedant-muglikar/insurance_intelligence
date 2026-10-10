@@ -46,13 +46,11 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/40 px-3 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800/80 hover:border-slate-600 focus:outline-none"
+        className="sx-avatar"
+        aria-label="Account menu"
+        aria-expanded={isOpen}
       >
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-          <User size={12} />
-        </div>
-        <span className="max-w-[120px] truncate sm:max-w-[160px]">{email}</span>
-        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        {(email ?? '?').charAt(0).toUpperCase()}
       </button>
 
       {isOpen && (

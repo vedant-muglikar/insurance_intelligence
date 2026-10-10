@@ -10,7 +10,7 @@ web
 Patients and their families who hold a health insurance policy and face a planned hospitalization. They want to know, before admission, how much the insurer will pay and how much they will have to cover themselves. (Confirmed with the user.)
 
 ## Product Purpose
-PolicyLens (renamed from ClaimLens at the user's request) is a pre-admission coverage preflight. It converts a health insurance policy PDF into auditable coverage rules, applies them to the patient's treatment scenario, and explains the patient share of the bill. Success means a patient walks into admission knowing their likely out-of-pocket amount and which clauses drive it.
+BimaSetu (renamed from ClaimLens at the user's request) is a pre-admission coverage preflight. It converts a health insurance policy PDF into auditable coverage rules, applies them to the patient's treatment scenario, and explains the patient share of the bill. Success means a patient walks into admission knowing their likely out-of-pocket amount and which clauses drive it.
 
 ## Positioning
 Two things together that a generic chatbot or insurer portal could not truthfully claim: (1) Clause-to-Rupee traceability, where every deduction is traced to policy wording with a page citation and all coverage arithmetic runs in deterministic code rather than an LLM; and (2) a modelled treatment cost range (P10/P50/P90) with stay-adjusted line items. (Confirmed with the user: "both together".)
@@ -28,7 +28,7 @@ Two things together that a generic chatbot or insurer portal could not truthfull
 - The product carries a disclaimer that it is not insurer authorization, claim settlement or legal advice (existing footer copy).
 
 ## Brand Commitments
-Name: PolicyLens (the user renamed the product from ClaimLens). The user asked for a dark default with a light-mode toggle, a warm (not cold or clinical) feel, and restrained motion that never slows tasks. The visual world is recorded in DESIGN.md.
+Name: BimaSetu (the user renamed the product from ClaimLens). The user asked for a dark default with a light-mode toggle, a warm (not cold or clinical) feel, and restrained motion that never slows tasks. The visual world is recorded in DESIGN.md.
 
 ## Evidence on Hand
 - Real, usable: the benchmark and ML cost outputs (for example Total Knee Replacement, Mumbai, private, single room, 4 days: about ₹3.44L to ₹4.61L, typical ₹4.04L), and the evaluation report at `ml_service/ML_MODEL_EVALUATION.md` (synthetic-data caveat applies).

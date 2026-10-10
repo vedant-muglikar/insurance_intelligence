@@ -17,7 +17,6 @@ import { PolicyTimeline } from './PolicyTimeline'
 import { ClaimReadiness } from './ClaimReadiness'
 import { QuoteReview } from './QuoteReview'
 import { ExportSummary } from './ExportSummary'
-import { CoverageGauge } from './CoverageGauge'
 import { ClauseFlowVisualizer } from './ClauseFlowVisualizer'
 import { CoverageRiskAnalyzer } from './CoverageRiskAnalyzer'
 import { EvidenceViewer } from './shared'
@@ -59,9 +58,8 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
     policyStartDate: '2023-01-15',
     proposedAdmissionDate: new Date().toISOString().split('T')[0],
     declaredPED: [],
-    availableSumInsured: policyResult.overview.sum_insured
-      ? parseInt(policyResult.overview.sum_insured.replace(/[^0-9]/g, '')) || 500000
-      : 500000,
+    // Taken from the policy document; left empty (the form asks) when the PDF does not state one clearly.
+    availableSumInsured: policyResult.overview.sum_insured_amount ?? undefined,
     isNetworkHospital: true,
   })
 
@@ -130,26 +128,19 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
   }
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 p-4">
+    <div className="flex flex-col xl:flex-row gap-6">
       {/* ─── Scenario Inputs Sidebar ────────────────────────────────────────── */}
-      <div className="w-full xl:w-[380px] shrink-0 space-y-4">
+      <div className="w-full xl:w-[380px] shrink-0 space-y-4 order-2 xl:order-1">
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-emerald-400" />
-              Pre-Admission Preflight
-            </h3>
-            <span className="text-[11px] uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-              Deterministic
-            </span>
+            <h3 className="text-base font-semibold text-white">Your stay</h3>
           </div>
 
           <form className="space-y-3.5 text-xs" onSubmit={(e) => e.preventDefault()}>
             {/* Treatment Selector with Procedure Suggestions */}
             <div>
               <label className="block text-slate-300 font-medium mb-1 flex items-center justify-between">
-                <span>Treatment / Procedure</span>
-                <span className="text-[11px] text-slate-500 font-normal">Canonical match</span>
+                <span>Treatment</span>
               </label>
               <input
                 type="text"
@@ -170,7 +161,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
-                  <Calendar size={11} /> Policy Start Date
+                  Policy started
                 </label>
                 <input
                   type="date"
@@ -181,7 +172,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               </div>
               <div>
                 <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
-                  <Calendar size={11} /> Planned Admission
+                  <Calendar size={11} /> Admission
                 </label>
                 <input
                   type="date"
@@ -196,7 +187,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
-                  <User size={11} /> Patient Age
+                  Age
                 </label>
                 <input
                   type="number"
@@ -209,7 +200,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               </div>
               <div>
                 <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
-                  <Building2 size={11} /> City
+                  City
                 </label>
                 <input
                   type="text"
@@ -225,7 +216,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-slate-400 text-[11px] mb-1 flex items-center gap-1">
-                  <Bed size={11} /> Room Choice
+                  Room
                 </label>
                 <select
                   className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500 capitalize"
@@ -241,7 +232,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               </div>
 
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Hospital Tier</label>
+                <label className="block text-slate-400 text-[11px] mb-1">Hospital</label>
                 <select
                   className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-emerald-500"
                   value={scenario.hospitalType}
@@ -257,7 +248,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             {/* Stay Duration & Available SI */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Stay Duration (Days)</label>
+                <label className="block text-slate-400 text-[11px] mb-1">Days in hospital</label>
                 <input
                   type="number"
                   min="1"
@@ -268,7 +259,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               </div>
 
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Available Sum Insured (₹)</label>
+                <label className="block text-slate-400 text-[11px] mb-1">Cover left (₹)</label>
                 <input
                   type="number"
                   step="50000"
@@ -282,7 +273,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
 
             {/* Declared PED Selection */}
             <div>
-              <label className="block text-slate-400 text-[11px] mb-1">Declared Pre-existing Diseases</label>
+              <label className="block text-slate-400 text-[11px] mb-1">Existing conditions</label>
               <div className="flex flex-wrap gap-1.5">
                 {['Diabetes', 'Hypertension', 'Arthritis', 'Cataract'].map(ped => {
                   const isChecked = scenario.declaredPED?.includes(ped)
@@ -311,11 +302,11 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             {/* Hospital Quote Action Box */}
             <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-slate-300 font-medium block">Hospital Estimate Document</span>
+                <span className="text-[11px] text-slate-300 font-medium block">Hospital quote</span>
                 <span className="text-[11px] text-slate-500">
                   {scenario.quoteLineItems?.length
                     ? `${scenario.quoteLineItems.length} line items loaded`
-                    : 'Using benchmark tariff'}
+                    : 'Using typical prices'}
                 </span>
               </div>
               <button
@@ -324,251 +315,129 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
                 className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-medium transition-colors"
               >
                 <Upload size={12} />
-                {scenario.quoteLineItems?.length ? 'Edit Quote' : 'Upload Quote'}
+                {scenario.quoteLineItems?.length ? 'Edit' : 'Add quote'}
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* ─── Preflight Results & Module Workspace ───────────────────────────── */}
-      <div className="flex-1 min-w-0 space-y-4">
+      {/* ─── Result: one number first, details on request ───────────────────── */}
+      <div className="flex-1 min-w-0 space-y-5 order-1 xl:order-2">
         {!preflight ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-500 border border-[var(--border)] rounded-xl border-dashed bg-[var(--card2)] p-10">
-            <Calculator className="w-10 h-10 mb-3 opacity-40 text-emerald-400" />
-            <p className="text-sm">Calculating deterministic coverage preflight...</p>
-          </div>
+          <p className="sx-wait">Working it out...</p>
         ) : (
           <>
-            {/* Statement of patient share: a ruled ledger block */}
-            <section className="pl-statement" aria-label="Statement of patient share">
-              <header className="pl-st-head">
-                <h3>Statement of patient share</h3>
-                <span className="pl-stamp pl-stamp-info">{preflight.costSource.replace(/_/g, ' ')}</span>
-              </header>
-
-              <div className="pl-st-row">
-                <div className="pl-st-what">
-                  <strong>Total treatment expense</strong>
-                  <em>Range {formatINR(preflight.treatmentCost.min)} to {formatINR(preflight.treatmentCost.max)}</em>
-                </div>
-                <span className="pl-num pl-st-amt">{formatINR(preflight.treatmentCost.typical)}</span>
+            <section className="sx-result" aria-label="Your estimated share">
+              <p className="sx-result-lead">You would pay about</p>
+              <p className="sx-result-amt">{formatINR(preflight.patientShare.typical)}</p>
+              <p className="sx-result-meta">
+                of a {formatINR(preflight.treatmentCost.typical)} bill. Your insurer covers{' '}
+                <strong>{formatINR(preflight.potentiallyCovered.typical)}</strong>.
+              </p>
+              <div
+                className="sx-result-bar"
+                role="img"
+                aria-label={`Insurer covers ${
+                  preflight.treatmentCost.typical > 0
+                    ? Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)
+                    : 0
+                } percent`}
+              >
+                <i
+                  style={{
+                    width: `${
+                      preflight.treatmentCost.typical > 0
+                        ? Math.min(100, Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
               </div>
-
-              <div className="pl-st-row" data-tone="ok">
-                <div className="pl-st-what">
-                  <strong>Potentially covered by insurer</strong>
-                  <em>
-                    Verified evidence {preflight.evidenceCoverage}%
-                    {preflight.treatmentCost.typical > 0
-                      ? ` · ${Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)}% admissible`
-                      : ''}
-                  </em>
-                </div>
-                <span className="pl-num pl-st-amt">{formatINR(preflight.potentiallyCovered.typical)}</span>
+              <div className="sx-result-foot">
+                <span className={`sx-status sx-status-${preflight.status}`}>
+                  {preflight.status === 'eligible'
+                    ? 'Looks covered'
+                    : preflight.status === 'conditional'
+                    ? 'Covered with conditions'
+                    : preflight.status === 'not_eligible'
+                    ? 'Not covered'
+                    : 'Needs more info'}
+                </span>
+                <span className="sx-result-range">
+                  Bill could be {formatINR(preflight.treatmentCost.min)} to {formatINR(preflight.treatmentCost.max)}
+                </span>
               </div>
-
-              <div className="pl-st-row pl-st-total" data-tone="deny">
-                <div className="pl-st-what">
-                  <strong>Estimated patient share</strong>
-                  <em>
-                    Out of pocket
-                    {preflight.treatmentCost.typical > 0
-                      ? ` · ${Math.round((preflight.patientShare.typical / preflight.treatmentCost.typical) * 100)}% of bill`
-                      : ''}
-                  </em>
-                </div>
-                <span className="pl-num pl-st-amt">{formatINR(preflight.patientShare.typical)}</span>
-              </div>
-
-              {preflight.costModel && (
-                <div className="pl-st-notes">
-                  <div>
-                    Model estimate · {preflight.costModel.uncertaintyLevel} uncertainty ·{' '}
-                    {Math.round(preflight.costModel.confidenceScore * 100)}% confidence
-                  </div>
-                  {preflight.costModel.drivers.map((d, i) => (
-                    <div key={i}>• {d}</div>
-                  ))}
-                  {preflight.costModel.warnings.map((w, i) => (
-                    <div key={`w${i}`} className="pl-st-warn">
-                      ⚠ {w}
-                    </div>
-                  ))}
-                </div>
-              )}
             </section>
 
-            {/* Coverage readout */}
-            <CoverageGauge
-              totalCost={preflight.treatmentCost.typical}
-              coveredAmount={preflight.potentiallyCovered.typical}
-              patientShare={preflight.patientShare.typical}
-              status={preflight.status}
-              evidenceCoverage={preflight.evidenceCoverage}
-            />
-
-            {/* Interactive Clause-to-Rupee Pipeline Flow Visualizer */}
-            <ClauseFlowVisualizer
-              totalCost={preflight.treatmentCost.typical}
-              coveredAmount={preflight.potentiallyCovered.typical}
-              patientShare={preflight.patientShare.typical}
-              ledger={preflight.ledger}
-              onSelectRule={(line) => {
-                setActivePreflightTab('ledger')
-              }}
-            />
-
-            {/* Status & Preflight Diagnostic Bar */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-slate-400">Preflight Status:</span>
-                  <span
-                    className={`font-semibold uppercase px-2 py-0.5 rounded text-[11px] font-mono ${
-                      preflight.status === 'eligible'
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
-                        : preflight.status === 'conditional'
-                        ? 'bg-blue-950 text-blue-300 border border-blue-700'
-                        : preflight.status === 'not_eligible'
-                        ? 'bg-red-950 text-red-300 border border-red-700'
-                        : 'bg-amber-950 text-amber-300 border border-amber-700'
-                    }`}
+            <div className="sx-chips" role="tablist" aria-label="More about this estimate">
+              {(
+                [
+                  ['ledger', 'Breakdown'],
+                  ['what_if', 'What if'],
+                  ['timeline', 'Before you go'],
+                  ['risk_analyzer', 'Risks'],
+                  ['export', 'Save'],
+                ] as const
+              ).map(([id, label]) => {
+                const selected =
+                  activePreflightTab === id ||
+                  (id === 'timeline' && (activePreflightTab === 'readiness' || activePreflightTab === 'missing_info'))
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    className="sx-chip"
+                    onClick={() => setActivePreflightTab(id)}
                   >
-                    {preflight.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-
-                <div className="hidden md:flex items-center gap-1.5 text-slate-400">
-                  <span>·</span>
-                  <span>Cost Conf: <strong className="capitalize text-slate-200">{preflight.costConfidence}</strong></span>
-                  <span>·</span>
-                  <span>Policy Conf: <strong className="capitalize text-slate-200">{preflight.coverageConfidence}</strong></span>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-slate-400">
-                {preflight.ledger.length} Clause Adjustment{preflight.ledger.length !== 1 ? 's' : ''}
-              </div>
+                    {label}
+                    {id === 'timeline' && preflight.missingInformation.length > 0 && <b>{preflight.missingInformation.length}</b>}
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Preflight Workspace Navigation Tabs */}
-            <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto pb-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('ledger')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'ledger'
-                    ? 'bg-[var(--card)] text-emerald-400 border-t-2 border-emerald-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <FileText size={13} />
-                Clause-to-Rupee Ledger
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('missing_info')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'missing_info'
-                    ? 'bg-[var(--card)] text-amber-400 border-t-2 border-amber-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <HelpCircle size={13} />
-                Missing Info Engine
-                {preflight.missingInformation.length > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[11px] flex items-center justify-center font-bold">
-                    {preflight.missingInformation.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('risk_analyzer')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
-                  activePreflightTab === 'risk_analyzer'
-                    ? 'bg-[var(--card)] text-rose-400 border-t-2 border-rose-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ShieldAlert size={13} />
-                Risk Analyzer
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('what_if')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'what_if'
-                    ? 'bg-[var(--card)] text-cyan-400 border-t-2 border-cyan-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Sparkles size={13} />
-                What-If Simulator
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('timeline')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'timeline'
-                    ? 'bg-[var(--card)] text-blue-400 border-t-2 border-blue-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Clock size={13} />
-                Waiting Milestones
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('readiness')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'readiness'
-                    ? 'bg-[var(--card)] text-purple-400 border-t-2 border-purple-400'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <CheckSquare size={13} />
-                Pre-Auth Checklist
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActivePreflightTab('export')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                  activePreflightTab === 'export'
-                    ? 'bg-[var(--card)] text-slate-200 border-t-2 border-slate-300'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Download size={13} />
-                Preflight Export
-              </button>
-            </div>
-
-            {/* Active Tab Sub-view Content */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               {activePreflightTab === 'ledger' && (
-                <CostLedger
-                  totalCost={preflight.treatmentCost.typical}
-                  coveredAmount={preflight.potentiallyCovered.typical}
-                  patientShare={preflight.patientShare.typical}
-                  costSource={preflight.costSource}
-                  ledger={preflight.ledger}
-                  onOpenEvidence={handleOpenEvidenceDetails}
-                />
-              )}
-
-              {activePreflightTab === 'missing_info' && (
-                <MissingInfoPanel
-                  missingFields={preflight.missingInformation}
-                  onResolveField={handleResolveMissingField}
-                />
+                <>
+                  <CostLedger
+                    totalCost={preflight.treatmentCost.typical}
+                    coveredAmount={preflight.potentiallyCovered.typical}
+                    patientShare={preflight.patientShare.typical}
+                    costSource={preflight.costSource}
+                    ledger={preflight.ledger}
+                    onOpenEvidence={handleOpenEvidenceDetails}
+                  />
+                  <details className="sx-more">
+                    <summary>How the money flows</summary>
+                    <ClauseFlowVisualizer
+                      totalCost={preflight.treatmentCost.typical}
+                      coveredAmount={preflight.potentiallyCovered.typical}
+                      patientShare={preflight.patientShare.typical}
+                      ledger={preflight.ledger}
+                      onSelectRule={() => setActivePreflightTab('ledger')}
+                    />
+                  </details>
+                  {preflight.costModel && (
+                    <details className="sx-more">
+                      <summary>Where the bill estimate comes from</summary>
+                      <ul>
+                        <li>
+                          Source: {preflight.costSource.replace(/_/g, ' ')}. {preflight.costModel.uncertaintyLevel} uncertainty,{' '}
+                          {Math.round(preflight.costModel.confidenceScore * 100)}% confidence.
+                        </li>
+                        {preflight.costModel.drivers.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                        {preflight.costModel.warnings.map((w, i) => (
+                          <li key={`w${i}`}>{w}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </>
               )}
 
               {activePreflightTab === 'what_if' && (
@@ -580,35 +449,35 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
                 />
               )}
 
-              {activePreflightTab === 'timeline' && (
-                <PolicyTimeline
-                  milestones={preflight.milestones || []}
-                  policyStartDate={scenario.policyStartDate}
-                  proposedAdmissionDate={scenario.proposedAdmissionDate}
-                  onOpenEvidence={handleOpenEvidenceDetails}
-                />
-              )}
-
-              {activePreflightTab === 'readiness' && (
-                <ClaimReadiness
-                  items={preflight.readinessChecklist || []}
-                  isNetworkHospital={scenario.isNetworkHospital}
-                />
+              {(activePreflightTab === 'timeline' ||
+                activePreflightTab === 'readiness' ||
+                activePreflightTab === 'missing_info') && (
+                <>
+                  {preflight.missingInformation.length > 0 && (
+                    <MissingInfoPanel
+                      missingFields={preflight.missingInformation}
+                      onResolveField={handleResolveMissingField}
+                    />
+                  )}
+                  <PolicyTimeline
+                    milestones={preflight.milestones || []}
+                    policyStartDate={scenario.policyStartDate}
+                    proposedAdmissionDate={scenario.proposedAdmissionDate}
+                    onOpenEvidence={handleOpenEvidenceDetails}
+                  />
+                  <ClaimReadiness
+                    items={preflight.readinessChecklist || []}
+                    isNetworkHospital={scenario.isNetworkHospital}
+                  />
+                </>
               )}
 
               {activePreflightTab === 'export' && (
-                <ExportSummary
-                  scenario={scenario}
-                  preflight={preflight}
-                  policy={policyResult}
-                />
+                <ExportSummary scenario={scenario} preflight={preflight} policy={policyResult} />
               )}
 
               {activePreflightTab === 'risk_analyzer' && (
-                <CoverageRiskAnalyzer
-                  policyRules={policyResult.rules}
-                  policyName={policyResult.overview?.plan_name}
-                />
+                <CoverageRiskAnalyzer policyRules={policyResult.rules} policyName={policyResult.overview?.plan_name} />
               )}
             </div>
           </>

@@ -68,7 +68,7 @@ function Nav() {
       <header className="lp-nav" data-scrolled={scrolled || open}>
         <div className="lp-progress" aria-hidden />
         <div className="lp-nav-inner">
-          <Brand href="#top" label="PolicyLens, back to top" />
+          <Brand href="#top" label="BimaSetu, back to top" />
 
           <nav className="lp-links" aria-label="Page sections">
             {SECTIONS.map((s) => (
@@ -126,7 +126,7 @@ function Hero() {
             <span className="lp-h1-accent">Coverage Preflight.</span>
           </h1>
           <p className="lp-lede">
-            Before planned hospitalization, PolicyLens converts your insurance policy into auditable rules, applies them
+            Before planned hospitalization, BimaSetu converts your insurance policy into auditable rules, applies them
             to patient scenarios in deterministic code, and explains your out-of-pocket patient share with
             Clause-to-Rupee traceability.
           </p>
@@ -426,7 +426,7 @@ const FEATURES = [
   },
   {
     title: 'Missing Information Engine',
-    desc: 'PolicyLens refuses false-confident answers. It spots missing start dates or declarations and asks for exactly what it needs.',
+    desc: 'BimaSetu refuses false-confident answers. It spots missing start dates or declarations and asks for exactly what it needs.',
   },
   {
     title: 'Hospital Estimate First',
@@ -577,9 +577,9 @@ function Footer() {
     <footer className="lp-footer">
       <div className="lp-wrap lp-footer-grid">
         <div>
-          <Brand href="#top" label="PolicyLens, back to top" />
+          <Brand href="#top" label="BimaSetu, back to top" />
           <p className="lp-footer-note">
-            PolicyLens is an auditable pre-admission coverage preflight and estimation tool. It does not constitute
+            BimaSetu is an auditable pre-admission coverage preflight and estimation tool. It does not constitute
             insurer authorization, claim settlement, or legal advice.
           </p>
         </div>

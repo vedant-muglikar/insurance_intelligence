@@ -5,7 +5,7 @@ import { UploadScreen } from './policy/UploadScreen'
 import { ProcessingTimeline } from './policy/ProcessingTimeline'
 import { PolicyResults } from './policy/PolicyResults'
 import type { PolicyAnalysisResult } from '@/lib/types/policy'
-import { AlertTriangle } from 'lucide-react'
+import { WarningCircle } from '@phosphor-icons/react'
 
 type AppState = 'upload' | 'processing' | 'results' | 'error'
 
@@ -70,29 +70,14 @@ export default function PolicyLens() {
 
   if (state === 'error') {
     return (
-      <div className="upload-screen-wrapper">
-        <div className="upload-screen-inner">
-          <div className="error-card">
-            <AlertTriangle size={28} className="text-red-400" />
-            <h2 className="error-title">Analysis failed</h2>
-            <p className="error-msg">{errorMsg}</p>
-            <div className="error-hints">
-              <p>Possible fixes:</p>
-              <ul>
-                <li>
-                  Make sure <code>OPENAI_API_KEY</code> or{' '}
-                  <code>GOOGLE_GENERATIVE_AI_API_KEY</code> is set in{' '}
-                  <code>.env.local</code>
-                </li>
-                <li>Check that the PDF is not password-protected</li>
-                <li>Try a smaller PDF (under 100 MB)</li>
-              </ul>
-            </div>
-            <button className="button-primary mt-6" onClick={reset}>
-              Try again
-            </button>
-          </div>
-        </div>
+      <div className="sx-process" role="alert">
+        <WarningCircle size={44} weight="duotone" className="sx-err-icon" aria-hidden />
+        <h1 className="sx-process-title">That did not work</h1>
+        <p className="sx-process-file">{errorMsg}</p>
+        <p className="sx-foot">Check the PDF is not password-locked and is under 100 MB.</p>
+        <button className="sx-go" onClick={reset}>
+          Try again
+        </button>
       </div>
     )
   }

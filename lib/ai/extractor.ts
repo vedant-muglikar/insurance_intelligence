@@ -26,8 +26,10 @@ Return a valid JSON object with exactly this structure:
   "overview": {
     "insurer": "string",
     "plan_name": "string",
-    "sum_insured": "string",
-    "policy_type": "string"
+    "sum_insured": "string as printed, e.g. Rs. 5,00,000",
+    "sum_insured_amount": 500000,
+    "policy_type": "string",
+    "uin": "the IRDAI Unique Identification Number printed in the document (like HDFHLIP21009V012021), copied exactly, or empty string"
   },
   "rules": [
     {
@@ -44,6 +46,9 @@ Return a valid JSON object with exactly this structure:
     }
   ]
 }
+
+SUM INSURED: "sum_insured_amount" is the base sum insured in rupees as a plain integer (500000, not "5 lakh"). Read it from the document only. If the document lists several options and does not say which applies, use null. Never guess.
+UIN: copy it exactly as printed. If you cannot see one, use an empty string. Never invent one.
 
 Respond with ONLY valid JSON. No markdown, no explanation.`
 }

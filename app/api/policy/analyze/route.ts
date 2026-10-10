@@ -2,7 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { extractPdfPages, detectScannedPdf } from '@/lib/pdf/extractor'
 import { extractPolicyWithAI, validateAndEnrichRules } from '@/lib/ai/extractor'
 import { compilePolicyRules } from '@/lib/policy/compiler'
-import type { PolicyAnalysisResult } from '@/lib/types/policy'
+import { extractUin, documentHash } from '@/lib/policy/identity'
+import { resolveSumInsured } from '@/lib/policy/sumInsured'
+import { findSavedAnalysis, saveAnalysis } from '@/lib/policy/store'
+import { formatINR } from '@/lib/policy/normalizers'
+import type { PolicyAnalysisResult, PolicyRule } from '@/lib/types/policy'
+
+function statsFor(rules: PolicyRule[]): PolicyAnalysisResult['extraction_stats'] {
+  const n = (f: (r: PolicyRule) => boolean) => rules.filter(f).length
+  return {
+    total_rules: rules.length,
+    coverage_count: n((r) => r.category === 'coverage'),
+    exclusion_count: n((r) => r.category === 'exclusion'),
+    waiting_period_count: n((r) => r.category === 'waiting_period'),
+    limit_count: n((r) => ['room_rent', 'icu_limit', 'sub_limit', 'deductible', 'co_payment'].includes(r.category)),
+    eligibility_count: n((r) => r.category === 'eligibility'),
+    claim_requirement_count: n((r) => r.category === 'claim_requirement'),
+    high_confidence: n((r) => r.confidence === 'high'),
+    medium_confidence: n((r) => r.confidence === 'medium'),
+    low_confidence: n((r) => r.confidence === 'low'),
+    validated_count: n((r) => r.evidence_validated),
+  }
+}
 
 export const maxDuration = 120 // seconds — allow long AI calls
 
@@ -50,44 +71,70 @@ export async function POST(request: NextRequest) {
     const scannedPdfWarning = detectScannedPdf(pages)
     const totalPages = pages.length
 
-    // ── 3. AI extraction ────────────────────────────────────────────────────
-    const aiResult = await extractPolicyWithAI(pages)
+    // ── 3. Identify the document: UIN (includes the product version) and a text hash ─────────
+    const uinInfo = extractUin(pages)
+    const hash = documentHash(pages)
 
-    // ── 4. Validate evidence & enrich rules ─────────────────────────────────
-    const rules = validateAndEnrichRules(aiResult.rules || [], pages)
-
-    // ── 5. Compute extraction stats ─────────────────────────────────────────
-    const stats = {
-      total_rules: rules.length,
-      coverage_count: rules.filter((r) => r.category === 'coverage').length,
-      exclusion_count: rules.filter((r) => r.category === 'exclusion').length,
-      waiting_period_count: rules.filter((r) => r.category === 'waiting_period').length,
-      limit_count: rules.filter(
-        (r) =>
-          r.category === 'room_rent' ||
-          r.category === 'icu_limit' ||
-          r.category === 'sub_limit' ||
-          r.category === 'deductible' ||
-          r.category === 'co_payment',
-      ).length,
-      eligibility_count: rules.filter((r) => r.category === 'eligibility').length,
-      claim_requirement_count: rules.filter((r) => r.category === 'claim_requirement').length,
-      high_confidence: rules.filter((r) => r.confidence === 'high').length,
-      medium_confidence: rules.filter((r) => r.confidence === 'medium').length,
-      low_confidence: rules.filter((r) => r.confidence === 'low').length,
-      validated_count: rules.filter((r) => r.evidence_validated).length,
+    // ── 4. Reuse a saved analysis of this exact policy wording, if there is one ──────────────
+    const saved = await findSavedAnalysis({ uin: uinInfo.uin, hash, pages: pages })
+    if (saved) {
+      const result: PolicyAnalysisResult = {
+        overview: { ...saved.overview, total_pages: totalPages },
+        rules: saved.rules,
+        compiled_rules: saved.compiledRules.length ? saved.compiledRules : compilePolicyRules(saved.rules, saved.pages),
+        plan_template_id: saved.planTemplateId,
+        cache: { hit: true, matchedBy: saved.matchedBy, uin: uinInfo.uin },
+        pages: saved.pages,
+        total_pages: totalPages,
+        scanned_pdf_warning: scannedPdfWarning,
+        extraction_stats: statsFor(saved.rules),
+        processing_time_ms: Date.now() - startTime,
+      }
+      return NextResponse.json({ success: true, data: result })
     }
 
-    // ── 5. Deterministically compile into executable rules (Blueprint F2) ───
+    // ── 5. AI extraction ────────────────────────────────────────────────────
+    const aiResult = await extractPolicyWithAI(pages)
+
+    // ── 6. Validate evidence & enrich rules ─────────────────────────────────
+    const rules = validateAndEnrichRules(aiResult.rules || [], pages)
+    const stats = statsFor(rules)
+
+    // ── 7. Deterministically compile into executable rules (Blueprint F2) ───
     const compiled_rules = compilePolicyRules(rules, pages)
 
+    // ── 8. Coverage amount and UIN, each checked against the document text ──
+    const llmOverview = aiResult.overview as typeof aiResult.overview & { sum_insured_amount?: number | null; uin?: string }
+    const si = resolveSumInsured(pages, llmOverview.sum_insured_amount, llmOverview.sum_insured)
+    const finalUin = extractUin(pages, llmOverview.uin).uin
+    const overview = {
+      ...aiResult.overview,
+      sum_insured: llmOverview.sum_insured || (si.amount ? formatINR(si.amount) : ''),
+      sum_insured_amount: si.amount,
+      sum_insured_source: si.source,
+      uin: finalUin ?? undefined,
+      total_pages: totalPages,
+    }
+
+    // ── 9. Save for next time (never blocks or breaks the response) ─────────
+    const confidence =
+      rules.length === 0 ? 'low' : stats.high_confidence / rules.length >= 0.6 ? 'high' : stats.high_confidence / rules.length >= 0.3 ? 'medium' : 'low'
+    const planTemplateId = await saveAnalysis({
+      uin: finalUin,
+      hash,
+      overview,
+      rules,
+      compiledRules: compiled_rules,
+      pages,
+      confidence,
+    })
+
     const result: PolicyAnalysisResult = {
-      overview: {
-        ...aiResult.overview,
-        total_pages: totalPages,
-      },
+      overview,
       rules,
       compiled_rules,
+      plan_template_id: planTemplateId,
+      cache: { hit: false, matchedBy: null, uin: finalUin },
       pages,
       total_pages: totalPages,
       scanned_pdf_warning: scannedPdfWarning,

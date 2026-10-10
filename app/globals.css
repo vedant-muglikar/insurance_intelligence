@@ -2331,15 +2331,18 @@ button {
 }
 
 .ba-finding-card--high {
-  border-left: 3px solid var(--deny);
+  border-color: color-mix(in srgb, var(--deny) 45%, var(--border));
+  background: color-mix(in srgb, var(--deny) 6%, var(--card));
 }
 
 .ba-finding-card--medium {
-  border-left: 3px solid var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+  background: color-mix(in srgb, var(--warn) 6%, var(--card));
 }
 
 .ba-finding-card--info {
-  border-left: 3px solid var(--info);
+  border-color: color-mix(in srgb, var(--info) 45%, var(--border));
+  background: color-mix(in srgb, var(--info) 6%, var(--card));
 }
 
 .ba-finding-head {

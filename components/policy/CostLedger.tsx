@@ -63,11 +63,8 @@ export function CostLedger({
         <div>
           <h3 className="text-base font-semibold text-white flex items-center gap-2">
             <Scale className="w-4 h-4 text-emerald-400" />
-            Clause-to-Rupee Audit Ledger
+            Where each rupee goes
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Every rupee adjustment traced from hospital line item to verified policy clause.
-          </p>
         </div>
         <span className="text-[11px] font-medium px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
           Source: {costSource.replace(/_/g, ' ')}

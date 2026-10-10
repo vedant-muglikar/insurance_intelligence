@@ -69,7 +69,9 @@ export function evaluatePolicyPreflight(
 
   // Sum Insured resolution
   let totalSumInsured: number | null = null
-  if (policy.overview.sum_insured) {
+  if (typeof policy.overview.sum_insured_amount === 'number') {
+    totalSumInsured = policy.overview.sum_insured_amount
+  } else if (policy.overview.sum_insured) {
     totalSumInsured = parseCurrency(policy.overview.sum_insured)
   }
   const effectiveSumInsured = scenario.availableSumInsured ?? totalSumInsured

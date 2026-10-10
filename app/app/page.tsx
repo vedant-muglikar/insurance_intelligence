@@ -1,7 +1,7 @@
 import PolicyLens from '@/components/policy-lens'
 
 export const metadata = {
-  title: 'PolicyLens - Coverage Preflight & Intelligence',
+  title: 'BimaSetu - Coverage Preflight',
   description: 'Upload your insurance policy PDF for pre-admission preflight with Clause-to-Rupee traceability.',
 }
 
