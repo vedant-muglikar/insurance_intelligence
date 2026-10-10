@@ -125,7 +125,7 @@ export function CostLedger({
                         <span className="text-sm font-semibold text-slate-200">
                           {line.ruleName}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 uppercase font-mono">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 uppercase">
                           {line.category}
                         </span>
                       </div>
@@ -140,7 +140,7 @@ export function CostLedger({
                       <div className={`text-sm font-bold ${isDenial ? 'text-red-400' : 'text-amber-400'}`}>
                         -{formatINR(line.deductionAmount)}
                       </div>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[11px] text-slate-500">
                         Remaining: {formatINR(line.coveredAmountAfter)}
                       </span>
                     </div>
@@ -165,12 +165,12 @@ export function CostLedger({
                             <FileText size={12} />
                             Policy Evidence Clause
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[11px] text-slate-400">
                             {line.evidence.page !== null ? `Page ${line.evidence.page}` : 'Document Quote'}
                             {line.evidence.section ? ` · ${line.evidence.section}` : ''}
                           </span>
                         </div>
-                        <blockquote className="text-slate-300 italic text-[11px] leading-relaxed border-l-2 border-emerald-500/50 pl-2">
+                        <blockquote className="text-slate-300 italic text-[11px] leading-relaxed">
                           "{line.evidence.quote}"
                         </blockquote>
                       </div>

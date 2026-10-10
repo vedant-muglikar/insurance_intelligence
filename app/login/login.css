@@ -1,0 +1,425 @@
+/* Sign in (Forest): a quiet proof panel beside the form. */
+.lg {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── proof panel ─────────────────────────────────────── */
+.lg-show {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(28px, 4vw, 56px);
+  background: var(--surface);
+  border-right: 1px solid var(--border2);
+}
+.lg-show-title {
+  margin: 0;
+  max-width: 18ch;
+  font-weight: 650;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.lg-show-sub {
+  margin: 14px 0 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 16.5px;
+  line-height: 1.6;
+}
+.lg-demo {
+  max-width: 500px;
+  animation: lg-rise 0.7s var(--ease) 0.08s both;
+}
+.lg-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.lg-points li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lg-points svg {
+  color: var(--brand);
+  flex: none;
+}
+@keyframes lg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── form ────────────────────────────────────────────── */
+.lg-panel {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(20px, 3vw, 36px) clamp(20px, 4vw, 56px) clamp(24px, 4vw, 48px);
+}
+.lg-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 40px;
+}
+.lg-panel-top .pl-brand {
+  margin-right: auto;
+  display: none;
+}
+.lg-panel-inner {
+  flex: 1;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: grid;
+  align-content: center;
+  gap: 22px;
+  padding-block: 20px;
+}
+.lg-form-wrap {
+  display: grid;
+  gap: 18px;
+}
+
+.lg-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--sunk);
+  border: 1px solid var(--border2);
+}
+.lg-switch-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border3);
+  transition: transform 0.4s var(--ease);
+}
+.lg-switch[data-mode='signup'] .lg-switch-thumb {
+  transform: translateX(100%);
+}
+.lg-switch-btn {
+  position: relative;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--subtle);
+  font-weight: 600;
+  font-size: 14.5px;
+  transition: color 0.2s;
+}
+.lg-switch-btn[aria-selected='true'] {
+  color: var(--text);
+}
+
+.lg-head {
+  animation: lg-fade 0.4s var(--ease) both;
+}
+@keyframes lg-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lg-title {
+  margin: 0;
+  font-weight: 650;
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+}
+.lg-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.lg-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border3);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ease);
+}
+.lg-google:hover:not(:disabled) {
+  background: var(--raised);
+  border-color: var(--brand);
+}
+.lg-google:active:not(:disabled) {
+  transform: scale(0.99);
+}
+.lg-google:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.lg-oauth-error {
+  margin: -6px 0 0;
+  color: var(--deny);
+  font-size: 14px;
+}
+
+.lg-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--subtle);
+  font-size: 14px;
+}
+.lg-or::before,
+.lg-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border2);
+}
+
+.lg-form {
+  display: grid;
+  gap: 16px;
+}
+.lg-field {
+  display: grid;
+  gap: 7px;
+}
+.lg-field label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.lg-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border3);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.lg-field input::placeholder {
+  color: var(--faint);
+}
+.lg-field input:hover {
+  border-color: var(--subtle);
+}
+.lg-field input:focus {
+  border-color: var(--brand);
+  background: var(--raised);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+.lg-field input:user-invalid {
+  border-color: var(--deny);
+}
+.lg-pw {
+  position: relative;
+}
+.lg-pw input {
+  padding-right: 46px;
+}
+.lg-eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--subtle);
+  transition: color 0.2s, background 0.2s;
+}
+.lg-eye:hover {
+  color: var(--text);
+  background: var(--sunk);
+}
+
+.lg-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--subtle);
+  font-size: 13.5px;
+  animation: lg-fade 0.35s var(--ease) both;
+}
+.lg-strength-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 22px);
+  gap: 4px;
+  flex: none;
+}
+.lg-strength-bars i {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border2);
+  transition: background 0.3s;
+}
+.lg-strength[data-level='0'] i:nth-child(-n + 1),
+.lg-strength[data-level='1'] i:nth-child(-n + 1) {
+  background: var(--deny);
+}
+.lg-strength[data-level='2'] i:nth-child(-n + 2) {
+  background: var(--warn);
+}
+.lg-strength[data-level='3'] i:nth-child(-n + 3),
+.lg-strength[data-level='4'] i {
+  background: var(--ok);
+}
+
+.lg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.45;
+  animation: lg-fade 0.35s var(--ease) both;
+}
+.lg-alert svg {
+  flex: none;
+  margin-top: 1px;
+}
+.lg-alert[data-status='error'] {
+  color: var(--deny-ink);
+  background: color-mix(in srgb, var(--deny) 10%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--deny) 50%, var(--border2));
+}
+.lg-alert[data-status='success'] {
+  color: var(--ok-ink);
+  background: color-mix(in srgb, var(--ok) 10%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--ok) 50%, var(--border2));
+}
+
+.lg-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  margin-top: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 650;
+  font-size: 16px;
+  transition: transform 0.22s var(--ease), background 0.2s, border-color 0.2s;
+}
+.lg-submit:hover:not(:disabled) {
+  background: var(--brand-hi);
+  border-color: var(--brand-hi);
+  transform: translateY(-1px);
+}
+.lg-submit:hover:not(:disabled) .lg-arrow {
+  transform: translateX(3px);
+}
+.lg-submit:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+.lg-submit:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.lg-arrow {
+  transition: transform 0.25s var(--ease);
+}
+.lg-spin {
+  animation: lg-spin 0.8s linear infinite;
+}
+@keyframes lg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lg-switch-hint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+.lg-switch-hint button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lg-switch-hint button:hover {
+  color: var(--brand-hi);
+}
+.lg-back {
+  width: fit-content;
+  margin: 0 auto;
+  color: var(--subtle);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.lg-back:hover {
+  color: var(--text);
+}
+
+@media (max-width: 1023px) {
+  .lg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lg-show {
+    display: none;
+  }
+  .lg-panel-top .pl-brand {
+    display: inline-flex;
+  }
+  .lg-panel-inner {
+    align-content: start;
+    padding-top: clamp(16px, 6vh, 56px);
+  }
+}
+@media (max-width: 420px) {
+  .lg-panel {
+    padding-inline: 20px;
+  }
+}

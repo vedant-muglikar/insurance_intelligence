@@ -1,306 +1,227 @@
+import json
 import os
+import re
+from contextlib import asynccontextmanager
+
 import joblib
 import numpy as np
 import pandas as pd
 import shap
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from data.generate_dataset import PROCEDURE_CATALOG
+from features import LINE_ITEMS, build_features
 from schemas import CostPredictionRequest, CostPredictionResponse, ItemizedBreakdown
-from data.generate_dataset import PROCEDURE_CATALOG, CITY_TIER_MULTIPLIERS, HOSPITAL_TIER_MULTIPLIERS, ROOM_CATEGORY_MULTIPLIERS
 
-# Global state for loaded model artifacts
-artifacts = {}
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+BUNDLE_PATH = os.path.join(MODELS_DIR, "bundle.pkl")
 
-FEATURE_COLS = [
-    "procedure_name",
-    "patient_age",
-    "city_tier",
-    "hospital_tier",
-    "room_category",
-    "stay_duration_days",
+artifacts: dict = {}
+
+# Ordered most-specific first. Each rule: (regex on lower-cased input, catalog procedure).
+PROCEDURE_RULES = [
+    (r"c-?section|caesarean|cesarean|lscs", "Caesarean Section"),
+    (r"normal delivery|vaginal delivery|childbirth|maternity|^delivery$", "Normal Delivery"),
+    (r"cabg|bypass|open heart", "Coronary Artery Bypass Graft (CABG)"),
+    (r"angioplasty|ptca|stent", "Coronary Angioplasty"),
+    (r"knee|tkr", "Total Knee Replacement"),
+    (r"\bhip\b|\bthr\b", "Total Hip Replacement"),
+    (r"cataract|phaco", "Cataract Surgery"),
+    (r"dengue", "Dengue Inpatient Care"),
+    (r"typhoid", "Typhoid Inpatient Care"),
+    (r"stone|lithotripsy|pcnl|ursl", "Kidney Stone Lithotripsy"),
+    (r"hernia", "Hernia Repair"),
+    (r"gallbladder|gall bladder|cholecystectomy", "Cholecystectomy"),
+    (r"appendi|appendectomy", "Appendectomy"),
+    (r"hysterectomy|uterus removal", "Hysterectomy"),
+    (r"tonsil", "Tonsillectomy"),
+    (r"dialysis", "Hemodialysis (Single Session)"),
+    (r"chemo", "Chemotherapy Infusion Cycle"),
 ]
 
-CATEGORICAL_COLS = ["procedure_name", "room_category"]
-NUMERICAL_COLS = ["patient_age", "city_tier", "hospital_tier", "stay_duration_days"]
 
-
-def normalize_procedure_name(input_proc: str) -> str:
-    """Matches user input procedure string against known catalog using substring/fuzzy matching."""
-    input_clean = input_proc.strip().lower()
-    
-    # 1. Exact match
-    for catalog_proc in PROCEDURE_CATALOG.keys():
-        if catalog_proc.lower() == input_clean:
-            return catalog_proc
-            
-    # 2. Substring match
-    for catalog_proc in PROCEDURE_CATALOG.keys():
-        cat_lower = catalog_proc.lower()
-        if input_clean in cat_lower or cat_lower in input_clean:
-            return catalog_proc
-        # Check ICD code match if present in input string
-        icd = PROCEDURE_CATALOG[catalog_proc]["icd_code"].lower()
-        if icd in input_clean:
-            return catalog_proc
-
-    # Key shorthand matches
-    if "cataract" in input_clean:
-        return "Cataract Surgery"
-    if "knee" in input_clean:
-        return "Total Knee Replacement"
-    if "hip" in input_clean:
-        return "Total Hip Replacement"
-    if "delivery" in input_clean or "normal" in input_clean:
-        return "Normal Delivery"
-    if "caesarean" in input_clean or "c-section" in input_clean or "csection" in input_clean:
-        return "Caesarean Section"
-    if "angioplasty" in input_clean or "stent" in input_clean:
-        return "Coronary Angioplasty"
-    if "cabg" in input_clean or "bypass" in input_clean:
-        return "Coronary Artery Bypass Graft (CABG)"
-    if "dengue" in input_clean:
-        return "Dengue Inpatient Care"
-    if "typhoid" in input_clean:
-        return "Typhoid Inpatient Care"
-    if "stone" in input_clean or "lithotripsy" in input_clean:
-        return "Kidney Stone Lithotripsy"
-    if "hernia" in input_clean:
-        return "Hernia Repair"
-    if "gallbladder" in input_clean or "cholecystectomy" in input_clean:
-        return "Cholecystectomy"
-    if "appendix" in input_clean or "appendectomy" in input_clean:
-        return "Appendectomy"
-
+def normalize_procedure_name(text: str):
+    """Resolve free text to a catalog procedure: exact name, ICD code, then keyword rules."""
+    clean = text.strip().lower()
+    for name, info in PROCEDURE_CATALOG.items():
+        if clean == name.lower() or clean == info["icd_code"].lower():
+            return name
+    for name in PROCEDURE_CATALOG:
+        if len(clean) >= 4 and (clean in name.lower() or name.lower() in clean):
+            return name
+    for pattern, name in PROCEDURE_RULES:
+        if re.search(pattern, clean):
+            return name
     return None
+
+
+def load_bundle():
+    if not os.path.exists(BUNDLE_PATH):
+        print("Model bundle missing. Training with default settings (run train.py for a full tuning pass)...")
+        from train import train_models
+        train_models(trials=15)
+    return joblib.load(BUNDLE_PATH)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Loads preprocessor, LGBM models, and SHAP explainer on startup."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    models_dir = os.path.join(base_dir, "models")
-
-    # If models do not exist, run auto-training
-    if not os.path.exists(os.path.join(models_dir, "cost_p50.pkl")):
-        print("Model artifacts missing in models/. Triggering headless training...")
-        from train import train_models
-        train_models()
-
-    artifacts["preprocessor"] = joblib.load(os.path.join(models_dir, "preprocessor.pkl"))
-    artifacts["cost_p10"] = joblib.load(os.path.join(models_dir, "cost_p10.pkl"))
-    artifacts["cost_p50"] = joblib.load(os.path.join(models_dir, "cost_p50.pkl"))
-    artifacts["cost_p90"] = joblib.load(os.path.join(models_dir, "cost_p90.pkl"))
-    
-    # Initialize TreeSHAP explainer for P50 median model
-    artifacts["explainer"] = shap.TreeExplainer(artifacts["cost_p50"])
-    
-    # Extract transformed feature names
-    cat_encoder = artifacts["preprocessor"].named_transformers_["cat"]
-    cat_names = list(cat_encoder.get_feature_names_out(CATEGORICAL_COLS))
-    artifacts["feature_names"] = cat_names + NUMERICAL_COLS
-
-    print(f"ClaimLens ML Microservice initialized with {len(artifacts['feature_names'])} features.")
+    bundle = load_bundle()
+    artifacts["bundle"] = bundle
+    artifacts["explainer"] = shap.TreeExplainer(bundle["models"]["p50"].booster_)
+    print(f"PolicyLens ML service ready: model v{bundle['version']}, {len(PROCEDURE_CATALOG)} procedures.")
     yield
     artifacts.clear()
 
 
 app = FastAPI(
-    title="ClaimLens ML Cost Estimation Microservice",
-    description="Production-grade LightGBM Quantile Regression microservice for inpatient procedure cost estimation",
-    version="1.0.0",
+    title="PolicyLens ML Cost Estimation Microservice",
+    description="LightGBM quantile-regression service for inpatient procedure cost distributions",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
-# Enable CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(","),
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint validating artifact loading status."""
-    is_ready = all(k in artifacts for k in ["preprocessor", "cost_p10", "cost_p50", "cost_p90", "explainer"])
+    ready = "bundle" in artifacts
     return {
-        "status": "healthy" if is_ready else "unhealthy",
-        "service": "ClaimLens ML Microservice",
-        "models_loaded": is_ready,
+        "status": "healthy" if ready else "unhealthy",
+        "service": "PolicyLens ML Microservice",
+        "models_loaded": ready,
+        "model_version": artifacts["bundle"]["version"] if ready else None,
         "available_procedures": list(PROCEDURE_CATALOG.keys()),
     }
 
 
-def compute_itemized_breakdown(proc_name: str, room_category: str, stay_days: int, total_p50: float) -> ItemizedBreakdown:
-    """Computes realistic itemized bill breakdown proportional to P50 median estimate."""
-    proc_info = PROCEDURE_CATALOG.get(proc_name, PROCEDURE_CATALOG["Appendectomy"])
-    
-    room_mult = ROOM_CATEGORY_MULTIPLIERS.get(room_category, 1.0)
-    base_daily_room = proc_info["base_daily_room"] * room_mult
-    base_daily_doctor = proc_info["base_daily_doctor"]
-    
-    raw_room = base_daily_room * stay_days
-    raw_surgery = proc_info["base_surgery_ot"] * (1.0 + (room_mult - 1.0) * 0.4)
-    raw_doctor = base_daily_doctor * stay_days
-    raw_meds = proc_info["base_medicines_implants"]
-    raw_cons = proc_info["base_consumables"] * (1.0 + stay_days * 0.08)
-
-    raw_sum = raw_room + raw_surgery + raw_doctor + raw_meds + raw_cons
-    if raw_sum <= 0:
-        raw_sum = total_p50
-
-    # Scale proportionally to exact P50 total estimate
-    scale = total_p50 / raw_sum
-
-    room_val = round(raw_room * scale, 2)
-    surg_val = round(raw_surgery * scale, 2)
-    doc_val = round(raw_doctor * scale, 2)
-    med_val = round(raw_meds * scale, 2)
-    cons_val = round(total_p50 - (room_val + surg_val + doc_val + med_val), 2)  # Adjust balance
-
-    return ItemizedBreakdown(
-        room_and_nursing=max(0.0, room_val),
-        surgery_and_ot=max(0.0, surg_val),
-        doctor_fees=max(0.0, doc_val),
-        medicines_and_implants=max(0.0, med_val),
-        consumables=max(0.0, cons_val),
-    )
+@app.get("/model-info")
+def model_info():
+    path = os.path.join(MODELS_DIR, "metrics.json")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="metrics.json not found; run train.py")
+    with open(path, encoding="utf-8") as f:
+        m = json.load(f)
+    return {k: m[k] for k in ("version", "trained_at", "rows", "final", "baseline", "line_items")}
 
 
-def compute_cost_drivers(req: CostPredictionRequest, normalized_proc: str, shap_values_single: np.ndarray, feature_names: list) -> list[str]:
-    """Generates top 3 human-readable cost driver explanations using SHAP & domain feature deltas."""
-    drivers = []
-    
-    # Map feature names to SHAP values
-    feat_shap_map = dict(zip(feature_names, shap_values_single))
-    
-    # 1. City Tier impact
-    if req.city_tier == 1:
-        drivers.append(f"City Tier 1 Metro location increases tariff by ~40%")
-    elif req.city_tier == 3:
-        drivers.append(f"City Tier 3 location reduces tariff by ~20%")
+def quantiles_at(bundle, row: pd.DataFrame):
+    X = build_features(row)
+    off = bundle["cqr_log_offset"]
+    m = bundle["models"]
+    mid = float(np.exp(m["p50"].predict(X)[0]))
+    lo = min(float(np.exp(m["p10"].predict(X)[0] - off)), mid)
+    hi = max(float(np.exp(m["p90"].predict(X)[0] + off)), mid)
+    return X, lo, mid, hi
 
-    # 2. Hospital Tier impact
-    if req.hospital_tier == 1:
-        drivers.append("Corporate / NABH accredited hospital premium (+35%)")
-    elif req.hospital_tier == 3:
-        drivers.append("Nursing Home facility discount (-15%)")
 
-    # 3. Room Category impact
-    if req.room_category == "suite":
-        drivers.append("Deluxe Suite room choice introduces highest tariff scaling (+65%)")
-    elif req.room_category == "single":
-        drivers.append("Single Private Room choice adds room & OT tariff multiplier (+35%)")
-    elif req.room_category == "general":
-        drivers.append("General Ward selection minimizes base room and OT charges")
+def predict_with_extrapolation(bundle, proc: str, req: CostPredictionRequest):
+    """Quantiles for the request; stays beyond the training range extend linearly, not flat."""
+    cap = bundle["stay_cap"].get(proc, 15)
+    stay = req.stay_duration_days
+    base = dict(procedure_name=proc, patient_age=req.patient_age, city_tier=req.city_tier,
+                hospital_tier=req.hospital_tier, room_category=req.room_category)
+    row = lambda d: pd.DataFrame([{**base, "stay_duration_days": d}])
 
-    # 4. Stay duration impact
-    proc_info = PROCEDURE_CATALOG.get(normalized_proc, {})
-    avg_stay = proc_info.get("base_stay_mean", 3.0)
-    if req.stay_duration_days > avg_stay + 1:
-        drivers.append(f"Extended inpatient stay ({req.stay_duration_days} days vs avg {avg_stay:.1f} days) increases room & nursing fees")
-    elif req.stay_duration_days < avg_stay - 1:
-        drivers.append(f"Short inpatient stay ({req.stay_duration_days} days) reduces variable nursing and doctor costs")
+    if stay <= cap:
+        X, lo, mid, hi = quantiles_at(bundle, row(stay))
+        return X, lo, mid, hi, False
 
-    # 5. Age complication
-    if req.patient_age > 60:
-        drivers.append(f"Geriatric patient age ({req.patient_age} yrs) increases clinical complication buffer & observation stay")
+    X, lo, mid, hi = quantiles_at(bundle, row(cap))
+    lag = max(1, cap - 2)
+    _, lo2, mid2, hi2 = quantiles_at(bundle, row(lag))
+    span = max(1, cap - lag)
+    extra = stay - cap
+    lo += max(0.0, (lo - lo2) / span) * extra
+    mid += max(0.0, (mid - mid2) / span) * extra
+    hi += max(0.0, (hi - hi2) / span) * extra
+    return X, lo, mid, hi, True
 
-    # Sort/Fallback top SHAP feature drivers
-    if len(drivers) < 3:
-        top_shap_idx = np.argsort(np.abs(shap_values_single))[::-1]
-        for idx in top_shap_idx:
-            fname = feature_names[idx]
-            fval = shap_values_single[idx]
-            impact_direction = "increases" if fval > 0 else "decreases"
-            explanation = f"Feature '{fname}' {impact_direction} estimated cost"
-            if explanation not in drivers and len(drivers) < 3:
-                drivers.append(explanation)
 
-    return drivers[:3]
+def itemize(bundle, X: pd.DataFrame, total: float) -> ItemizedBreakdown:
+    """Line items from per-component models, rescaled to sum exactly to the P50 total."""
+    raw = []
+    for li in LINE_ITEMS:
+        v = float(np.expm1(bundle["item_models"][li].predict(X)[0]))
+        raw.append(0.0 if v < 1.0 else v)
+    s = sum(raw) or 1.0
+    vals = [round(v * total / s, 2) for v in raw]
+    vals[-1] = round(total - sum(vals[:-1]), 2)  # absorb rounding so items sum to the total
+    return ItemizedBreakdown(**dict(zip(LINE_ITEMS, [max(0.0, v) for v in vals])))
+
+
+ROOM_LABEL = {"general": "General ward", "twin": "Twin-sharing room", "single": "Single private room", "suite": "Deluxe suite"}
+CITY_LABEL = {1: "Metro (Tier 1) city", 2: "Tier 2 city", 3: "Tier 3 city"}
+HOSP_LABEL = {1: "Corporate / NABH hospital", 2: "Private multi-specialty hospital", 3: "Nursing home / smaller facility"}
+
+
+def cost_drivers(req: CostPredictionRequest, X: pd.DataFrame, bundle) -> list[str]:
+    """Top drivers from TreeSHAP on the log-cost model; SHAP in log space => multiplicative effects."""
+    try:
+        sv = np.asarray(artifacts["explainer"].shap_values(X))[0]
+    except Exception:
+        return ["Estimate based on procedure, hospital tier, city tier, room class and length of stay"]
+    contrib = dict(zip(X.columns, sv))
+    groups = {
+        "city": (contrib["city_tier"], CITY_LABEL[req.city_tier]),
+        "hospital": (contrib["hospital_tier"], HOSP_LABEL[req.hospital_tier]),
+        "room": (contrib["room_rank"], ROOM_LABEL[req.room_category]),
+        "stay": (contrib["stay_duration_days"] + contrib["stay_delta"], f"{req.stay_duration_days}-day stay"),
+        "age": (contrib["patient_age"] + contrib["age_over_60"], f"Patient age {req.patient_age}"),
+    }
+    ranked = sorted(groups.values(), key=lambda g: abs(g[0]), reverse=True)
+    out = []
+    for val, label in ranked:
+        pct = (np.exp(val) - 1) * 100
+        if abs(pct) < 1.0:
+            continue
+        out.append(f"{label} {'raises' if pct > 0 else 'lowers'} the estimate by ~{abs(pct):.0f}% vs the average case")
+        if len(out) == 3:
+            break
+    return out or ["No single factor moves the estimate more than 1% from the average case"]
 
 
 @app.post("/predict", response_model=CostPredictionResponse)
 def predict_cost(req: CostPredictionRequest):
-    """
-    POST /predict
-    Calculates P10, P50, and P90 cost estimates, itemized line items, and SHAP cost drivers.
-    """
-    # 1. Normalize procedure name
-    normalized_proc = normalize_procedure_name(req.procedure_name)
-    if not normalized_proc:
+    bundle = artifacts["bundle"]
+    proc = normalize_procedure_name(req.procedure_name)
+    if not proc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unknown procedure '{req.procedure_name}'. Available procedures: {list(PROCEDURE_CATALOG.keys())}"
+            detail=f"Unknown procedure '{req.procedure_name}'. Available procedures: {list(PROCEDURE_CATALOG.keys())}",
         )
 
-    # 2. Build input DataFrame
-    input_data = pd.DataFrame([{
-        "procedure_name": normalized_proc,
-        "patient_age": req.patient_age,
-        "city_tier": req.city_tier,
-        "hospital_tier": req.hospital_tier,
-        "room_category": req.room_category,
-        "stay_duration_days": req.stay_duration_days,
-    }])
+    X, p10, p50, p90, extrapolated = predict_with_extrapolation(bundle, proc, req)
+    p10, p50, p90 = round(max(1000.0, p10), 2), round(p50, 2), round(p90, 2)
 
-    # 3. Preprocess input
-    try:
-        X_trans = artifacts["preprocessor"].transform(input_data)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Preprocessing error: {str(e)}"
-        )
-
-    # 4. Predict Quantiles
-    p10 = float(artifacts["cost_p10"].predict(X_trans)[0])
-    p50 = float(artifacts["cost_p50"].predict(X_trans)[0])
-    p90 = float(artifacts["cost_p90"].predict(X_trans)[0])
-
-    # Ensure quantile monotonicity (P10 <= P50 <= P90) and positive lower bound
-    p10 = max(1000.0, min(p10, p50))
-    p90 = max(p50, p90)
-
-    estimated_bill = round(p50, 2)
-    p10 = round(p10, 2)
-    p90 = round(p90, 2)
-
-    # 5. Calculate Confidence Score and Uncertainty Level
-    # Spread ratio = (P90 - P10) / P50
     spread = (p90 - p10) / p50 if p50 > 0 else 0.5
-    confidence_score = round(float(np.clip(1.0 - (spread * 0.75), 0.15, 0.98)), 2)
+    confidence = round(float(np.clip(1.0 - spread * 0.75, 0.15, 0.98)), 2)
+    th = bundle["spread_thresholds"]
+    level = "low" if spread < th["low"] else "medium" if spread < th["high"] else "high"
 
-    if spread < 0.35:
-        uncertainty_level = "low"
-    elif spread < 0.65:
-        uncertainty_level = "medium"
-    else:
-        uncertainty_level = "high"
-
-    # 6. Compute Itemized Breakdown
-    itemized = compute_itemized_breakdown(normalized_proc, req.room_category, req.stay_duration_days, estimated_bill)
-
-    # 7. Compute SHAP Values & Cost Drivers
-    try:
-        raw_shap = artifacts["explainer"].shap_values(X_trans)
-        shap_vals_single = raw_shap[0] if isinstance(raw_shap, list) or len(raw_shap.shape) > 1 else raw_shap
-    except Exception:
-        shap_vals_single = np.zeros(len(artifacts["feature_names"]))
-
-    cost_drivers = compute_cost_drivers(req, normalized_proc, shap_vals_single, artifacts["feature_names"])
+    warnings = []
+    if extrapolated:
+        warnings.append(
+            f"Stay of {req.stay_duration_days} days is longer than typical for {proc} "
+            f"(training range up to {bundle['stay_cap'].get(proc)} days); the estimate extends the per-day trend and is less certain."
+        )
+        confidence = round(min(confidence, 0.5), 2)
+        level = "high"
+    if req.patient_age < 18:
+        warnings.append("Model was trained on adult patients (18+); paediatric estimates may be less accurate.")
 
     return CostPredictionResponse(
-        cost_p10=p10,
-        cost_p50=p50,
-        cost_p90=p90,
-        estimated_bill=estimated_bill,
-        confidence_score=confidence_score,
-        uncertainty_level=uncertainty_level,
-        itemized_breakdown=itemized,
-        cost_drivers=cost_drivers,
+        cost_p10=p10, cost_p50=p50, cost_p90=p90, estimated_bill=p50,
+        confidence_score=confidence, uncertainty_level=level,
+        itemized_breakdown=itemize(bundle, X, p50),
+        cost_drivers=cost_drivers(req, X, bundle),
+        matched_procedure=proc, model_version=bundle["version"],
+        extrapolated=extrapolated, warnings=warnings,
     )

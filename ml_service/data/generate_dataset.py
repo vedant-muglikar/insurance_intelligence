@@ -143,6 +143,26 @@ PROCEDURE_CATALOG = {
         "base_medicines_implants": 105000,
         "base_consumables": 15000,
     },
+    "Hemodialysis (Single Session)": {
+        "icd_code": "Z49.1",
+        "base_stay_mean": 1.0,
+        "base_stay_std": 0.1,
+        "base_surgery_ot": 0,  # Non-surgical session
+        "base_daily_room": 1500,
+        "base_daily_doctor": 1800,
+        "base_medicines_implants": 1200,
+        "base_consumables": 1500,
+    },
+    "Chemotherapy Infusion Cycle": {
+        "icd_code": "Z51.1",
+        "base_stay_mean": 1.0,
+        "base_stay_std": 0.2,
+        "base_surgery_ot": 0,  # Day-care infusion
+        "base_daily_room": 5000,
+        "base_daily_doctor": 12000,
+        "base_medicines_implants": 50000,
+        "base_consumables": 4000,
+    },
     "Tonsillectomy": {
         "icd_code": "J35.0",
         "base_stay_mean": 1.8,
@@ -174,7 +194,7 @@ ROOM_CATEGORY_MULTIPLIERS = {
     "suite": 1.65,      # Deluxe Suite (+65%)
 }
 
-def generate_dataset(num_records: int = 10000, seed: int = 42, output_path: str = None) -> pd.DataFrame:
+def generate_dataset(num_records: int = 20000, seed: int = 42, output_path: str = None) -> pd.DataFrame:
     """
     Generates synthetic clinically grounded inpatient tariff records for Indian health procedures.
     """
@@ -211,6 +231,10 @@ def generate_dataset(num_records: int = 10000, seed: int = 42, output_path: str 
         stay_mean = proc_info["base_stay_mean"] + (1.5 if patient_age > 65 else 0.0)
         stay_std = proc_info["base_stay_std"]
         stay_duration_days = max(1, int(np.round(np.random.normal(stay_mean, stay_std))))
+        # Complication tail: a minority of admissions run long (more likely with age),
+        # giving the model real data for extended stays instead of a hard cut-off.
+        if stay_duration_days >= 1 and proc_info["base_stay_mean"] > 1.0 and np.random.random() < (0.05 + age_complication * 0.4):
+            stay_duration_days += int(np.random.geometric(0.35))
         
         # Heteroscedastic noise (higher age/corporate hospital => higher cost variance)
         noise_factor = np.random.normal(1.0, 0.08 + age_complication * 0.3)

@@ -1,24 +1,35 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import './theme.css'
+import './ledger.css'
+import './ledger-tool.css'
+
+// Geist for text and display, Geist Mono for figures. Self-hosted by next/font.
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' })
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'PolicyLens — Insurance Policy Intelligence',
-  description: 'Upload your health insurance PDF and instantly understand coverage, exclusions, limits, and out-of-pocket costs — backed by page-level citations.',
+  title: 'PolicyLens - Insurance Policy Intelligence',
+  description:
+    'Upload your health insurance PDF and instantly understand coverage, exclusions, limits, and out-of-pocket costs, backed by page-level citations.',
   icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
     apple: '/apple-icon.png',
   },
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#080d14',
+  colorScheme: 'dark light',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0c1411' },
+    { media: '(prefers-color-scheme: light)', color: '#eef1ee' },
+  ],
 }
+
+// Runs before first paint so the saved theme never flashes. Dark is the default.
+const THEME_INIT = `try{var t=localStorage.getItem('pl-theme');document.documentElement.dataset.theme=(t==='light'||t==='dark')?t:'dark'}catch(e){document.documentElement.dataset.theme='dark'}`
 
 export default function RootLayout({
   children,
@@ -26,15 +37,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Inter for UI, Sora for display headlines */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
       <body>
         {children}

@@ -19,7 +19,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
 
   const handleDownloadJSON = () => {
     const payload = {
-      product: 'ClaimLens Pre-admission Preflight',
+      product: 'PolicyLens Pre-admission Preflight',
       timestamp: new Date().toISOString(),
       policy: {
         insurer: policy.overview.insurer,
@@ -45,7 +45,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ClaimLens_Preflight_${scenario.treatment.replace(/\s+/g, '_')}.json`
+    a.download = `PolicyLens_Preflight_${scenario.treatment.replace(/\s+/g, '_')}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -77,7 +77,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
           <button
             type="button"
             onClick={handlePrint}
-            className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium flex items-center gap-1.5 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg bg-[var(--brand)] hover:bg-[var(--brand-hi)] text-[var(--on-brand)] font-medium flex items-center gap-1.5 transition-colors"
           >
             <Printer size={13} />
             Print Report
@@ -105,25 +105,25 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
         {/* Policy & Patient Header */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800">
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-mono">Insurer & Plan</span>
+            <span className="text-slate-500 block text-[11px] uppercase">Insurer & Plan</span>
             <strong className="text-white">{policy.overview.insurer || 'Insurer'}</strong>
             <p className="text-slate-400 text-[11px]">{policy.overview.plan_name}</p>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-mono">Procedure & Room</span>
+            <span className="text-slate-500 block text-[11px] uppercase">Procedure & Room</span>
             <strong className="text-white">{scenario.treatment}</strong>
             <p className="text-slate-400 text-[11px] capitalize">{scenario.roomType} Room</p>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-mono">Patient Profile</span>
+            <span className="text-slate-500 block text-[11px] uppercase">Patient Profile</span>
             <strong className="text-white">Age: {scenario.age}</strong>
             <p className="text-slate-400 text-[11px]">
               {scenario.policyStartDate ? `Policy Start: ${formatDateIndian(scenario.policyStartDate)}` : 'Start Date Unknown'}
             </p>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-mono">Preflight Status</span>
-            <strong className="text-emerald-400 uppercase font-mono">{preflight.status.replace(/_/g, ' ')}</strong>
+            <span className="text-slate-500 block text-[11px] uppercase">Preflight Status</span>
+            <strong className="text-emerald-400 uppercase">{preflight.status.replace(/_/g, ' ')}</strong>
             <p className="text-slate-400 text-[11px]">Confidence: {preflight.confidence.toUpperCase()}</p>
           </div>
         </div>
@@ -135,7 +135,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
           </span>
           <div className="border border-slate-800 rounded-lg overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-900 text-slate-400 uppercase text-[11px] border-b border-slate-800">
                 <tr>
                   <th className="py-2 px-3">Item / Clause</th>
                   <th className="py-2 px-3">Category</th>
@@ -159,10 +159,10 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
                     <td className="py-2 px-3 text-slate-200">
                       <div>{line.ruleName}</div>
                       {line.evidence?.page && (
-                        <span className="text-[10px] text-slate-500 font-mono">Clause p.{line.evidence.page}</span>
+                        <span className="text-[11px] text-slate-500 font-mono">Clause p.{line.evidence.page}</span>
                       )}
                     </td>
-                    <td className="py-2 px-3 text-slate-400 font-mono text-[10px] uppercase">{line.category}</td>
+                    <td className="py-2 px-3 text-slate-400 text-[11px] uppercase">{line.category}</td>
                     <td className="py-2 px-3 text-slate-400 text-[11px]">{line.calculation}</td>
                     <td className="py-2 px-3 text-right text-amber-400 font-semibold font-mono">
                       -{formatINR(line.deductionAmount)}
@@ -195,7 +195,7 @@ export function ExportSummary({ scenario, preflight, policy }: ExportSummaryProp
 
         {/* Disclaimer per blueprint */}
         <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-          <strong>Important Preflight Notice:</strong> ClaimLens provides an explainable pre-admission preflight estimate based strictly on policy evidence clauses and scenario parameters. It does not constitute pre-authorization or claim guarantee; final authorization remains subject to insurer and Third Party Administrator (TPA) medical audit.
+          <strong>Important Preflight Notice:</strong> PolicyLens provides an explainable pre-admission preflight estimate based strictly on policy evidence clauses and scenario parameters. It does not constitute pre-authorization or claim guarantee; final authorization remains subject to insurer and Third Party Administrator (TPA) medical audit.
         </div>
       </div>
     </div>

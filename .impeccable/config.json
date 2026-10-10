@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/policy/ClaimDispute.tsx"
+        ],
+        "createdAt": "2026-10-10T05:46:20.308Z",
+        "reason": "assistant judgment: styles inside the printable dispute-letter HTML document, not app UI; not user confirmed"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "components/policy/PolicyQA.tsx"
+        ],
+        "createdAt": "2026-10-10T05:46:20.399Z",
+        "reason": "assistant judgment: chat typing-indicator dots, literal domain motion; not user confirmed"
+      }
+    ]
+  }
+}

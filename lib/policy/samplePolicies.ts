@@ -1,5 +1,5 @@
 /**
- * ClaimLens - Pre-compiled Verified Sample Policies
+ * PolicyLens - Pre-compiled Verified Sample Policies
  * Provides instant 1-click test policies for judges and demonstrations
  * with verified page evidence, compiled rules, and realistic clauses.
  */

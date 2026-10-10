@@ -19,7 +19,7 @@ export interface TreatmentScenario {
   roomType: 'general' | 'twin-sharing' | 'single-private' | 'suite' | 'icu'
   stayDurationDays: number
   quotedCost?: number
-  // Extended fields for ClaimLens (Blueprint F4)
+  // Extended fields for PolicyLens (Blueprint F4)
   policyStartDate?: string
   proposedAdmissionDate?: string
   declaredPED?: string[]
@@ -81,6 +81,40 @@ export interface ParsedHospitalQuote {
   sourceDocumentHash?: string
   rawText?: string
   warnings: string[]
+}
+
+// ─── ML Cost Model (LightGBM quantile regression microservice) ──────────────
+
+export type CostSource = 'hospital_quote' | 'manual_quote' | 'ml_model' | 'benchmark' | 'synthetic'
+
+export interface MlCostPrediction {
+  costP10: number
+  costP50: number
+  costP90: number
+  confidenceScore: number
+  uncertaintyLevel: 'low' | 'medium' | 'high'
+  itemizedBreakdown: {
+    roomAndNursing: number
+    surgeryAndOt: number
+    doctorFees: number
+    medicinesAndImplants: number
+    consumables: number
+  }
+  costDrivers: string[]
+  matchedProcedure: string
+  modelVersion: string
+  extrapolated: boolean
+  warnings: string[]
+}
+
+export interface CostModelInfo {
+  modelVersion: string
+  matchedProcedure: string
+  confidenceScore: number
+  uncertaintyLevel: 'low' | 'medium' | 'high'
+  drivers: string[]
+  warnings: string[]
+  extrapolated: boolean
 }
 
 // ─── Clause-to-Rupee Ledger (Blueprint Section 8 & 10) ──────────────────────
@@ -183,7 +217,8 @@ export interface CoverageResult {
   treatmentCost: MoneyRange
   potentiallyCovered: MoneyRange
   patientShare: MoneyRange
-  costSource: 'hospital_quote' | 'manual_quote' | 'benchmark' | 'synthetic'
+  costSource: CostSource
+  costModel?: CostModelInfo
   ledger: DeductionLine[]
   missingInformation: MissingField[]
   assumptions: string[]
@@ -241,6 +276,6 @@ export interface EstimateResult {
   policyEval: PolicyEvaluation
   coverage: CoverageCalculation
   confidence: ConfidenceMetrics
-  // ClaimLens extended preflight result
+  // PolicyLens extended preflight result
   preflight?: CoverageResult
 }

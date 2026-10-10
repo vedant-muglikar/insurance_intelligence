@@ -167,7 +167,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
 
                 <div className={`rounded-2xl px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-emerald-600 text-white rounded-br-sm'
+                    ? 'bg-[var(--brand)] text-[var(--on-brand)] rounded-br-sm'
                     : msg.isError
                       ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-bl-sm'
                       : 'bg-[var(--card)] border border-[var(--border)] text-[var(--text)] rounded-bl-sm'
@@ -185,7 +185,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
                   {/* Citations */}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-[var(--border)]">
-                      <p className="text-[10px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Evidence</p>
+                      <p className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Evidence</p>
                       <div className="flex flex-wrap gap-1.5">
                         {msg.citations.map((cit, idx) => (
                           <button
@@ -244,7 +244,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="bg-[var(--brand)] hover:bg-[var(--brand-hi)] text-[var(--on-brand)] rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -283,7 +283,7 @@ export function PolicyQA({ pages }: PolicyQAProps) {
                   </>
                 )}
               </div>
-              <div className="border-l-2 border-emerald-500/40 pl-3">
+              <div className="pl-1">
                 <p className="text-sm text-[var(--muted)] leading-relaxed italic">
                   &ldquo;{selectedCitation.evidence_text}&rdquo;
                 </p>

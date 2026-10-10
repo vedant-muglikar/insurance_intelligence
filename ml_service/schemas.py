@@ -1,8 +1,8 @@
-from typing import Dict, List
+from typing import List
 from pydantic import BaseModel, Field, field_validator
 
 class CostPredictionRequest(BaseModel):
-    procedure_name: str = Field(..., description="Standard medical procedure name or description")
+    procedure_name: str = Field(..., min_length=2, description="Standard medical procedure name or description")
     patient_age: int = Field(..., ge=0, le=120, description="Patient age in years (0-120)")
     city_tier: int = Field(..., ge=1, le=3, description="City tier: 1 (Metro), 2 (Tier 2), 3 (Tier 3)")
     hospital_tier: int = Field(..., ge=1, le=3, description="Hospital tier: 1 (Corporate/NABH), 2 (Private Multi-specialty), 3 (Nursing Home)")
@@ -36,3 +36,7 @@ class CostPredictionResponse(BaseModel):
     uncertainty_level: str = Field(..., description="Uncertainty classification: 'low', 'medium', or 'high'")
     itemized_breakdown: ItemizedBreakdown = Field(..., description="Itemized cost distribution")
     cost_drivers: List[str] = Field(..., description="Top feature cost drivers explaining the estimate")
+    matched_procedure: str = Field(..., description="Catalog procedure the request was resolved to")
+    model_version: str = Field(..., description="Version of the trained model bundle")
+    extrapolated: bool = Field(False, description="True when the stay exceeds the range seen in training")
+    warnings: List[str] = Field(default_factory=list, description="Caveats the caller should surface")

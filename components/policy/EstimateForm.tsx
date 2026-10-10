@@ -8,6 +8,7 @@ import {
   QuoteLineItem,
 } from '@/lib/types/estimate'
 import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
+import { fetchMlCostPrediction, scenarioNeedsMlCost } from '@/lib/estimate/mlClient'
 import { CANONICAL_PROCEDURES, formatINR } from '@/lib/policy/normalizers'
 import { CostLedger } from './CostLedger'
 import { MissingInfoPanel } from './MissingInfoPanel'
@@ -70,11 +71,20 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
   const [activeEvidenceModal, setActiveEvidenceModal] = useState<PolicyRule | null>(null)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
 
-  // Compute preflight deterministically whenever scenario changes
+  // Recompute the preflight whenever the scenario changes. Cost comes from the ML service
+  // (debounced, cached); policy rules stay deterministic. If the service is down the
+  // prediction is null and the static benchmark is used.
   useEffect(() => {
-    if (scenario.treatment.trim()) {
-      const res = evaluatePolicyPreflight(scenario, policyResult)
-      setPreflight(res)
+    if (!scenario.treatment.trim()) return
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      const mlPrediction = await fetchMlCostPrediction(scenario, controller.signal)
+      if (controller.signal.aborted) return
+      setPreflight(evaluatePolicyPreflight(scenario, policyResult, { mlPrediction }))
+    }, scenarioNeedsMlCost(scenario) ? 300 : 0)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
     }
   }, [scenario, policyResult])
 
@@ -127,7 +137,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <Calculator className="w-4 h-4 text-emerald-400" />
               Pre-Admission Preflight
             </h3>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+            <span className="text-[11px] uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
               Deterministic
             </span>
           </div>
@@ -137,7 +147,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             <div>
               <label className="block text-slate-300 font-medium mb-1 flex items-center justify-between">
                 <span>Treatment / Procedure</span>
-                <span className="text-[10px] text-slate-500 font-normal">Canonical match</span>
+                <span className="text-[11px] text-slate-500 font-normal">Canonical match</span>
               </label>
               <input
                 type="text"
@@ -283,7 +293,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
                         const updated = isChecked ? current.filter(p => p !== ped) : [...current, ped]
                         setScenario({ ...scenario, declaredPED: updated })
                       }}
-                      className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                      className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
                         isChecked
                           ? 'bg-amber-950/80 border-amber-500 text-amber-300 font-semibold'
                           : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -300,7 +310,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
             <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-300 font-medium block">Hospital Estimate Document</span>
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[11px] text-slate-500">
                   {scenario.quoteLineItems?.length
                     ? `${scenario.quoteLineItems.length} line items loaded`
                     : 'Using benchmark tariff'}
@@ -320,7 +330,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
       </div>
 
       {/* ─── Preflight Results & Module Workspace ───────────────────────────── */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 min-w-0 space-y-4">
         {!preflight ? (
           <div className="h-64 flex flex-col items-center justify-center text-slate-500 border border-[var(--border)] rounded-xl border-dashed bg-[var(--card2)] p-10">
             <Calculator className="w-10 h-10 mb-3 opacity-40 text-emerald-400" />
@@ -328,60 +338,66 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
           </div>
         ) : (
           <>
-            {/* Top 3 KPI Cards + Status Banner */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Gross Treatment Cost */}
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Total Treatment Expense
-                </span>
-                <div className="text-xl font-bold text-white mt-1">
-                  {formatINR(preflight.treatmentCost.typical)}
+            {/* Statement of patient share: a ruled ledger block */}
+            <section className="pl-statement" aria-label="Statement of patient share">
+              <header className="pl-st-head">
+                <h3>Statement of patient share</h3>
+                <span className="pl-stamp pl-stamp-info">{preflight.costSource.replace(/_/g, ' ')}</span>
+              </header>
+
+              <div className="pl-st-row">
+                <div className="pl-st-what">
+                  <strong>Total treatment expense</strong>
+                  <em>Range {formatINR(preflight.treatmentCost.min)} to {formatINR(preflight.treatmentCost.max)}</em>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                  <span>Range: {formatINR(preflight.treatmentCost.min)} – {formatINR(preflight.treatmentCost.max)}</span>
-                  <span className="capitalize text-slate-400 font-mono text-[10px]">{preflight.costSource.replace(/_/g, ' ')}</span>
-                </div>
+                <span className="pl-num pl-st-amt">{formatINR(preflight.treatmentCost.typical)}</span>
               </div>
 
-              {/* Potentially Covered */}
-              <div className="bg-[var(--card)] border border-emerald-500/30 bg-emerald-950/10 rounded-xl p-4 shadow-sm">
-                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider block">
-                  Potentially Covered
-                </span>
-                <div className="text-xl font-bold text-emerald-300 mt-1">
-                  {formatINR(preflight.potentiallyCovered.typical)}
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Verified Evidence: {preflight.evidenceCoverage}%</span>
-                  <span className="text-emerald-400 font-medium">
+              <div className="pl-st-row" data-tone="ok">
+                <div className="pl-st-what">
+                  <strong>Potentially covered by insurer</strong>
+                  <em>
+                    Verified evidence {preflight.evidenceCoverage}%
                     {preflight.treatmentCost.typical > 0
-                      ? `${Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)}% Admissible`
-                      : '—'}
-                  </span>
+                      ? ` · ${Math.round((preflight.potentiallyCovered.typical / preflight.treatmentCost.typical) * 100)}% admissible`
+                      : ''}
+                  </em>
                 </div>
+                <span className="pl-num pl-st-amt">{formatINR(preflight.potentiallyCovered.typical)}</span>
               </div>
 
-              {/* Out-of-Pocket Share */}
-              <div className="bg-[var(--card)] border border-amber-500/30 bg-amber-950/10 rounded-xl p-4 shadow-sm">
-                <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block">
-                  Estimated Patient Share
-                </span>
-                <div className="text-xl font-bold text-amber-300 mt-1">
-                  {formatINR(preflight.patientShare.typical)}
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Out of pocket</span>
-                  <span className="text-amber-400 font-medium">
+              <div className="pl-st-row pl-st-total" data-tone="deny">
+                <div className="pl-st-what">
+                  <strong>Estimated patient share</strong>
+                  <em>
+                    Out of pocket
                     {preflight.treatmentCost.typical > 0
-                      ? `${Math.round((preflight.patientShare.typical / preflight.treatmentCost.typical) * 100)}% of Bill`
-                      : '—'}
-                  </span>
+                      ? ` · ${Math.round((preflight.patientShare.typical / preflight.treatmentCost.typical) * 100)}% of bill`
+                      : ''}
+                  </em>
                 </div>
+                <span className="pl-num pl-st-amt">{formatINR(preflight.patientShare.typical)}</span>
               </div>
-            </div>
 
-            {/* Interactive Biometric Radial Coverage Gauge */}
+              {preflight.costModel && (
+                <div className="pl-st-notes">
+                  <div>
+                    Model estimate · {preflight.costModel.uncertaintyLevel} uncertainty ·{' '}
+                    {Math.round(preflight.costModel.confidenceScore * 100)}% confidence
+                  </div>
+                  {preflight.costModel.drivers.map((d, i) => (
+                    <div key={i}>• {d}</div>
+                  ))}
+                  {preflight.costModel.warnings.map((w, i) => (
+                    <div key={`w${i}`} className="pl-st-warn">
+                      ⚠ {w}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Coverage readout */}
             <CoverageGauge
               totalCost={preflight.treatmentCost.typical}
               coveredAmount={preflight.potentiallyCovered.typical}
@@ -439,7 +455,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('ledger')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'ledger'
                     ? 'bg-[var(--card)] text-emerald-400 border-t-2 border-emerald-400'
                     : 'text-slate-400 hover:text-white'
@@ -452,7 +468,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('missing_info')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'missing_info'
                     ? 'bg-[var(--card)] text-amber-400 border-t-2 border-amber-400'
                     : 'text-slate-400 hover:text-white'
@@ -461,7 +477,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
                 <HelpCircle size={13} />
                 Missing Info Engine
                 {preflight.missingInformation.length > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] flex items-center justify-center font-bold">
+                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[11px] flex items-center justify-center font-bold">
                     {preflight.missingInformation.length}
                   </span>
                 )}
@@ -470,7 +486,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('what_if')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'what_if'
                     ? 'bg-[var(--card)] text-cyan-400 border-t-2 border-cyan-400'
                     : 'text-slate-400 hover:text-white'
@@ -483,7 +499,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('timeline')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'timeline'
                     ? 'bg-[var(--card)] text-blue-400 border-t-2 border-blue-400'
                     : 'text-slate-400 hover:text-white'
@@ -496,7 +512,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('readiness')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'readiness'
                     ? 'bg-[var(--card)] text-purple-400 border-t-2 border-purple-400'
                     : 'text-slate-400 hover:text-white'
@@ -509,7 +525,7 @@ export function EstimateForm({ policyResult }: EstimateFormProps) {
               <button
                 type="button"
                 onClick={() => setActivePreflightTab('export')}
-                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activePreflightTab === 'export'
                     ? 'bg-[var(--card)] text-slate-200 border-t-2 border-slate-300'
                     : 'text-slate-400 hover:text-white'

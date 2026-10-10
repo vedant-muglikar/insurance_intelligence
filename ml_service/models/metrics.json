@@ -1,0 +1,387 @@
+{
+  "version": "2.0.0",
+  "trained_at": "2026-10-10T04:29:07.991441+00:00",
+  "rows": {
+    "train": 14000,
+    "calibration": 3000,
+    "test": 3000
+  },
+  "baseline": {
+    "pinball_p10": 3731.371556389999,
+    "pinball_p50": 7867.395855830466,
+    "pinball_p90": 3622.8930327078924,
+    "pinball_mean": 5073.886814976119,
+    "mae": 15734.791711660931,
+    "rmse": 27012.87658450943,
+    "mape_pct": 9.7616796981285,
+    "wape_pct": 8.96466867381115,
+    "median_ape_pct": 7.5603517190452925,
+    "r2": 0.9745355844042313,
+    "coverage_80_pct": 77.4,
+    "below_p10_pct": 11.3,
+    "below_p50_pct": 48.9,
+    "below_p90_pct": 88.7,
+    "mean_interval_width": 53004.79693532899,
+    "mean_relative_width_pct": 30.62973497877653,
+    "interval_score": 73542.6458909789,
+    "crossing_rate_pct": 2.0666666666666664
+  },
+  "final": {
+    "pinball_p10": 3311.86709705972,
+    "pinball_p50": 7512.534848590694,
+    "pinball_p90": 3366.3771473706247,
+    "pinball_mean": 4730.2596976736795,
+    "mae": 15025.069697181389,
+    "rmse": 25915.619866570494,
+    "mape_pct": 8.789108012447166,
+    "wape_pct": 8.560314880833786,
+    "median_ape_pct": 7.2086352575450094,
+    "r2": 0.9765622861911695,
+    "coverage_80_pct": 80.96666666666667,
+    "below_p10_pct": 9.700000000000001,
+    "below_p50_pct": 48.4,
+    "below_p90_pct": 90.66666666666666,
+    "mean_interval_width": 51794.11868932746,
+    "mean_relative_width_pct": 28.808190065284617,
+    "interval_score": 66782.44244430345,
+    "crossing_rate_pct": 0.0
+  },
+  "ablation": [
+    {
+      "step": "Original pipeline (one-hot, raw target, fixed params)",
+      "pinball_p10": 3731.371556389999,
+      "pinball_p50": 7867.395855830466,
+      "pinball_p90": 3622.8930327078924,
+      "pinball_mean": 5073.886814976119,
+      "mae": 15734.791711660931,
+      "rmse": 27012.87658450943,
+      "mape_pct": 9.7616796981285,
+      "wape_pct": 8.96466867381115,
+      "median_ape_pct": 7.5603517190452925,
+      "r2": 0.9745355844042313,
+      "coverage_80_pct": 77.4,
+      "below_p10_pct": 11.3,
+      "below_p50_pct": 48.9,
+      "below_p90_pct": 88.7,
+      "mean_interval_width": 53004.79693532899,
+      "mean_relative_width_pct": 30.62973497877653,
+      "interval_score": 73542.6458909789,
+      "crossing_rate_pct": 2.0666666666666664
+    },
+    {
+      "step": "+ native categoricals & engineered features",
+      "pinball_p10": 3458.092342293724,
+      "pinball_p50": 7498.7289227633455,
+      "pinball_p90": 3430.806966979828,
+      "pinball_mean": 4795.876077345632,
+      "mae": 14997.457845526691,
+      "rmse": 25967.992466809956,
+      "mape_pct": 8.845797422733085,
+      "wape_pct": 8.544583430040488,
+      "median_ape_pct": 7.197491564999272,
+      "r2": 0.9764674604191481,
+      "coverage_80_pct": 76.26666666666667,
+      "below_p10_pct": 12.233333333333334,
+      "below_p50_pct": 49.4,
+      "below_p90_pct": 88.5,
+      "mean_interval_width": 48181.2298220129,
+      "mean_relative_width_pct": 27.471105211934958,
+      "interval_score": 68888.99309273552,
+      "crossing_rate_pct": 0.8
+    },
+    {
+      "step": "+ log-target",
+      "pinball_p10": 3351.9395557937187,
+      "pinball_p50": 7489.95695165819,
+      "pinball_p90": 3375.3361798713554,
+      "pinball_mean": 4739.077562441088,
+      "mae": 14979.91390331638,
+      "rmse": 25848.171679878626,
+      "mape_pct": 8.725806683482622,
+      "wape_pct": 8.53458802418892,
+      "median_ape_pct": 7.048628579931969,
+      "r2": 0.9766841257738644,
+      "coverage_80_pct": 75.9,
+      "below_p10_pct": 12.0,
+      "below_p50_pct": 48.56666666666667,
+      "below_p90_pct": 87.9,
+      "mean_interval_width": 46319.18049802526,
+      "mean_relative_width_pct": 26.39491454081167,
+      "interval_score": 67272.75735665075,
+      "crossing_rate_pct": 0.0
+    },
+    {
+      "step": "+ Optuna-tuned hyper-parameters",
+      "pinball_p10": 3305.73210955958,
+      "pinball_p50": 7512.534848590694,
+      "pinball_p90": 3359.1796519125664,
+      "pinball_mean": 4725.8155366876135,
+      "mae": 15025.069697181389,
+      "rmse": 25915.619866570494,
+      "mape_pct": 8.789108012447166,
+      "wape_pct": 8.560314880833786,
+      "median_ape_pct": 7.2086352575450094,
+      "r2": 0.9765622861911695,
+      "coverage_80_pct": 77.83333333333333,
+      "below_p10_pct": 10.933333333333334,
+      "below_p50_pct": 48.4,
+      "below_p90_pct": 88.76666666666667,
+      "mean_interval_width": 48395.116320818524,
+      "mean_relative_width_pct": 26.859732259184543,
+      "interval_score": 66649.11761472147,
+      "crossing_rate_pct": 0.0
+    },
+    {
+      "step": "+ conformal (CQR) interval calibration  = FINAL",
+      "pinball_p10": 3311.86709705972,
+      "pinball_p50": 7512.534848590694,
+      "pinball_p90": 3366.3771473706247,
+      "pinball_mean": 4730.2596976736795,
+      "mae": 15025.069697181389,
+      "rmse": 25915.619866570494,
+      "mape_pct": 8.789108012447166,
+      "wape_pct": 8.560314880833786,
+      "median_ape_pct": 7.2086352575450094,
+      "r2": 0.9765622861911695,
+      "coverage_80_pct": 80.96666666666667,
+      "below_p10_pct": 9.700000000000001,
+      "below_p50_pct": 48.4,
+      "below_p90_pct": 90.66666666666666,
+      "mean_interval_width": 51794.11868932746,
+      "mean_relative_width_pct": 28.808190065284617,
+      "interval_score": 66782.44244430345,
+      "crossing_rate_pct": 0.0
+    }
+  ],
+  "best_params": {
+    "p10": {
+      "params": {
+        "learning_rate": 0.052377710217858336,
+        "num_leaves": 8,
+        "min_child_samples": 67,
+        "subsample": 0.9248700354591795,
+        "colsample_bytree": 0.9358030410212546,
+        "reg_lambda": 0.00315552947012097,
+        "reg_alpha": 0.0039030674152799585,
+        "min_split_gain": 0.027058359691230563,
+        "max_bin": 127,
+        "subsample_freq": 1
+      },
+      "n_estimators": 525,
+      "cv_pinball": 3342.168000945691
+    },
+    "p50": {
+      "params": {
+        "learning_rate": 0.038253876213142746,
+        "num_leaves": 9,
+        "min_child_samples": 59,
+        "subsample": 0.7584141572704747,
+        "colsample_bytree": 0.7610962365381044,
+        "reg_lambda": 2.475959040136244,
+        "reg_alpha": 0.015506083844098587,
+        "min_split_gain": 0.04756459391915473,
+        "max_bin": 63,
+        "subsample_freq": 1
+      },
+      "n_estimators": 770,
+      "cv_pinball": 7678.551288131389
+    },
+    "p90": {
+      "params": {
+        "learning_rate": 0.0256402008378338,
+        "num_leaves": 10,
+        "min_child_samples": 80,
+        "subsample": 0.7257423924305306,
+        "colsample_bytree": 0.8034282764658811,
+        "reg_lambda": 8.007014729318678,
+        "reg_alpha": 0.008358425539630955,
+        "min_split_gain": 0.04103829230356298,
+        "max_bin": 63,
+        "subsample_freq": 1
+      },
+      "n_estimators": 1495,
+      "cv_pinball": 3674.8352930996302
+    }
+  },
+  "cqr_log_offset": 0.009687418590011987,
+  "line_items": {
+    "per_item": {
+      "room_and_nursing": {
+        "ml_mae": 1659.35564016529,
+        "heuristic_mae": 2120.2112879842907,
+        "mean_actual": 32741.166576666663
+      },
+      "surgery_and_ot": {
+        "ml_mae": 3857.573010638115,
+        "heuristic_mae": 4831.904587527045,
+        "mean_actual": 66024.37130666667
+      },
+      "doctor_fees": {
+        "ml_mae": 1451.3877902151296,
+        "heuristic_mae": 2165.716541861554,
+        "mean_actual": 24483.022793333334
+      },
+      "medicines_and_implants": {
+        "ml_mae": 2225.8959653109237,
+        "heuristic_mae": 6425.081704884591,
+        "mean_actual": 38011.11390333334
+      },
+      "consumables": {
+        "ml_mae": 881.0071347158505,
+        "heuristic_mae": 1313.002465587738,
+        "mean_actual": 13937.56538
+      }
+    },
+    "ml_mae_all": 2015.0439082090618,
+    "heuristic_mae_all": 3371.1833175690435
+  },
+  "by_procedure": {
+    "Appendectomy": {
+      "n": 176,
+      "mape_pct": 9.40830496275084,
+      "coverage_80_pct": 83.52272727272727
+    },
+    "Caesarean Section": {
+      "n": 172,
+      "mape_pct": 8.538053061599573,
+      "coverage_80_pct": 80.23255813953489
+    },
+    "Cataract Surgery": {
+      "n": 182,
+      "mape_pct": 8.482915026984502,
+      "coverage_80_pct": 80.21978021978022
+    },
+    "Chemotherapy Infusion Cycle": {
+      "n": 185,
+      "mape_pct": 9.59118400379541,
+      "coverage_80_pct": 81.62162162162161
+    },
+    "Cholecystectomy": {
+      "n": 176,
+      "mape_pct": 8.509811086568261,
+      "coverage_80_pct": 80.68181818181817
+    },
+    "Coronary Angioplasty": {
+      "n": 172,
+      "mape_pct": 8.711059971225815,
+      "coverage_80_pct": 83.13953488372093
+    },
+    "Coronary Artery Bypass Graft (CABG)": {
+      "n": 174,
+      "mape_pct": 7.822177014124788,
+      "coverage_80_pct": 83.9080459770115
+    },
+    "Dengue Inpatient Care": {
+      "n": 177,
+      "mape_pct": 9.529512715160692,
+      "coverage_80_pct": 72.31638418079096
+    },
+    "Hemodialysis (Single Session)": {
+      "n": 183,
+      "mape_pct": 8.81154587583579,
+      "coverage_80_pct": 80.87431693989072
+    },
+    "Hernia Repair": {
+      "n": 171,
+      "mape_pct": 9.589556134069667,
+      "coverage_80_pct": 76.60818713450293
+    },
+    "Hysterectomy": {
+      "n": 170,
+      "mape_pct": 8.439498410185472,
+      "coverage_80_pct": 78.82352941176471
+    },
+    "Kidney Stone Lithotripsy": {
+      "n": 174,
+      "mape_pct": 8.723711746991183,
+      "coverage_80_pct": 81.03448275862068
+    },
+    "Normal Delivery": {
+      "n": 183,
+      "mape_pct": 8.251678233955172,
+      "coverage_80_pct": 86.88524590163934
+    },
+    "Tonsillectomy": {
+      "n": 184,
+      "mape_pct": 8.971768894587898,
+      "coverage_80_pct": 82.06521739130434
+    },
+    "Total Hip Replacement": {
+      "n": 170,
+      "mape_pct": 8.820390868401375,
+      "coverage_80_pct": 81.76470588235294
+    },
+    "Total Knee Replacement": {
+      "n": 174,
+      "mape_pct": 8.326446706844854,
+      "coverage_80_pct": 81.60919540229885
+    },
+    "Typhoid Inpatient Care": {
+      "n": 177,
+      "mape_pct": 8.851681968428315,
+      "coverage_80_pct": 80.7909604519774
+    }
+  },
+  "by_hospital_tier": {
+    "1": {
+      "n": 1050,
+      "mape_pct": 9.013318334787115,
+      "coverage_80_pct": 79.9047619047619
+    },
+    "2": {
+      "n": 1365,
+      "mape_pct": 8.657368490962519,
+      "coverage_80_pct": 80.73260073260073
+    },
+    "3": {
+      "n": 585,
+      "mape_pct": 8.69407144555758,
+      "coverage_80_pct": 83.41880341880342
+    }
+  },
+  "by_city_tier": {
+    "1": {
+      "n": 1219,
+      "mape_pct": 8.823609648817115,
+      "coverage_80_pct": 82.52666119770304
+    },
+    "2": {
+      "n": 1190,
+      "mape_pct": 8.81662334232395,
+      "coverage_80_pct": 79.66386554621849
+    },
+    "3": {
+      "n": 591,
+      "mape_pct": 8.662541621096327,
+      "coverage_80_pct": 80.37225042301185
+    }
+  },
+  "by_room": {
+    "general": {
+      "n": 923,
+      "mape_pct": 8.881464208418102,
+      "coverage_80_pct": 81.79848320693391
+    },
+    "single": {
+      "n": 771,
+      "mape_pct": 9.064790689903004,
+      "coverage_80_pct": 79.89623865110246
+    },
+    "suite": {
+      "n": 284,
+      "mape_pct": 8.301073399036525,
+      "coverage_80_pct": 84.15492957746478
+    },
+    "twin": {
+      "n": 1022,
+      "mape_pct": 8.633340612260271,
+      "coverage_80_pct": 80.13698630136986
+    }
+  },
+  "monotonic_stay_violations_pct": 0.0,
+  "latency_ms_single_prediction": 17.24110600000131,
+  "spread_thresholds": {
+    "low": 0.24917830161903473,
+    "high": 0.30042435569089754
+  }
+}

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { TreatmentScenario, CoverageResult, WhatIfDelta } from '@/lib/types/estimate'
 import { PolicyAnalysisResult } from '@/lib/types/policy'
 import { evaluatePolicyPreflight } from '@/lib/estimate/policy'
+import { fetchMlCostPrediction } from '@/lib/estimate/mlClient'
 import { formatINR } from '@/lib/policy/normalizers'
 import { Sparkles, ArrowRight, CheckCircle2, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react'
 
@@ -24,10 +25,12 @@ export function WhatIfPanel({
   const [simulatedPreflight, setSimulatedPreflight] = useState<CoverageResult | null>(null)
   const [activeSimulationLabel, setActiveSimulationLabel] = useState<string | null>(null)
 
-  const runSimulation = (updatedScenario: TreatmentScenario, label: string) => {
+  const runSimulation = async (updatedScenario: TreatmentScenario, label: string) => {
     setTestScenario(updatedScenario)
     setActiveSimulationLabel(label)
-    const newPreflight = evaluatePolicyPreflight(updatedScenario, policyResult)
+    // Use the same cost source as the baseline so the delta isolates the policy effect.
+    const mlPrediction = await fetchMlCostPrediction(updatedScenario)
+    const newPreflight = evaluatePolicyPreflight(updatedScenario, policyResult, { mlPrediction })
     setSimulatedPreflight(newPreflight)
   }
 
@@ -155,7 +158,7 @@ export function WhatIfPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Before card */}
             <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-500 block">
+              <span className="text-[11px] uppercase font-semibold text-slate-500 block">
                 Current Scenario
               </span>
               <div className="mt-1 flex justify-between items-baseline">
@@ -180,7 +183,7 @@ export function WhatIfPanel({
 
             {/* After card */}
             <div className="p-3 rounded-lg bg-cyan-950/20 border border-cyan-500/40">
-              <span className="text-[10px] uppercase font-semibold text-cyan-400 block">
+              <span className="text-[11px] uppercase font-semibold text-cyan-400 block">
                 Simulated Outcome
               </span>
               <div className="mt-1 flex justify-between items-baseline">

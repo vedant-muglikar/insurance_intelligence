@@ -240,7 +240,7 @@ export function QuoteReview({
         <button
           type="button"
           onClick={handleConfirm}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+          className="bg-[var(--brand)] hover:bg-[var(--brand-hi)] text-[var(--on-brand)] font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
         >
           <CheckCircle2 size={14} />
           Confirm & Recompute Preflight

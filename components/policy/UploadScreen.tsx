@@ -2,6 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { UserMenu } from '@/components/ui/UserMenu'
+import { Brand } from '@/components/ui/Brand'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import {
   CloudUpload,
   FileCheck2,
@@ -74,22 +76,13 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
 
   return (
     <div className="us-root relative overflow-hidden">
-      {/* ── Ambient Glow Auroras ── */}
-      <div className="aurora-bg w-96 h-96 -top-24 -left-24 bg-emerald-500/20" />
-      <div className="aurora-bg w-96 h-96 -bottom-24 -right-24 bg-cyan-500/15" />
-
-      {/* ── Subtle grid background ── */}
-      <div className="us-grid-bg" />
-
       {/* ── Top bar ── */}
       <div className="us-topbar">
-        <div className="lp-nav-brand">
-          <div className="brand-mark small">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <span className="lp-nav-name">Claim<span className="lp-accent">Lens</span></span>
+        <Brand />
+        <div className="us-topbar-actions">
+          <ThemeToggle />
+          <UserMenu />
         </div>
-        <UserMenu />
       </div>
 
       {/* ── Main layout: left context / right upload ── */}
@@ -98,11 +91,6 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
         {/* LEFT — context panel */}
         <div className="us-left">
           <div className="us-left-inner">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                Preflight Ingestion
-              </span>
-            </div>
             <h1 className="us-left-headline">
               Upload your policy.<br />
               Audit every clause.
@@ -225,7 +213,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
                     <span className="font-semibold text-slate-200 group-hover:text-emerald-300 block truncate">
                       HDFC ERGO Optima Secure
                     </span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[11px] text-slate-400 block">
                       ₹5L SI · 24M Joint Wait · 20% Senior Co-pay
                     </span>
                   </button>
@@ -238,7 +226,7 @@ export function UploadScreen({ onAnalyze, onLoadSample }: UploadScreenProps) {
                     <span className="font-semibold text-slate-200 group-hover:text-emerald-300 block truncate">
                       Star Health Comprehensive
                     </span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[11px] text-slate-400 block">
                       ₹10L SI · 36M PED Wait · Suite Proration
                     </span>
                   </button>
