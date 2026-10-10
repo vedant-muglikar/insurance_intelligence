@@ -52,6 +52,8 @@ interface PolicyQAProps {
   /** Policy rules, used by the bill check to judge each charge against the policy. */
   rules: PolicyRule[]
   chat: ChatState
+  /** Opens the claim ledger with a bill read in this chat. */
+  onAdjudicate?: (bill: HospitalBill) => void
 }
 
 type VoiceState = 'idle' | 'listening' | 'speaking'
@@ -72,7 +74,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
   unclear: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
 }
 
-export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) {
+export function PolicyQA({ pages, planTemplateId, rules, chat, onAdjudicate }: PolicyQAProps) {
   const { messages, setMessages, speak, setSpeak, busy, setBusy } = chat
   const [input, setInput] = useState('')
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null)
@@ -431,7 +433,11 @@ export function PolicyQA({ pages, planTemplateId, rules, chat }: PolicyQAProps) 
                     )}
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
 
-                    {msg.bill && <BillCheckCard check={msg.bill} onItemsChange={(items) => updateBillItems(msg.id, items)} />}
+                    {msg.bill && <BillCheckCard
+                        check={msg.bill}
+                        onItemsChange={(items) => updateBillItems(msg.id, items)}
+                        onAdjudicate={onAdjudicate ? () => onAdjudicate({ ...msg.bill!.data, lineItems: msg.bill!.items }) : undefined}
+                      />}
 
                     {msg.citations && msg.citations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-[var(--border)]">

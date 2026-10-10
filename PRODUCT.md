@@ -17,7 +17,7 @@ Two things together that a generic chatbot or insurer portal could not truthfull
 
 ## Operating Context
 - The user uploads a policy PDF (up to 100 MB), optionally a hospital estimate PDF or its line items, then sets a treatment scenario (procedure, age, city, hospital type, room, stay, policy start and admission dates, declared pre-existing conditions).
-- Output: covered versus patient share with a clause ledger, missing-information prompts, what-if comparisons, a waiting-period timeline, a pre-authorization readiness checklist, a Q&A chat over the policy, and a claim-dispute helper.
+- Output: covered versus patient share with a clause ledger, missing-information prompts, what-if comparisons, a waiting-period timeline, a pre-authorization readiness checklist, a Q&A chat over the policy, a claim-dispute helper, and an item-level claim ledger that applies the policy documents in force on the treatment date (base policy plus amendments) to a bill.
 - Sign-in is via Supabase (email/password and Google). The landing page (`/`) and `/login` are public; the tool (`/app`) requires sign-in.
 
 ## Capabilities and Constraints

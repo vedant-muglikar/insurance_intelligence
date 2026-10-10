@@ -8,6 +8,7 @@ import {
   ChatCircleDots,
   ListChecks,
   MagnifyingGlass,
+  Receipt,
   Scales,
   ShieldCheck,
   UploadSimple,
@@ -17,6 +18,8 @@ import { RuleCard, EvidenceViewer } from './shared'
 import { PolicyQA, useChatState } from './PolicyQA'
 import { EstimateForm } from './EstimateForm'
 import { ClaimDispute } from './ClaimDispute'
+import { ClaimLedger } from './ClaimLedger'
+import type { HospitalBill } from '@/lib/types/bill'
 import { Brand } from '../ui/Brand'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { UserMenu } from '../ui/UserMenu'
@@ -30,12 +33,13 @@ import type { CoverageResult, TreatmentScenario } from '@/lib/types/estimate'
 
 // ─── Views ────────────────────────────────────────────────────────────────────
 
-type View = 'policy' | 'estimate' | 'checklist' | 'ask' | 'claims'
+type View = 'policy' | 'estimate' | 'checklist' | 'ledger' | 'ask' | 'claims'
 
 const VIEWS: { id: View; label: string; title: string; sub: string; Icon: any }[] = [
   { id: 'policy', label: 'Overview', title: 'Policy overview', sub: 'What your policy covers, limits and excludes.', Icon: ShieldCheck },
   { id: 'estimate', label: 'Estimator', title: 'Cost estimator', sub: 'Plan a hospital stay and see what you would pay.', Icon: Calculator },
   { id: 'checklist', label: 'Checklist', title: 'Preparation checklist', sub: 'Tasks to finish before admission, taken from your policy.', Icon: ListChecks },
+  { id: 'ledger', label: 'Claim ledger', title: 'Claim ledger', sub: 'Item by item: what is payable, what is deducted, and which clause says so.', Icon: Receipt },
   { id: 'ask', label: 'Ask AI', title: 'Ask your policy', sub: 'Questions in text or voice, and bill checks.', Icon: ChatCircleDots },
   { id: 'claims', label: 'Disputes', title: 'Claim disputes', sub: 'Build a reply to a rejected claim from your policy.', Icon: Scales },
 ]
@@ -209,6 +213,7 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
   const [view, setView] = useState<View>('policy')
   const [activeRule, setActiveRule] = useState<PolicyRule | null>(null)
   const chat = useChatState() // held here so the chat survives switching tabs
+  const [claimBill, setClaimBill] = useState<HospitalBill | null>(null)
 
   // Preflight scenario lives here so it survives tab switches and can personalise the checklist
   const [estimator, setEstimator] = useState<{
@@ -333,9 +338,19 @@ export function PolicyResults({ result, fileName, onReset }: PolicyResultsProps)
           )}
           {view === 'ask' && (
             <div className="db-card db-chat">
-              <PolicyQA pages={result.pages} planTemplateId={result.plan_template_id} rules={result.rules} chat={chat} />
+              <PolicyQA
+                pages={result.pages}
+                planTemplateId={result.plan_template_id}
+                rules={result.rules}
+                chat={chat}
+                onAdjudicate={(bill) => {
+                  setClaimBill(bill)
+                  go('ledger')
+                }}
+              />
             </div>
           )}
+          {view === 'ledger' && <ClaimLedger policy={result} fileName={fileName} incomingBill={claimBill} />}
           {view === 'claims' && (
             <div className="db-stack">
               <ClaimDispute pages={result.pages} />

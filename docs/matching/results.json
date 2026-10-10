@@ -1,0 +1,2285 @@
+{
+  "model": "gemini-embedding-001@768",
+  "config": {
+    "retrieveFloor": 0,
+    "supportThreshold": 0.1,
+    "conditionThreshold": 0.3,
+    "margin": 0.06,
+    "topK": 5,
+    "center": true,
+    "minPeak": 2
+  },
+  "counts": {
+    "examples": 43,
+    "dev": 22,
+    "test": 21,
+    "clauses": 17
+  },
+  "summaries": {
+    "keyword": {
+      "All": {
+        "n": 43,
+        "strict": 19,
+        "outcome": 21,
+        "lo": 0.3043308562392133,
+        "hi": 0.5889264193448829,
+        "retrievalN": 33,
+        "h1": 20,
+        "h3": 21,
+        "mrr": 0.6161616161616162,
+        "noneN": 10,
+        "falseSupport": 4,
+        "decided": 20,
+        "decidedRight": 8
+      },
+      "Dev": {
+        "n": 22,
+        "strict": 11,
+        "outcome": 12,
+        "lo": 0.3072180469247956,
+        "hi": 0.6927819530752044,
+        "retrievalN": 17,
+        "h1": 9,
+        "h3": 10,
+        "mrr": 0.5490196078431372,
+        "noneN": 5,
+        "falseSupport": 2,
+        "decided": 10,
+        "decidedRight": 4
+      },
+      "Test": {
+        "n": 21,
+        "strict": 8,
+        "outcome": 9,
+        "lo": 0.20750767797982506,
+        "hi": 0.5912170418449848,
+        "retrievalN": 16,
+        "h1": 11,
+        "h3": 11,
+        "mrr": 0.6875,
+        "noneN": 5,
+        "falseSupport": 2,
+        "decided": 10,
+        "decidedRight": 4
+      },
+      "paraphrase": {
+        "n": 14,
+        "strict": 4,
+        "outcome": 6,
+        "lo": 0.11721187910109099,
+        "hi": 0.5464954117248438,
+        "retrievalN": 14,
+        "h1": 5,
+        "h3": 6,
+        "mrr": 0.380952380952381,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 7,
+        "decidedRight": 4
+      },
+      "exclusion": {
+        "n": 7,
+        "strict": 3,
+        "outcome": 3,
+        "lo": 0.15821692226262685,
+        "hi": 0.7495457695909742,
+        "retrievalN": 7,
+        "h1": 3,
+        "h3": 3,
+        "mrr": 0.42857142857142855,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 4,
+        "decidedRight": 3
+      },
+      "carve-out": {
+        "n": 5,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.1176182311592533,
+        "hi": 0.769280067791163,
+        "retrievalN": 5,
+        "h1": 5,
+        "h3": 5,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 3,
+        "decidedRight": 0
+      },
+      "conflict": {
+        "n": 5,
+        "strict": 4,
+        "outcome": 4,
+        "lo": 0.3755282641185388,
+        "hi": 0.9637768390302125,
+        "retrievalN": 5,
+        "h1": 5,
+        "h3": 5,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 1,
+        "decidedRight": 0
+      },
+      "clear-winner": {
+        "n": 2,
+        "strict": 1,
+        "outcome": 1,
+        "lo": 0.09452865480086614,
+        "hi": 0.9054713451991339,
+        "retrievalN": 2,
+        "h1": 2,
+        "h3": 2,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 1,
+        "decidedRight": 1
+      },
+      "missing-evidence": {
+        "n": 7,
+        "strict": 5,
+        "outcome": 5,
+        "lo": 0.35892909014821267,
+        "hi": 0.9177828342909844,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 7,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      },
+      "keyword-trap": {
+        "n": 3,
+        "strict": 0,
+        "outcome": 0,
+        "lo": 0,
+        "hi": 0.5615060804490177,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 3,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      }
+    },
+    "semantic_raw": {
+      "All": {
+        "n": 43,
+        "strict": 33,
+        "outcome": 33,
+        "lo": 0.622551917005606,
+        "hi": 0.8684646153075517,
+        "retrievalN": 33,
+        "h1": 31,
+        "h3": 33,
+        "mrr": 0.9696969696969697,
+        "noneN": 10,
+        "falseSupport": 4,
+        "decided": 31,
+        "decidedRight": 22
+      },
+      "Dev": {
+        "n": 22,
+        "strict": 18,
+        "outcome": 18,
+        "lo": 0.6148297802336213,
+        "hi": 0.9269323397589488,
+        "retrievalN": 17,
+        "h1": 16,
+        "h3": 17,
+        "mrr": 0.9705882352941176,
+        "noneN": 5,
+        "falseSupport": 2,
+        "decided": 14,
+        "decidedRight": 11
+      },
+      "Test": {
+        "n": 21,
+        "strict": 15,
+        "outcome": 15,
+        "lo": 0.500432261771624,
+        "hi": 0.8618632425437179,
+        "retrievalN": 16,
+        "h1": 15,
+        "h3": 16,
+        "mrr": 0.96875,
+        "noneN": 5,
+        "falseSupport": 2,
+        "decided": 17,
+        "decidedRight": 11
+      },
+      "paraphrase": {
+        "n": 14,
+        "strict": 14,
+        "outcome": 14,
+        "lo": 0.7846829880728186,
+        "hi": 1,
+        "retrievalN": 14,
+        "h1": 14,
+        "h3": 14,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 14,
+        "decidedRight": 14
+      },
+      "exclusion": {
+        "n": 7,
+        "strict": 6,
+        "outcome": 6,
+        "lo": 0.48686549668097007,
+        "hi": 0.9743210440510253,
+        "retrievalN": 7,
+        "h1": 6,
+        "h3": 7,
+        "mrr": 0.9285714285714286,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 6,
+        "decidedRight": 6
+      },
+      "carve-out": {
+        "n": 5,
+        "strict": 3,
+        "outcome": 3,
+        "lo": 0.23071993220883708,
+        "hi": 0.8823817688407467,
+        "retrievalN": 5,
+        "h1": 4,
+        "h3": 5,
+        "mrr": 0.9,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 2,
+        "decidedRight": 0
+      },
+      "conflict": {
+        "n": 5,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.1176182311592533,
+        "hi": 0.769280067791163,
+        "retrievalN": 5,
+        "h1": 5,
+        "h3": 5,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 3,
+        "decidedRight": 0
+      },
+      "clear-winner": {
+        "n": 2,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.34237195288961925,
+        "hi": 1,
+        "retrievalN": 2,
+        "h1": 2,
+        "h3": 2,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 2,
+        "decidedRight": 2
+      },
+      "missing-evidence": {
+        "n": 7,
+        "strict": 5,
+        "outcome": 5,
+        "lo": 0.35892909014821267,
+        "hi": 0.9177828342909844,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 7,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      },
+      "keyword-trap": {
+        "n": 3,
+        "strict": 1,
+        "outcome": 1,
+        "lo": 0.0614903152761605,
+        "hi": 0.7923450448735121,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 3,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      }
+    },
+    "semantic_no_check": {
+      "All": {
+        "n": 43,
+        "strict": 30,
+        "outcome": 30,
+        "lo": 0.5489435424759017,
+        "hi": 0.8139817205381712,
+        "retrievalN": 33,
+        "h1": 31,
+        "h3": 33,
+        "mrr": 0.9696969696969697,
+        "noneN": 10,
+        "falseSupport": 3,
+        "decided": 35,
+        "decidedRight": 22
+      },
+      "Dev": {
+        "n": 22,
+        "strict": 17,
+        "outcome": 17,
+        "lo": 0.5655964393704065,
+        "hi": 0.8987710920517964,
+        "retrievalN": 17,
+        "h1": 16,
+        "h3": 17,
+        "mrr": 0.9705882352941176,
+        "noneN": 5,
+        "falseSupport": 0,
+        "decided": 16,
+        "decidedRight": 11
+      },
+      "Test": {
+        "n": 21,
+        "strict": 13,
+        "outcome": 13,
+        "lo": 0.40878295815501514,
+        "hi": 0.7924923220201749,
+        "retrievalN": 16,
+        "h1": 15,
+        "h3": 16,
+        "mrr": 0.96875,
+        "noneN": 5,
+        "falseSupport": 3,
+        "decided": 19,
+        "decidedRight": 11
+      },
+      "paraphrase": {
+        "n": 14,
+        "strict": 14,
+        "outcome": 14,
+        "lo": 0.7846829880728186,
+        "hi": 1,
+        "retrievalN": 14,
+        "h1": 14,
+        "h3": 14,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 14,
+        "decidedRight": 14
+      },
+      "exclusion": {
+        "n": 7,
+        "strict": 6,
+        "outcome": 6,
+        "lo": 0.48686549668097007,
+        "hi": 0.9743210440510253,
+        "retrievalN": 7,
+        "h1": 6,
+        "h3": 7,
+        "mrr": 0.9285714285714286,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 7,
+        "decidedRight": 6
+      },
+      "carve-out": {
+        "n": 5,
+        "strict": 0,
+        "outcome": 0,
+        "lo": 0,
+        "hi": 0.43449149475208104,
+        "retrievalN": 5,
+        "h1": 4,
+        "h3": 5,
+        "mrr": 0.9,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 5,
+        "decidedRight": 0
+      },
+      "conflict": {
+        "n": 5,
+        "strict": 1,
+        "outcome": 1,
+        "lo": 0.03622316096978745,
+        "hi": 0.6244717358814613,
+        "retrievalN": 5,
+        "h1": 5,
+        "h3": 5,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 4,
+        "decidedRight": 0
+      },
+      "clear-winner": {
+        "n": 2,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.34237195288961925,
+        "hi": 1,
+        "retrievalN": 2,
+        "h1": 2,
+        "h3": 2,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 2,
+        "decidedRight": 2
+      },
+      "missing-evidence": {
+        "n": 7,
+        "strict": 6,
+        "outcome": 6,
+        "lo": 0.48686549668097007,
+        "hi": 0.9743210440510253,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 7,
+        "falseSupport": 1,
+        "decided": 1,
+        "decidedRight": 0
+      },
+      "keyword-trap": {
+        "n": 3,
+        "strict": 1,
+        "outcome": 1,
+        "lo": 0.0614903152761605,
+        "hi": 0.7923450448735121,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 3,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      }
+    },
+    "semantic": {
+      "All": {
+        "n": 43,
+        "strict": 35,
+        "outcome": 35,
+        "lo": 0.6738270676469403,
+        "hi": 0.9025836441989402,
+        "retrievalN": 33,
+        "h1": 31,
+        "h3": 33,
+        "mrr": 0.9696969696969697,
+        "noneN": 10,
+        "falseSupport": 3,
+        "decided": 30,
+        "decidedRight": 22
+      },
+      "Dev": {
+        "n": 22,
+        "strict": 20,
+        "outcome": 20,
+        "lo": 0.7218461934161421,
+        "hi": 0.9747051037171622,
+        "retrievalN": 17,
+        "h1": 16,
+        "h3": 17,
+        "mrr": 0.9705882352941176,
+        "noneN": 5,
+        "falseSupport": 0,
+        "decided": 13,
+        "decidedRight": 11
+      },
+      "Test": {
+        "n": 21,
+        "strict": 15,
+        "outcome": 15,
+        "lo": 0.500432261771624,
+        "hi": 0.8618632425437179,
+        "retrievalN": 16,
+        "h1": 15,
+        "h3": 16,
+        "mrr": 0.96875,
+        "noneN": 5,
+        "falseSupport": 3,
+        "decided": 17,
+        "decidedRight": 11
+      },
+      "paraphrase": {
+        "n": 14,
+        "strict": 14,
+        "outcome": 14,
+        "lo": 0.7846829880728186,
+        "hi": 1,
+        "retrievalN": 14,
+        "h1": 14,
+        "h3": 14,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 14,
+        "decidedRight": 14
+      },
+      "exclusion": {
+        "n": 7,
+        "strict": 6,
+        "outcome": 6,
+        "lo": 0.48686549668097007,
+        "hi": 0.9743210440510253,
+        "retrievalN": 7,
+        "h1": 6,
+        "h3": 7,
+        "mrr": 0.9285714285714286,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 7,
+        "decidedRight": 6
+      },
+      "carve-out": {
+        "n": 5,
+        "strict": 4,
+        "outcome": 4,
+        "lo": 0.3755282641185388,
+        "hi": 0.9637768390302125,
+        "retrievalN": 5,
+        "h1": 4,
+        "h3": 5,
+        "mrr": 0.9,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 1,
+        "decidedRight": 0
+      },
+      "conflict": {
+        "n": 5,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.1176182311592533,
+        "hi": 0.769280067791163,
+        "retrievalN": 5,
+        "h1": 5,
+        "h3": 5,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 3,
+        "decidedRight": 0
+      },
+      "clear-winner": {
+        "n": 2,
+        "strict": 2,
+        "outcome": 2,
+        "lo": 0.34237195288961925,
+        "hi": 1,
+        "retrievalN": 2,
+        "h1": 2,
+        "h3": 2,
+        "mrr": 1,
+        "noneN": 0,
+        "falseSupport": 0,
+        "decided": 2,
+        "decidedRight": 2
+      },
+      "missing-evidence": {
+        "n": 7,
+        "strict": 6,
+        "outcome": 6,
+        "lo": 0.48686549668097007,
+        "hi": 0.9743210440510253,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 7,
+        "falseSupport": 1,
+        "decided": 1,
+        "decidedRight": 0
+      },
+      "keyword-trap": {
+        "n": 3,
+        "strict": 1,
+        "outcome": 1,
+        "lo": 0.0614903152761605,
+        "hi": 0.7923450448735121,
+        "retrievalN": 0,
+        "h1": 0,
+        "h3": 0,
+        "mrr": 0,
+        "noneN": 3,
+        "falseSupport": 2,
+        "decided": 2,
+        "decidedRight": 0
+      }
+    }
+  },
+  "paired": {
+    "semanticOnly": 20,
+    "keywordOnly": 4,
+    "both": 15
+  },
+  "examples": [
+    {
+      "id": "pa01",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Nitrile exam hand coverings, box of 100",
+      "outcome": "exclude",
+      "gold": [
+        "E1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa02",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "N95 respirators for OT staff",
+      "outcome": "exclude",
+      "gold": [
+        "E1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa03",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "IV cannula 20G with injection port",
+      "outcome": "exclude",
+      "gold": [
+        "E1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa04",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Case paper and medical record creation charge",
+      "outcome": "exclude",
+      "gold": [
+        "E3"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E3"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E3"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E3"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa05",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Cable TV and phone rental during stay",
+      "outcome": "exclude",
+      "gold": [
+        "E4"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa06",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Blood tests done 12 days before admission for the same illness",
+      "outcome": "cover",
+      "gold": [
+        "C2"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C2"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C2"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C2"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C2"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa07",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Follow-up consultation 40 days after discharge for the same illness",
+      "outcome": "cover",
+      "gold": [
+        "C3"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa08",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Hospital van used to bring the patient to casualty",
+      "outcome": "cover",
+      "gold": [
+        "C4"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa09",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Hemodialysis session, 4 hours, discharged same evening",
+      "outcome": "cover",
+      "gold": [
+        "C5"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C2"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C5"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C5"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C5"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa10",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Panchakarma therapy, inpatient, at a recognised Ayush hospital",
+      "outcome": "cover",
+      "gold": [
+        "C6"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E6",
+            "C6"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa11",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Kidney retrieval surgery cost for the donor",
+      "outcome": "cover",
+      "gold": [
+        "C7"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C7"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C7"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C7"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C7"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa12",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Titanium bone plates and screws",
+      "outcome": "cover",
+      "gold": [
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa13",
+      "kind": "paraphrase",
+      "split": "dev",
+      "text": "Absorbable surgical thread, 3 packs",
+      "outcome": "cover",
+      "gold": [
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "pa14",
+      "kind": "paraphrase",
+      "split": "test",
+      "text": "Single private AC suite, 3 nights at Rs 8,000",
+      "outcome": "cover",
+      "gold": [
+        "C8"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C8"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C8"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C8"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C8"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex01",
+      "kind": "exclusion",
+      "split": "dev",
+      "text": "Rhinoplasty for appearance enhancement",
+      "outcome": "exclude",
+      "gold": [
+        "E2"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex02",
+      "kind": "exclusion",
+      "split": "test",
+      "text": "Stem cell infusion for knee arthritis",
+      "outcome": "exclude",
+      "gold": [
+        "E6"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex03",
+      "kind": "exclusion",
+      "split": "dev",
+      "text": "Reading glasses supplied at discharge",
+      "outcome": "exclude",
+      "gold": [
+        "E9"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "ex04",
+      "kind": "exclusion",
+      "split": "test",
+      "text": "Hearing amplification device fitted",
+      "outcome": "exclude",
+      "gold": [
+        "E9"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E9"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E9"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E9"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E9"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex05",
+      "kind": "exclusion",
+      "split": "dev",
+      "text": "Root canal treatment and tooth scaling, outpatient",
+      "outcome": "exclude",
+      "gold": [
+        "E5"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex06",
+      "kind": "exclusion",
+      "split": "test",
+      "text": "Multivitamin syrup for take-home use",
+      "outcome": "exclude",
+      "gold": [
+        "E8"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E8"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E8"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E8"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ex07",
+      "kind": "exclusion",
+      "split": "dev",
+      "text": "Admission kit with blanket, slippers and toiletries",
+      "outcome": "exclude",
+      "gold": [
+        "E4",
+        "E3",
+        "E1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cd01",
+      "kind": "carve-out",
+      "split": "dev",
+      "text": "Plastic surgery to repair facial burns after a road accident",
+      "outcome": "review",
+      "gold": [
+        "E2"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "review",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cd02",
+      "kind": "carve-out",
+      "split": "test",
+      "text": "Gastric sleeve surgery, patient BMI 33",
+      "outcome": "review",
+      "gold": [
+        "E7"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E7"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E7"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E7"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E7"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cd03",
+      "kind": "carve-out",
+      "split": "dev",
+      "text": "Dental extraction after a fall, admitted overnight",
+      "outcome": "review",
+      "gold": [
+        "E5"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E5",
+            "C3"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "review",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cd04",
+      "kind": "carve-out",
+      "split": "test",
+      "text": "Vitamin K injection prescribed during the inpatient stay",
+      "outcome": "review",
+      "gold": [
+        "E8"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E8",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C6"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "cd05",
+      "kind": "carve-out",
+      "split": "test",
+      "text": "Breast reconstruction following cancer surgery",
+      "outcome": "review",
+      "gold": [
+        "E2"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "review",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cf01",
+      "kind": "conflict",
+      "split": "dev",
+      "text": "Disposable surgical drape and gown pack for the operation",
+      "outcome": "review",
+      "gold": [
+        "E1",
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cf02",
+      "kind": "conflict",
+      "split": "test",
+      "text": "Single-use trocar used in laparoscopy",
+      "outcome": "review",
+      "gold": [
+        "E1",
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "cf03",
+      "kind": "conflict",
+      "split": "dev",
+      "text": "Suture removal kit",
+      "outcome": "review",
+      "gold": [
+        "E1",
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E1",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "cf04",
+      "kind": "conflict",
+      "split": "test",
+      "text": "Disposable skin stapler used to close the wound",
+      "outcome": "review",
+      "gold": [
+        "E1",
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "cf05",
+      "kind": "conflict",
+      "split": "dev",
+      "text": "Dental implant fixture placed after an accident, admitted",
+      "outcome": "review",
+      "gold": [
+        "E5",
+        "C1"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E5",
+            "C1"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "review",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "review",
+          "clauses": [
+            "E5"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cw01",
+      "kind": "clear-winner",
+      "split": "test",
+      "text": "Cosmetic breast implant",
+      "outcome": "exclude",
+      "gold": [
+        "E2"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E2",
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E2"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "cw02",
+      "kind": "clear-winner",
+      "split": "dev",
+      "text": "Ambulance to carry the kidney donor between hospitals",
+      "outcome": "cover",
+      "gold": [
+        "C4",
+        "C7"
+      ],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C7"
+          ],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "cover",
+          "clauses": [
+            "C4"
+          ],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms01",
+      "kind": "missing-evidence",
+      "split": "dev",
+      "text": "Surgeon professional fee",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms02",
+      "kind": "missing-evidence",
+      "split": "test",
+      "text": "Anaesthesia charges",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms03",
+      "kind": "missing-evidence",
+      "split": "dev",
+      "text": "Operation theatre charges",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms04",
+      "kind": "missing-evidence",
+      "split": "test",
+      "text": "HbA1c laboratory test",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "ms05",
+      "kind": "missing-evidence",
+      "split": "dev",
+      "text": "Nursing care, per day",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C5"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "cover",
+          "clauses": [
+            "C3"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms06",
+      "kind": "missing-evidence",
+      "split": "test",
+      "text": "Two units of packed red blood cells",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "exclude",
+          "clauses": [
+            "E6"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "ms07",
+      "kind": "missing-evidence",
+      "split": "dev",
+      "text": "MRI knee, plain",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "tr01",
+      "kind": "keyword-trap",
+      "split": "test",
+      "text": "Implant removal follow-up review visit",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E5"
+          ],
+          "correct": false
+        }
+      }
+    },
+    {
+      "id": "tr02",
+      "kind": "keyword-trap",
+      "split": "dev",
+      "text": "Room disinfection charge",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "cover",
+          "clauses": [
+            "C8"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E3"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        },
+        "semantic": {
+          "outcome": "none",
+          "clauses": [],
+          "correct": true
+        }
+      }
+    },
+    {
+      "id": "tr03",
+      "kind": "keyword-trap",
+      "split": "test",
+      "text": "Patient diet meals during admission",
+      "outcome": "none",
+      "gold": [],
+      "predictions": {
+        "keyword": {
+          "outcome": "review",
+          "clauses": [
+            "E3",
+            "C1"
+          ],
+          "correct": false
+        },
+        "semantic_raw": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": false
+        },
+        "semantic_no_check": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": false
+        },
+        "semantic": {
+          "outcome": "exclude",
+          "clauses": [
+            "E4"
+          ],
+          "correct": false
+        }
+      }
+    }
+  ]
+}

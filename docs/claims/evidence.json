@@ -1,0 +1,3958 @@
+{
+  "knee": {
+    "bill": "Knee replacement, deluxe room",
+    "before": {
+      "treatmentDate": "2026-02-10",
+      "selection": {
+        "treatmentDate": "2026-02-10",
+        "candidates": [
+          {
+            "id": "base",
+            "label": "Base policy",
+            "kind": "base",
+            "effectiveFrom": "2025-04-01",
+            "inForce": true,
+            "reason": "Base policy for this treatment date."
+          },
+          {
+            "id": "endorsement-1",
+            "label": "Endorsement 1",
+            "kind": "amendment",
+            "effectiveFrom": "2026-04-01",
+            "inForce": false,
+            "reason": "Takes effect on 2026-04-01, after the treatment date 2026-02-10."
+          }
+        ],
+        "inForce": [
+          "base"
+        ],
+        "rules": [
+          {
+            "rule": {
+              "id": "hdfc_2",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "appliesTo": [
+                "knee_replacement",
+                "hip_replacement",
+                "cataract",
+                "cholecystectomy"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 24,
+                  "description": "Requires policy continuity of at least 24 months"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 24 months is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 24,
+                "days": 720,
+                "type": "specific_illness"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Waiting Periods",
+                "quote": "A waiting period of 24 consecutive months of continuous coverage applies to joint replacement surgery, cataract surgery, benign prostatic hypertrophy, and hernia repair."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Specific Illness 24-Month Waiting Period. 24 months. Mandatory 24 months continuous coverage required before joint replacement, cataract, hernia, and stones are eligible.. Treatment within waiting period of 24 months is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_3",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Initial 30-Day Waiting Period",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 1,
+                  "description": "Requires policy continuity of at least 30 days"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 30 days is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 1,
+                "days": 30,
+                "type": "initial"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Initial Waiting Period",
+                "quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising from accidental bodily injury."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Initial 30-Day Waiting Period. 30 days. No medical expenses admissible within first 30 days from policy inception except accidental injuries.. Treatment within waiting period of 30 days is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_8",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Cosmetic & Aesthetic Surgery Exclusion",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Plastic surgery or aesthetic procedures not medically necessary are excluded."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 14,
+                "section": "Section 4.3 - Permanent Exclusions",
+                "quote": "Expenses for cosmetic or aesthetic surgery or any treatment which is not medically necessary are permanently excluded."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cosmetic & Aesthetic Surgery Exclusion. Not covered. Plastic surgery or aesthetic procedures not medically necessary are excluded.. Plastic surgery or aesthetic procedures not medically necessary are excluded."
+          },
+          {
+            "rule": {
+              "id": "hdfc_4",
+              "ruleType": "ROOM_LIMIT",
+              "rawCategory": "room_rent",
+              "ruleName": "Room Category Eligibility",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "room_category",
+                  "operator": ">",
+                  "value": "single-private",
+                  "description": "Eligible room category capped at single-private"
+                }
+              ],
+              "effect": {
+                "action": "room_excess",
+                "calculationBase": "room_rent",
+                "description": "Excess room rent over eligible tier (single-private) deducted directly."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 30,
+              "evidence": {
+                "page": 7,
+                "section": "Section 2.1 - Inpatient Care",
+                "quote": "Room rent, boarding and nursing charges are covered up to Single Private AC Room category. In case of admission to higher category room, excess room fee shall be borne by the insured."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Room Category Eligibility. Single Private Room. Eligible room category is Single Private AC room. Upgrading to Deluxe Suite incurs room excess fees.. Excess room rent over eligible tier (single-private) deducted directly."
+          },
+          {
+            "rule": {
+              "id": "hdfc_6",
+              "ruleType": "SUB_LIMIT",
+              "rawCategory": "sub_limit",
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "appliesTo": [
+                "cataract"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 40000,
+                "calculationBase": "claim_amount",
+                "description": "Specific sub-limit capped at ₹40,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 40,
+              "evidence": {
+                "page": 8,
+                "section": "Section 2.4 - Specific Capping",
+                "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cataract Surgery Sub-Limit. ₹40,000 per eye. Cataract treatment capped at Rs 40,000 per eye per policy year.. Specific sub-limit capped at ₹40,000"
+          },
+          {
+            "rule": {
+              "id": "hdfc_7",
+              "ruleType": "DEDUCTIBLE",
+              "rawCategory": "deductible",
+              "ruleName": "Zero Voluntary Deductible",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "No deductible applies to standard inpatient hospitalization claims."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 17,
+                "section": "Section 6 - Cost Sharing",
+                "quote": "Standard policy operates with Nil compulsory deductible on inpatient hospitalizations."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Zero Voluntary Deductible. ₹0. No deductible applies to standard inpatient hospitalization claims.. No deductible applies to standard inpatient hospitalization claims."
+          },
+          {
+            "rule": {
+              "id": "hdfc_5",
+              "ruleType": "COPAY",
+              "rawCategory": "co_payment",
+              "ruleName": "Senior Citizen Co-pay (Age 60+)",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "age",
+                  "operator": ">=",
+                  "value": 60,
+                  "description": "Co-pay applies to patients age 60 and above."
+                }
+              ],
+              "effect": {
+                "action": "deduct_percentage",
+                "percentage": 20,
+                "calculationBase": "admissible_amount",
+                "description": "20% co-payment applies on admissible claim amount."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 60,
+              "evidence": {
+                "page": 16,
+                "section": "Section 5.3 - Co-payment Clause",
+                "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Senior Citizen Co-pay (Age 60+). 20%. 20% co-payment deducted from admissible claim amount if patient age is 60 or older on date of admission.. 20% co-payment applies on admissible claim amount."
+          },
+          {
+            "rule": {
+              "id": "hdfc_1",
+              "ruleType": "SUM_INSURED",
+              "rawCategory": "sum_insured",
+              "ruleName": "Base Sum Insured Protection",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 500000,
+                "amount": 500000,
+                "description": "Overall policy sum insured ceiling ₹5,00,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 90,
+              "evidence": {
+                "page": 3,
+                "section": "Section 1 - Schedule of Benefits",
+                "quote": "The Company maximum liability for all admissible claims during the policy year shall not exceed the Sum Insured of Rs 5,00,000 specified in the Schedule."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Base Sum Insured Protection. ₹5,00,000. Aggregate maximum claim indemnity of Rs 5,00,000 available across the active policy term.. Overall policy sum insured ceiling ₹5,00,000"
+          }
+        ],
+        "changes": [],
+        "warnings": []
+      },
+      "items": [
+        {
+          "id": "item_1",
+          "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+          "category": "room",
+          "claimed": 32000,
+          "payable": 25600,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 6400,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [
+            "The policy names a room category but no rupee limit per day. Enter the hospital's rate for that category to compute any room-rent deduction."
+          ],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Room Category Eligibility",
+              "versionLabel": "Base policy",
+              "role": "room",
+              "score": 3,
+              "terms": [
+                "room",
+                "single",
+                "deluxe"
+              ]
+            },
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_2",
+          "description": "Nursing and RMO Care Charges (4 Days)",
+          "category": "room",
+          "claimed": 4800,
+          "payable": 3840,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 960,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            },
+            {
+              "ruleName": "Room Category Eligibility",
+              "versionLabel": "Base policy",
+              "role": "room",
+              "score": 1,
+              "terms": [
+                "room"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_3",
+          "description": "Major Operation Theatre Charges",
+          "category": "surgery",
+          "claimed": 45000,
+          "payable": 36000,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 9000,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_4",
+          "description": "Orthopaedic Surgeon Professional Fee",
+          "category": "doctor",
+          "claimed": 60000,
+          "payable": 48000,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 12000,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_5",
+          "description": "Anaesthetist Fee",
+          "category": "doctor",
+          "claimed": 15000,
+          "payable": 12000,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 3000,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_6",
+          "description": "Knee Prosthesis Implant (Attune CR)",
+          "category": "implant",
+          "claimed": 120000,
+          "payable": 96000,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 24000,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_7",
+          "description": "Pre-op and Post-op Diagnostics (Blood, ECG, X-Ray)",
+          "category": "diagnostics",
+          "claimed": 14000,
+          "payable": 11200,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 2800,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_8",
+          "description": "Inpatient Pharmacy and Antibiotic Injections",
+          "category": "medicines",
+          "claimed": 26000,
+          "payable": 20800,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 5200,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Zero Voluntary Deductible",
+              "versionLabel": "Base policy",
+              "role": "other",
+              "score": 1,
+              "terms": [
+                "inpatient"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_9",
+          "description": "Gloves, Masks, PPE Kits and Syringes",
+          "category": "consumables",
+          "claimed": 9500,
+          "payable": 7600,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 1900,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_10",
+          "description": "Surgical Stapler and Suture Kit",
+          "category": "consumables",
+          "claimed": 7200,
+          "payable": 5760,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 1440,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_11",
+          "description": "Admission and Processing Fee",
+          "category": "other",
+          "claimed": 2500,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 2500,
+              "formula": "Held for review: no clause found for this charge",
+              "clauses": []
+            }
+          ],
+          "status": "review",
+          "review": [
+            "No policy clause supports or excludes this charge. A reviewer must decide."
+          ],
+          "heldForReview": 2500,
+          "matches": [
+            {
+              "ruleName": "Senior Citizen Co-pay (Age 60+)",
+              "versionLabel": "Base policy",
+              "role": "other",
+              "score": 1,
+              "terms": [
+                "admission"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_12",
+          "description": "Patient Comfort Kit (Slippers, Toiletries)",
+          "category": "other",
+          "claimed": 1800,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 1800,
+              "formula": "Held for review: no clause found for this charge",
+              "clauses": []
+            }
+          ],
+          "status": "review",
+          "review": [
+            "No policy clause supports or excludes this charge. A reviewer must decide."
+          ],
+          "heldForReview": 1800,
+          "matches": []
+        }
+      ],
+      "totals": {
+        "claimed": 337800,
+        "payable": 266800,
+        "patientPays": 71000,
+        "heldForReview": 4300,
+        "byStage": {
+          "copay": 66700,
+          "review_hold": 4300
+        }
+      },
+      "trace": [
+        {
+          "stage": "start",
+          "title": "Claimed amount",
+          "formula": "12 bill items add up to ₹3,37,800",
+          "totalBefore": 337800,
+          "deducted": 0,
+          "totalAfter": 337800
+        },
+        {
+          "stage": "version",
+          "title": "Policy documents in force",
+          "formula": "Treatment date 2026-02-10. Applied: Base policy.",
+          "totalBefore": 337800,
+          "deducted": 0,
+          "totalAfter": 337800
+        },
+        {
+          "stage": "exclusion",
+          "title": "Exclusions and unclear evidence",
+          "formula": "Items an exclusion clause covers are removed. Conflicting or missing evidence is held, not guessed.",
+          "totalBefore": 337800,
+          "deducted": 4300,
+          "totalAfter": 333500,
+          "perItem": [
+            {
+              "itemId": "item_11",
+              "description": "Admission and Processing Fee",
+              "amount": 2500
+            },
+            {
+              "itemId": "item_12",
+              "description": "Patient Comfort Kit (Slippers, Toiletries)",
+              "amount": 1800
+            }
+          ]
+        },
+        {
+          "stage": "room_rent",
+          "title": "Room Category Eligibility",
+          "formula": "No rupee limit available",
+          "clause": {
+            "ruleId": "hdfc_4",
+            "ruleName": "Room Category Eligibility",
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "page": 7,
+            "section": "Section 2.1 - Inpatient Care",
+            "quote": "Room rent, boarding and nursing charges are covered up to Single Private AC Room category. In case of admission to higher category room, excess room fee shall be borne by the insured."
+          },
+          "totalBefore": 333500,
+          "deducted": 0,
+          "totalAfter": 333500,
+          "perItem": []
+        },
+        {
+          "stage": "copay",
+          "title": "Senior Citizen Co-pay (Age 60+)",
+          "formula": "20% of ₹3,33,500 remaining after the deductible = ₹66,700 (patient age 64 is 60 or more)",
+          "clause": {
+            "ruleId": "hdfc_5",
+            "ruleName": "Senior Citizen Co-pay (Age 60+)",
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "page": 16,
+            "section": "Section 5.3 - Co-payment Clause",
+            "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+          },
+          "totalBefore": 333500,
+          "deducted": 66700,
+          "totalAfter": 266800,
+          "perItem": [
+            {
+              "itemId": "item_1",
+              "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+              "amount": 6400
+            },
+            {
+              "itemId": "item_2",
+              "description": "Nursing and RMO Care Charges (4 Days)",
+              "amount": 960
+            },
+            {
+              "itemId": "item_3",
+              "description": "Major Operation Theatre Charges",
+              "amount": 9000
+            },
+            {
+              "itemId": "item_4",
+              "description": "Orthopaedic Surgeon Professional Fee",
+              "amount": 12000
+            },
+            {
+              "itemId": "item_5",
+              "description": "Anaesthetist Fee",
+              "amount": 3000
+            },
+            {
+              "itemId": "item_6",
+              "description": "Knee Prosthesis Implant (Attune CR)",
+              "amount": 24000
+            },
+            {
+              "itemId": "item_7",
+              "description": "Pre-op and Post-op Diagnostics (Blood, ECG, X-Ray)",
+              "amount": 2800
+            },
+            {
+              "itemId": "item_8",
+              "description": "Inpatient Pharmacy and Antibiotic Injections",
+              "amount": 5200
+            },
+            {
+              "itemId": "item_9",
+              "description": "Gloves, Masks, PPE Kits and Syringes",
+              "amount": 1900
+            },
+            {
+              "itemId": "item_10",
+              "description": "Surgical Stapler and Suture Kit",
+              "amount": 1440
+            }
+          ]
+        },
+        {
+          "stage": "result",
+          "title": "Payable amount",
+          "formula": "₹3,37,800 claimed - ₹71,000 deducted = ₹2,66,800 payable",
+          "totalBefore": 337800,
+          "deducted": 71000,
+          "totalAfter": 266800
+        }
+      ],
+      "warnings": [
+        "Room-rent entitlement has no rupee amount in the policy. Enter the entitled room rate to apply the clause."
+      ],
+      "checks": {
+        "ok": true,
+        "messages": []
+      },
+      "matcher": "keyword-baseline"
+    },
+    "after": {
+      "treatmentDate": "2026-05-12",
+      "selection": {
+        "treatmentDate": "2026-05-12",
+        "candidates": [
+          {
+            "id": "base",
+            "label": "Base policy",
+            "kind": "base",
+            "effectiveFrom": "2025-04-01",
+            "inForce": true,
+            "reason": "Base policy for this treatment date."
+          },
+          {
+            "id": "endorsement-1",
+            "label": "Endorsement 1",
+            "kind": "amendment",
+            "effectiveFrom": "2026-04-01",
+            "inForce": true,
+            "reason": "In force: effective 2026-04-01, on or before the treatment date 2026-05-12."
+          }
+        ],
+        "inForce": [
+          "base",
+          "endorsement-1"
+        ],
+        "rules": [
+          {
+            "rule": {
+              "id": "hdfc_2",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "appliesTo": [
+                "knee_replacement",
+                "hip_replacement",
+                "cataract",
+                "cholecystectomy"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 24,
+                  "description": "Requires policy continuity of at least 24 months"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 24 months is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 24,
+                "days": 720,
+                "type": "specific_illness"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Waiting Periods",
+                "quote": "A waiting period of 24 consecutive months of continuous coverage applies to joint replacement surgery, cataract surgery, benign prostatic hypertrophy, and hernia repair."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Specific Illness 24-Month Waiting Period. 24 months. Mandatory 24 months continuous coverage required before joint replacement, cataract, hernia, and stones are eligible.. Treatment within waiting period of 24 months is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_3",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Initial 30-Day Waiting Period",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 1,
+                  "description": "Requires policy continuity of at least 30 days"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 30 days is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 1,
+                "days": 30,
+                "type": "initial"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Initial Waiting Period",
+                "quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising from accidental bodily injury."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Initial 30-Day Waiting Period. 30 days. No medical expenses admissible within first 30 days from policy inception except accidental injuries.. Treatment within waiting period of 30 days is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_8",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Cosmetic & Aesthetic Surgery Exclusion",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Plastic surgery or aesthetic procedures not medically necessary are excluded."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 14,
+                "section": "Section 4.3 - Permanent Exclusions",
+                "quote": "Expenses for cosmetic or aesthetic surgery or any treatment which is not medically necessary are permanently excluded."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cosmetic & Aesthetic Surgery Exclusion. Not covered. Plastic surgery or aesthetic procedures not medically necessary are excluded.. Plastic surgery or aesthetic procedures not medically necessary are excluded."
+          },
+          {
+            "rule": {
+              "id": "amd1_room",
+              "ruleType": "ROOM_LIMIT",
+              "rawCategory": "room_rent",
+              "ruleName": "Room Rent Limit (Endorsement 1)",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "room_category",
+                  "operator": ">",
+                  "value": "single-private",
+                  "description": "Eligible room category capped at single-private"
+                }
+              ],
+              "effect": {
+                "action": "proration",
+                "amount": 5000,
+                "calculationBase": "room_rent",
+                "description": "Proportionate deduction clause applied if room category exceeds eligible tier (single-private)."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 30,
+              "evidence": {
+                "page": 2,
+                "section": "Endorsement 1, page 2",
+                "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Room Rent Limit (Endorsement 1). ₹5,000 per day. Room rent is limited to Rs 5,000 per day. Associated medical expenses are reduced proportionately when the room rent exceeds this limit (proportionate deduction).. Proportionate deduction clause applied if room category exceeds eligible tier (single-private).",
+            "supersedes": {
+              "versionId": "base",
+              "ruleId": "hdfc_4",
+              "ruleName": "Room Category Eligibility"
+            }
+          },
+          {
+            "rule": {
+              "id": "hdfc_6",
+              "ruleType": "SUB_LIMIT",
+              "rawCategory": "sub_limit",
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "appliesTo": [
+                "cataract"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 40000,
+                "calculationBase": "claim_amount",
+                "description": "Specific sub-limit capped at ₹40,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 40,
+              "evidence": {
+                "page": 8,
+                "section": "Section 2.4 - Specific Capping",
+                "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cataract Surgery Sub-Limit. ₹40,000 per eye. Cataract treatment capped at Rs 40,000 per eye per policy year.. Specific sub-limit capped at ₹40,000"
+          },
+          {
+            "rule": {
+              "id": "hdfc_7",
+              "ruleType": "DEDUCTIBLE",
+              "rawCategory": "deductible",
+              "ruleName": "Zero Voluntary Deductible",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "No deductible applies to standard inpatient hospitalization claims."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 17,
+                "section": "Section 6 - Cost Sharing",
+                "quote": "Standard policy operates with Nil compulsory deductible on inpatient hospitalizations."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Zero Voluntary Deductible. ₹0. No deductible applies to standard inpatient hospitalization claims.. No deductible applies to standard inpatient hospitalization claims."
+          },
+          {
+            "rule": {
+              "id": "amd1_copay",
+              "ruleType": "COPAY",
+              "rawCategory": "co_payment",
+              "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "age",
+                  "operator": ">=",
+                  "value": 60,
+                  "description": "Co-pay applies to patients age 60 and above."
+                }
+              ],
+              "effect": {
+                "action": "deduct_percentage",
+                "percentage": 25,
+                "calculationBase": "admissible_amount",
+                "description": "25% co-payment applies on admissible claim amount."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 60,
+              "evidence": {
+                "page": 3,
+                "section": "Endorsement 1, page 3",
+                "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Senior Citizen Co-pay (Age 60+) revised. 25%. A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission.. 25% co-payment applies on admissible claim amount.",
+            "supersedes": {
+              "versionId": "base",
+              "ruleId": "hdfc_5",
+              "ruleName": "Senior Citizen Co-pay (Age 60+)"
+            }
+          },
+          {
+            "rule": {
+              "id": "hdfc_1",
+              "ruleType": "SUM_INSURED",
+              "rawCategory": "sum_insured",
+              "ruleName": "Base Sum Insured Protection",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 500000,
+                "amount": 500000,
+                "description": "Overall policy sum insured ceiling ₹5,00,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 90,
+              "evidence": {
+                "page": 3,
+                "section": "Section 1 - Schedule of Benefits",
+                "quote": "The Company maximum liability for all admissible claims during the policy year shall not exceed the Sum Insured of Rs 5,00,000 specified in the Schedule."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Base Sum Insured Protection. ₹5,00,000. Aggregate maximum claim indemnity of Rs 5,00,000 available across the active policy term.. Overall policy sum insured ceiling ₹5,00,000"
+          },
+          {
+            "rule": {
+              "id": "amd1_excl",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Non-Payable Consumables and Disposables",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 4,
+                "section": "Endorsement 1, page 4",
+                "quote": "Clause 4.9 (Non-Payable Items, added). Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Non-Payable Consumables and Disposables. Not covered. Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable.. Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+          },
+          {
+            "rule": {
+              "id": "amd1_cov",
+              "ruleType": "GENERAL_CLAUSE",
+              "rawCategory": "coverage",
+              "ruleName": "Operative Implants and Consumables Payable",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 5,
+                "section": "Endorsement 1, page 5",
+                "quote": "Clause 4.10 (Operative Items, added). Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Operative Implants and Consumables Payable. Covered. Implants and operative consumables such as sutures and staplers used during the surgery are payable.. Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+          }
+        ],
+        "changes": [
+          {
+            "kind": "added",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Non-Payable Consumables and Disposables",
+            "ruleType": "EXCLUSION",
+            "newSummary": "not payable"
+          },
+          {
+            "kind": "replaced",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Room Rent Limit (Endorsement 1)",
+            "ruleType": "ROOM_LIMIT",
+            "previousName": "Room Category Eligibility",
+            "previousSummary": "Room Category Eligibility",
+            "newSummary": "₹5,000, proportionate deduction"
+          },
+          {
+            "kind": "added",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Operative Implants and Consumables Payable",
+            "ruleType": "GENERAL_CLAUSE",
+            "newSummary": "payable"
+          },
+          {
+            "kind": "replaced",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+            "ruleType": "COPAY",
+            "previousName": "Senior Citizen Co-pay (Age 60+)",
+            "previousSummary": "20%",
+            "newSummary": "25%"
+          }
+        ],
+        "warnings": []
+      },
+      "items": [
+        {
+          "id": "item_1",
+          "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+          "category": "room",
+          "claimed": 32000,
+          "payable": 15000,
+          "deductions": [
+            {
+              "stage": "room_rent",
+              "amount": 12000,
+              "formula": "Room billed at ₹8,000/day, limit ₹5,000/day: 4 days x ₹3,000 excess",
+              "clauses": [
+                {
+                  "ruleId": "amd1_room",
+                  "ruleName": "Room Rent Limit (Endorsement 1)",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 2,
+                  "section": "Endorsement 1, page 2",
+                  "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 5000,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Room Rent Limit (Endorsement 1)",
+              "versionLabel": "Endorsement 1",
+              "role": "room",
+              "score": 3,
+              "terms": [
+                "room",
+                "day",
+                "single"
+              ]
+            },
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_2",
+          "description": "Nursing and RMO Care Charges (4 Days)",
+          "category": "room",
+          "claimed": 4800,
+          "payable": 2250,
+          "deductions": [
+            {
+              "stage": "room_rent",
+              "amount": 1800,
+              "formula": "Proportionate deduction: ₹5,000 / ₹8,000 = 62.5% of ₹6,600 is payable",
+              "clauses": [
+                {
+                  "ruleId": "amd1_room",
+                  "ruleName": "Room Rent Limit (Endorsement 1)",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 2,
+                  "section": "Endorsement 1, page 2",
+                  "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 750,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Room Rent Limit (Endorsement 1)",
+              "versionLabel": "Endorsement 1",
+              "role": "room",
+              "score": 2,
+              "terms": [
+                "room",
+                "day"
+              ]
+            },
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_3",
+          "description": "Major Operation Theatre Charges",
+          "category": "surgery",
+          "claimed": 45000,
+          "payable": 21094,
+          "deductions": [
+            {
+              "stage": "room_rent",
+              "amount": 16875,
+              "formula": "Proportionate deduction: ₹5,000 / ₹8,000 = 62.5% of ₹61,875 is payable",
+              "clauses": [
+                {
+                  "ruleId": "amd1_room",
+                  "ruleName": "Room Rent Limit (Endorsement 1)",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 2,
+                  "section": "Endorsement 1, page 2",
+                  "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 7031,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_4",
+          "description": "Orthopaedic Surgeon Professional Fee",
+          "category": "doctor",
+          "claimed": 60000,
+          "payable": 28125,
+          "deductions": [
+            {
+              "stage": "room_rent",
+              "amount": 22500,
+              "formula": "Proportionate deduction: ₹5,000 / ₹8,000 = 62.5% of ₹82,500 is payable",
+              "clauses": [
+                {
+                  "ruleId": "amd1_room",
+                  "ruleName": "Room Rent Limit (Endorsement 1)",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 2,
+                  "section": "Endorsement 1, page 2",
+                  "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 9375,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_5",
+          "description": "Anaesthetist Fee",
+          "category": "doctor",
+          "claimed": 15000,
+          "payable": 7031,
+          "deductions": [
+            {
+              "stage": "room_rent",
+              "amount": 5625,
+              "formula": "Proportionate deduction: ₹5,000 / ₹8,000 = 62.5% of ₹20,625 is payable",
+              "clauses": [
+                {
+                  "ruleId": "amd1_room",
+                  "ruleName": "Room Rent Limit (Endorsement 1)",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 2,
+                  "section": "Endorsement 1, page 2",
+                  "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 2344,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_6",
+          "description": "Knee Prosthesis Implant (Attune CR)",
+          "category": "implant",
+          "claimed": 120000,
+          "payable": 90000,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 30000,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Operative Implants and Consumables Payable",
+              "versionLabel": "Endorsement 1",
+              "role": "coverage",
+              "score": 1,
+              "terms": [
+                "implant"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_7",
+          "description": "Pre-op and Post-op Diagnostics (Blood, ECG, X-Ray)",
+          "category": "diagnostics",
+          "claimed": 14000,
+          "payable": 10500,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 3500,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": []
+        },
+        {
+          "id": "item_8",
+          "description": "Inpatient Pharmacy and Antibiotic Injections",
+          "category": "medicines",
+          "claimed": 26000,
+          "payable": 19500,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 6500,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Zero Voluntary Deductible",
+              "versionLabel": "Base policy",
+              "role": "other",
+              "score": 1,
+              "terms": [
+                "inpatient"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_9",
+          "description": "Gloves, Masks, PPE Kits and Syringes",
+          "category": "consumables",
+          "claimed": 9500,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "exclusion",
+              "amount": 9500,
+              "formula": "Excluded by \"Non-Payable Consumables and Disposables\" (matched: consumable, disposable, glove, mask, ppe, kit, syringe)",
+              "clauses": [
+                {
+                  "ruleId": "amd1_excl",
+                  "ruleName": "Non-Payable Consumables and Disposables",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 4,
+                  "section": "Endorsement 1, page 4",
+                  "quote": "Clause 4.9 (Non-Payable Items, added). Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+                }
+              ]
+            }
+          ],
+          "status": "excluded",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Non-Payable Consumables and Disposables",
+              "versionLabel": "Endorsement 1",
+              "role": "exclusion",
+              "score": 7,
+              "terms": [
+                "consumable",
+                "disposable",
+                "glove",
+                "mask",
+                "ppe",
+                "kit",
+                "syringe"
+              ]
+            },
+            {
+              "ruleName": "Operative Implants and Consumables Payable",
+              "versionLabel": "Endorsement 1",
+              "role": "coverage",
+              "score": 1,
+              "terms": [
+                "consumable"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_10",
+          "description": "Surgical Stapler and Suture Kit",
+          "category": "consumables",
+          "claimed": 7200,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 7200,
+              "formula": "Held for review: conflicting clauses",
+              "clauses": [
+                {
+                  "ruleId": "amd1_excl",
+                  "ruleName": "Non-Payable Consumables and Disposables",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 4,
+                  "section": "Endorsement 1, page 4",
+                  "quote": "Clause 4.9 (Non-Payable Items, added). Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+                },
+                {
+                  "ruleId": "amd1_cov",
+                  "ruleName": "Operative Implants and Consumables Payable",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 5,
+                  "section": "Endorsement 1, page 5",
+                  "quote": "Clause 4.10 (Operative Items, added). Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+                }
+              ]
+            }
+          ],
+          "status": "review",
+          "review": [
+            "Conflicting evidence: \"Non-Payable Consumables and Disposables\" would exclude this item, but \"Operative Implants and Consumables Payable\" would pay it. A reviewer must decide."
+          ],
+          "heldForReview": 7200,
+          "matches": [
+            {
+              "ruleName": "Operative Implants and Consumables Payable",
+              "versionLabel": "Endorsement 1",
+              "role": "coverage",
+              "score": 4,
+              "terms": [
+                "operative",
+                "consumable",
+                "suture",
+                "stapler"
+              ]
+            },
+            {
+              "ruleName": "Non-Payable Consumables and Disposables",
+              "versionLabel": "Endorsement 1",
+              "role": "exclusion",
+              "score": 3,
+              "terms": [
+                "consumable",
+                "disposable",
+                "kit"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_11",
+          "description": "Admission and Processing Fee",
+          "category": "other",
+          "claimed": 2500,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 2500,
+              "formula": "Held for review: no clause found for this charge",
+              "clauses": []
+            }
+          ],
+          "status": "review",
+          "review": [
+            "No policy clause supports or excludes this charge. A reviewer must decide."
+          ],
+          "heldForReview": 2500,
+          "matches": [
+            {
+              "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+              "versionLabel": "Endorsement 1",
+              "role": "other",
+              "score": 1,
+              "terms": [
+                "admission"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_12",
+          "description": "Patient Comfort Kit (Slippers, Toiletries)",
+          "category": "other",
+          "claimed": 1800,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "exclusion",
+              "amount": 1800,
+              "formula": "Excluded by \"Non-Payable Consumables and Disposables\" (matched: disposable, kit)",
+              "clauses": [
+                {
+                  "ruleId": "amd1_excl",
+                  "ruleName": "Non-Payable Consumables and Disposables",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 4,
+                  "section": "Endorsement 1, page 4",
+                  "quote": "Clause 4.9 (Non-Payable Items, added). Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+                }
+              ]
+            }
+          ],
+          "status": "excluded",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Non-Payable Consumables and Disposables",
+              "versionLabel": "Endorsement 1",
+              "role": "exclusion",
+              "score": 2,
+              "terms": [
+                "disposable",
+                "kit"
+              ]
+            }
+          ]
+        }
+      ],
+      "totals": {
+        "claimed": 337800,
+        "payable": 193500,
+        "patientPays": 144300,
+        "heldForReview": 9700,
+        "byStage": {
+          "room_rent": 58800,
+          "copay": 64500,
+          "exclusion": 11300,
+          "review_hold": 9700
+        }
+      },
+      "trace": [
+        {
+          "stage": "start",
+          "title": "Claimed amount",
+          "formula": "12 bill items add up to ₹3,37,800",
+          "totalBefore": 337800,
+          "deducted": 0,
+          "totalAfter": 337800
+        },
+        {
+          "stage": "version",
+          "title": "Policy documents in force",
+          "formula": "Treatment date 2026-05-12. Applied: Base policy + Endorsement 1.",
+          "totalBefore": 337800,
+          "deducted": 0,
+          "totalAfter": 337800
+        },
+        {
+          "stage": "exclusion",
+          "title": "Exclusions and unclear evidence",
+          "formula": "Items an exclusion clause covers are removed. Conflicting or missing evidence is held, not guessed.",
+          "totalBefore": 337800,
+          "deducted": 21000,
+          "totalAfter": 316800,
+          "perItem": [
+            {
+              "itemId": "item_9",
+              "description": "Gloves, Masks, PPE Kits and Syringes",
+              "amount": 9500
+            },
+            {
+              "itemId": "item_10",
+              "description": "Surgical Stapler and Suture Kit",
+              "amount": 7200
+            },
+            {
+              "itemId": "item_11",
+              "description": "Admission and Processing Fee",
+              "amount": 2500
+            },
+            {
+              "itemId": "item_12",
+              "description": "Patient Comfort Kit (Slippers, Toiletries)",
+              "amount": 1800
+            }
+          ]
+        },
+        {
+          "stage": "room_rent",
+          "title": "Room Rent Limit (Endorsement 1)",
+          "formula": "Limit ₹5,000 per day, with proportionate reduction of room-linked charges",
+          "clause": {
+            "ruleId": "amd1_room",
+            "ruleName": "Room Rent Limit (Endorsement 1)",
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "page": 2,
+            "section": "Endorsement 1, page 2",
+            "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+          },
+          "totalBefore": 316800,
+          "deducted": 58800,
+          "totalAfter": 258000,
+          "perItem": [
+            {
+              "itemId": "item_1",
+              "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+              "amount": 12000
+            },
+            {
+              "itemId": "item_2",
+              "description": "Nursing and RMO Care Charges (4 Days)",
+              "amount": 1800
+            },
+            {
+              "itemId": "item_3",
+              "description": "Major Operation Theatre Charges",
+              "amount": 16875
+            },
+            {
+              "itemId": "item_4",
+              "description": "Orthopaedic Surgeon Professional Fee",
+              "amount": 22500
+            },
+            {
+              "itemId": "item_5",
+              "description": "Anaesthetist Fee",
+              "amount": 5625
+            }
+          ]
+        },
+        {
+          "stage": "copay",
+          "title": "Senior Citizen Co-pay (Age 60+) revised",
+          "formula": "25% of ₹2,58,000 remaining after the deductible = ₹64,500 (patient age 64 is 60 or more)",
+          "clause": {
+            "ruleId": "amd1_copay",
+            "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "page": 3,
+            "section": "Endorsement 1, page 3",
+            "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+          },
+          "totalBefore": 258000,
+          "deducted": 64500,
+          "totalAfter": 193500,
+          "perItem": [
+            {
+              "itemId": "item_1",
+              "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+              "amount": 5000
+            },
+            {
+              "itemId": "item_2",
+              "description": "Nursing and RMO Care Charges (4 Days)",
+              "amount": 750
+            },
+            {
+              "itemId": "item_3",
+              "description": "Major Operation Theatre Charges",
+              "amount": 7031
+            },
+            {
+              "itemId": "item_4",
+              "description": "Orthopaedic Surgeon Professional Fee",
+              "amount": 9375
+            },
+            {
+              "itemId": "item_5",
+              "description": "Anaesthetist Fee",
+              "amount": 2344
+            },
+            {
+              "itemId": "item_6",
+              "description": "Knee Prosthesis Implant (Attune CR)",
+              "amount": 30000
+            },
+            {
+              "itemId": "item_7",
+              "description": "Pre-op and Post-op Diagnostics (Blood, ECG, X-Ray)",
+              "amount": 3500
+            },
+            {
+              "itemId": "item_8",
+              "description": "Inpatient Pharmacy and Antibiotic Injections",
+              "amount": 6500
+            }
+          ]
+        },
+        {
+          "stage": "result",
+          "title": "Payable amount",
+          "formula": "₹3,37,800 claimed - ₹1,44,300 deducted = ₹1,93,500 payable",
+          "totalBefore": 337800,
+          "deducted": 144300,
+          "totalAfter": 193500
+        }
+      ],
+      "warnings": [],
+      "checks": {
+        "ok": true,
+        "messages": []
+      },
+      "matcher": "keyword-baseline"
+    },
+    "diff": {
+      "rows": [
+        {
+          "id": "item_1",
+          "description": "Single Deluxe AC Room (4 Days @ ₹8,000/day)",
+          "claimed": 32000,
+          "payableBefore": 25600,
+          "payableAfter": 15000,
+          "change": -10600,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_2",
+          "description": "Nursing and RMO Care Charges (4 Days)",
+          "claimed": 4800,
+          "payableBefore": 3840,
+          "payableAfter": 2250,
+          "change": -1590,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_3",
+          "description": "Major Operation Theatre Charges",
+          "claimed": 45000,
+          "payableBefore": 36000,
+          "payableAfter": 21094,
+          "change": -14906,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_4",
+          "description": "Orthopaedic Surgeon Professional Fee",
+          "claimed": 60000,
+          "payableBefore": 48000,
+          "payableAfter": 28125,
+          "change": -19875,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_5",
+          "description": "Anaesthetist Fee",
+          "claimed": 15000,
+          "payableBefore": 12000,
+          "payableAfter": 7031,
+          "change": -4969,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_6",
+          "description": "Knee Prosthesis Implant (Attune CR)",
+          "claimed": 120000,
+          "payableBefore": 96000,
+          "payableAfter": 90000,
+          "change": -6000,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_7",
+          "description": "Pre-op and Post-op Diagnostics (Blood, ECG, X-Ray)",
+          "claimed": 14000,
+          "payableBefore": 11200,
+          "payableAfter": 10500,
+          "change": -700,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_8",
+          "description": "Inpatient Pharmacy and Antibiotic Injections",
+          "claimed": 26000,
+          "payableBefore": 20800,
+          "payableAfter": 19500,
+          "change": -1300,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_9",
+          "description": "Gloves, Masks, PPE Kits and Syringes",
+          "claimed": 9500,
+          "payableBefore": 7600,
+          "payableAfter": 0,
+          "change": -7600,
+          "statusBefore": "reduced",
+          "statusAfter": "excluded"
+        },
+        {
+          "id": "item_10",
+          "description": "Surgical Stapler and Suture Kit",
+          "claimed": 7200,
+          "payableBefore": 5760,
+          "payableAfter": 0,
+          "change": -5760,
+          "statusBefore": "reduced",
+          "statusAfter": "review"
+        },
+        {
+          "id": "item_11",
+          "description": "Admission and Processing Fee",
+          "claimed": 2500,
+          "payableBefore": 0,
+          "payableAfter": 0,
+          "change": 0,
+          "statusBefore": "review",
+          "statusAfter": "review"
+        },
+        {
+          "id": "item_12",
+          "description": "Patient Comfort Kit (Slippers, Toiletries)",
+          "claimed": 1800,
+          "payableBefore": 0,
+          "payableAfter": 0,
+          "change": 0,
+          "statusBefore": "review",
+          "statusAfter": "excluded"
+        }
+      ],
+      "payableBefore": 266800,
+      "payableAfter": 193500,
+      "change": -73300,
+      "changedItems": 10
+    }
+  },
+  "cataract": {
+    "bill": "Cataract surgery, day care",
+    "before": {
+      "treatmentDate": "2026-02-10",
+      "selection": {
+        "treatmentDate": "2026-02-10",
+        "candidates": [
+          {
+            "id": "base",
+            "label": "Base policy",
+            "kind": "base",
+            "effectiveFrom": "2025-04-01",
+            "inForce": true,
+            "reason": "Base policy for this treatment date."
+          },
+          {
+            "id": "endorsement-1",
+            "label": "Endorsement 1",
+            "kind": "amendment",
+            "effectiveFrom": "2026-04-01",
+            "inForce": false,
+            "reason": "Takes effect on 2026-04-01, after the treatment date 2026-02-10."
+          }
+        ],
+        "inForce": [
+          "base"
+        ],
+        "rules": [
+          {
+            "rule": {
+              "id": "hdfc_2",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "appliesTo": [
+                "knee_replacement",
+                "hip_replacement",
+                "cataract",
+                "cholecystectomy"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 24,
+                  "description": "Requires policy continuity of at least 24 months"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 24 months is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 24,
+                "days": 720,
+                "type": "specific_illness"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Waiting Periods",
+                "quote": "A waiting period of 24 consecutive months of continuous coverage applies to joint replacement surgery, cataract surgery, benign prostatic hypertrophy, and hernia repair."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Specific Illness 24-Month Waiting Period. 24 months. Mandatory 24 months continuous coverage required before joint replacement, cataract, hernia, and stones are eligible.. Treatment within waiting period of 24 months is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_3",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Initial 30-Day Waiting Period",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 1,
+                  "description": "Requires policy continuity of at least 30 days"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 30 days is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 1,
+                "days": 30,
+                "type": "initial"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Initial Waiting Period",
+                "quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising from accidental bodily injury."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Initial 30-Day Waiting Period. 30 days. No medical expenses admissible within first 30 days from policy inception except accidental injuries.. Treatment within waiting period of 30 days is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_8",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Cosmetic & Aesthetic Surgery Exclusion",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Plastic surgery or aesthetic procedures not medically necessary are excluded."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 14,
+                "section": "Section 4.3 - Permanent Exclusions",
+                "quote": "Expenses for cosmetic or aesthetic surgery or any treatment which is not medically necessary are permanently excluded."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cosmetic & Aesthetic Surgery Exclusion. Not covered. Plastic surgery or aesthetic procedures not medically necessary are excluded.. Plastic surgery or aesthetic procedures not medically necessary are excluded."
+          },
+          {
+            "rule": {
+              "id": "hdfc_4",
+              "ruleType": "ROOM_LIMIT",
+              "rawCategory": "room_rent",
+              "ruleName": "Room Category Eligibility",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "room_category",
+                  "operator": ">",
+                  "value": "single-private",
+                  "description": "Eligible room category capped at single-private"
+                }
+              ],
+              "effect": {
+                "action": "room_excess",
+                "calculationBase": "room_rent",
+                "description": "Excess room rent over eligible tier (single-private) deducted directly."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 30,
+              "evidence": {
+                "page": 7,
+                "section": "Section 2.1 - Inpatient Care",
+                "quote": "Room rent, boarding and nursing charges are covered up to Single Private AC Room category. In case of admission to higher category room, excess room fee shall be borne by the insured."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Room Category Eligibility. Single Private Room. Eligible room category is Single Private AC room. Upgrading to Deluxe Suite incurs room excess fees.. Excess room rent over eligible tier (single-private) deducted directly."
+          },
+          {
+            "rule": {
+              "id": "hdfc_6",
+              "ruleType": "SUB_LIMIT",
+              "rawCategory": "sub_limit",
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "appliesTo": [
+                "cataract"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 40000,
+                "calculationBase": "claim_amount",
+                "description": "Specific sub-limit capped at ₹40,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 40,
+              "evidence": {
+                "page": 8,
+                "section": "Section 2.4 - Specific Capping",
+                "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cataract Surgery Sub-Limit. ₹40,000 per eye. Cataract treatment capped at Rs 40,000 per eye per policy year.. Specific sub-limit capped at ₹40,000"
+          },
+          {
+            "rule": {
+              "id": "hdfc_7",
+              "ruleType": "DEDUCTIBLE",
+              "rawCategory": "deductible",
+              "ruleName": "Zero Voluntary Deductible",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "No deductible applies to standard inpatient hospitalization claims."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 17,
+                "section": "Section 6 - Cost Sharing",
+                "quote": "Standard policy operates with Nil compulsory deductible on inpatient hospitalizations."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Zero Voluntary Deductible. ₹0. No deductible applies to standard inpatient hospitalization claims.. No deductible applies to standard inpatient hospitalization claims."
+          },
+          {
+            "rule": {
+              "id": "hdfc_5",
+              "ruleType": "COPAY",
+              "rawCategory": "co_payment",
+              "ruleName": "Senior Citizen Co-pay (Age 60+)",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "age",
+                  "operator": ">=",
+                  "value": 60,
+                  "description": "Co-pay applies to patients age 60 and above."
+                }
+              ],
+              "effect": {
+                "action": "deduct_percentage",
+                "percentage": 20,
+                "calculationBase": "admissible_amount",
+                "description": "20% co-payment applies on admissible claim amount."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 60,
+              "evidence": {
+                "page": 16,
+                "section": "Section 5.3 - Co-payment Clause",
+                "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Senior Citizen Co-pay (Age 60+). 20%. 20% co-payment deducted from admissible claim amount if patient age is 60 or older on date of admission.. 20% co-payment applies on admissible claim amount."
+          },
+          {
+            "rule": {
+              "id": "hdfc_1",
+              "ruleType": "SUM_INSURED",
+              "rawCategory": "sum_insured",
+              "ruleName": "Base Sum Insured Protection",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 500000,
+                "amount": 500000,
+                "description": "Overall policy sum insured ceiling ₹5,00,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 90,
+              "evidence": {
+                "page": 3,
+                "section": "Section 1 - Schedule of Benefits",
+                "quote": "The Company maximum liability for all admissible claims during the policy year shall not exceed the Sum Insured of Rs 5,00,000 specified in the Schedule."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Base Sum Insured Protection. ₹5,00,000. Aggregate maximum claim indemnity of Rs 5,00,000 available across the active policy term.. Overall policy sum insured ceiling ₹5,00,000"
+          }
+        ],
+        "changes": [],
+        "warnings": []
+      },
+      "items": [
+        {
+          "id": "item_101",
+          "description": "Day-care Bed Charges (1 Day)",
+          "category": "room",
+          "claimed": 1500,
+          "payable": 1200,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 300,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            },
+            {
+              "ruleName": "Room Category Eligibility",
+              "versionLabel": "Base policy",
+              "role": "room",
+              "score": 1,
+              "terms": [
+                "room"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_102",
+          "description": "Phacoemulsification Cataract Surgery Procedure",
+          "category": "surgery",
+          "claimed": 38000,
+          "payable": 17572,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 16035,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 4393,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_103",
+          "description": "Intraocular Lens (IOL) Implant for Cataract",
+          "category": "implant",
+          "claimed": 22000,
+          "payable": 10174,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 9283,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 2543,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_104",
+          "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+          "category": "doctor",
+          "claimed": 8000,
+          "payable": 3699,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 3376,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 925,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_105",
+          "description": "Antibiotic Eye Drops and Medicines",
+          "category": "medicines",
+          "claimed": 1200,
+          "payable": 555,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 506,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 139,
+              "formula": "20% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_5",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+)",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 16,
+                  "section": "Section 5.3 - Co-payment Clause",
+                  "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "eye"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_106",
+          "description": "Registration Fee",
+          "category": "other",
+          "claimed": 500,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 500,
+              "formula": "Held for review: no clause found for this charge",
+              "clauses": []
+            }
+          ],
+          "status": "review",
+          "review": [
+            "No policy clause supports or excludes this charge. A reviewer must decide."
+          ],
+          "heldForReview": 500,
+          "matches": []
+        }
+      ],
+      "totals": {
+        "claimed": 71200,
+        "payable": 33200,
+        "patientPays": 38000,
+        "heldForReview": 500,
+        "byStage": {
+          "copay": 8300,
+          "sub_limit": 29200,
+          "review_hold": 500
+        }
+      },
+      "trace": [
+        {
+          "stage": "start",
+          "title": "Claimed amount",
+          "formula": "6 bill items add up to ₹71,200",
+          "totalBefore": 71200,
+          "deducted": 0,
+          "totalAfter": 71200
+        },
+        {
+          "stage": "version",
+          "title": "Policy documents in force",
+          "formula": "Treatment date 2026-02-10. Applied: Base policy.",
+          "totalBefore": 71200,
+          "deducted": 0,
+          "totalAfter": 71200
+        },
+        {
+          "stage": "exclusion",
+          "title": "Exclusions and unclear evidence",
+          "formula": "Items an exclusion clause covers are removed. Conflicting or missing evidence is held, not guessed.",
+          "totalBefore": 71200,
+          "deducted": 500,
+          "totalAfter": 70700,
+          "perItem": [
+            {
+              "itemId": "item_106",
+              "description": "Registration Fee",
+              "amount": 500
+            }
+          ]
+        },
+        {
+          "stage": "sub_limit",
+          "title": "Cataract Surgery Sub-Limit",
+          "formula": "4 related item(s) total ₹69,200; cap ₹40,000; ₹29,200 removed pro rata",
+          "clause": {
+            "ruleId": "hdfc_6",
+            "ruleName": "Cataract Surgery Sub-Limit",
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "page": 8,
+            "section": "Section 2.4 - Specific Capping",
+            "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+          },
+          "totalBefore": 70700,
+          "deducted": 29200,
+          "totalAfter": 41500,
+          "perItem": [
+            {
+              "itemId": "item_102",
+              "description": "Phacoemulsification Cataract Surgery Procedure",
+              "amount": 16035
+            },
+            {
+              "itemId": "item_103",
+              "description": "Intraocular Lens (IOL) Implant for Cataract",
+              "amount": 9283
+            },
+            {
+              "itemId": "item_104",
+              "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+              "amount": 3376
+            },
+            {
+              "itemId": "item_105",
+              "description": "Antibiotic Eye Drops and Medicines",
+              "amount": 506
+            }
+          ]
+        },
+        {
+          "stage": "copay",
+          "title": "Senior Citizen Co-pay (Age 60+)",
+          "formula": "20% of ₹41,500 remaining after the deductible = ₹8,300 (patient age 62 is 60 or more)",
+          "clause": {
+            "ruleId": "hdfc_5",
+            "ruleName": "Senior Citizen Co-pay (Age 60+)",
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "page": 16,
+            "section": "Section 5.3 - Co-payment Clause",
+            "quote": "A co-payment of 20% shall be borne by the insured person on every admissible claim if the insured person is aged 60 years or above on the date of hospital admission."
+          },
+          "totalBefore": 41500,
+          "deducted": 8300,
+          "totalAfter": 33200,
+          "perItem": [
+            {
+              "itemId": "item_101",
+              "description": "Day-care Bed Charges (1 Day)",
+              "amount": 300
+            },
+            {
+              "itemId": "item_102",
+              "description": "Phacoemulsification Cataract Surgery Procedure",
+              "amount": 4393
+            },
+            {
+              "itemId": "item_103",
+              "description": "Intraocular Lens (IOL) Implant for Cataract",
+              "amount": 2543
+            },
+            {
+              "itemId": "item_104",
+              "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+              "amount": 925
+            },
+            {
+              "itemId": "item_105",
+              "description": "Antibiotic Eye Drops and Medicines",
+              "amount": 139
+            }
+          ]
+        },
+        {
+          "stage": "result",
+          "title": "Payable amount",
+          "formula": "₹71,200 claimed - ₹38,000 deducted = ₹33,200 payable",
+          "totalBefore": 71200,
+          "deducted": 38000,
+          "totalAfter": 33200
+        }
+      ],
+      "warnings": [],
+      "checks": {
+        "ok": true,
+        "messages": []
+      },
+      "matcher": "keyword-baseline"
+    },
+    "after": {
+      "treatmentDate": "2026-05-20",
+      "selection": {
+        "treatmentDate": "2026-05-20",
+        "candidates": [
+          {
+            "id": "base",
+            "label": "Base policy",
+            "kind": "base",
+            "effectiveFrom": "2025-04-01",
+            "inForce": true,
+            "reason": "Base policy for this treatment date."
+          },
+          {
+            "id": "endorsement-1",
+            "label": "Endorsement 1",
+            "kind": "amendment",
+            "effectiveFrom": "2026-04-01",
+            "inForce": true,
+            "reason": "In force: effective 2026-04-01, on or before the treatment date 2026-05-20."
+          }
+        ],
+        "inForce": [
+          "base",
+          "endorsement-1"
+        ],
+        "rules": [
+          {
+            "rule": {
+              "id": "hdfc_2",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "appliesTo": [
+                "knee_replacement",
+                "hip_replacement",
+                "cataract",
+                "cholecystectomy"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 24,
+                  "description": "Requires policy continuity of at least 24 months"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 24 months is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 24,
+                "days": 720,
+                "type": "specific_illness"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Waiting Periods",
+                "quote": "A waiting period of 24 consecutive months of continuous coverage applies to joint replacement surgery, cataract surgery, benign prostatic hypertrophy, and hernia repair."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Specific Illness 24-Month Waiting Period. 24 months. Mandatory 24 months continuous coverage required before joint replacement, cataract, hernia, and stones are eligible.. Treatment within waiting period of 24 months is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_3",
+              "ruleType": "WAITING_PERIOD",
+              "rawCategory": "waiting_period",
+              "ruleName": "Initial 30-Day Waiting Period",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "waiting_elapsed",
+                  "field": "policyStartDate",
+                  "operator": ">=",
+                  "value": 1,
+                  "description": "Requires policy continuity of at least 30 days"
+                }
+              ],
+              "effect": {
+                "action": "deny",
+                "description": "Treatment within waiting period of 30 days is not admissible."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 10,
+              "effectivePeriod": {
+                "months": 1,
+                "days": 30,
+                "type": "initial"
+              },
+              "evidence": {
+                "page": 11,
+                "section": "Section 4.1 - Initial Waiting Period",
+                "quote": "Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising from accidental bodily injury."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Initial 30-Day Waiting Period. 30 days. No medical expenses admissible within first 30 days from policy inception except accidental injuries.. Treatment within waiting period of 30 days is not admissible."
+          },
+          {
+            "rule": {
+              "id": "hdfc_8",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Cosmetic & Aesthetic Surgery Exclusion",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Plastic surgery or aesthetic procedures not medically necessary are excluded."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 14,
+                "section": "Section 4.3 - Permanent Exclusions",
+                "quote": "Expenses for cosmetic or aesthetic surgery or any treatment which is not medically necessary are permanently excluded."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cosmetic & Aesthetic Surgery Exclusion. Not covered. Plastic surgery or aesthetic procedures not medically necessary are excluded.. Plastic surgery or aesthetic procedures not medically necessary are excluded."
+          },
+          {
+            "rule": {
+              "id": "amd1_room",
+              "ruleType": "ROOM_LIMIT",
+              "rawCategory": "room_rent",
+              "ruleName": "Room Rent Limit (Endorsement 1)",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "room_category",
+                  "operator": ">",
+                  "value": "single-private",
+                  "description": "Eligible room category capped at single-private"
+                }
+              ],
+              "effect": {
+                "action": "proration",
+                "amount": 5000,
+                "calculationBase": "room_rent",
+                "description": "Proportionate deduction clause applied if room category exceeds eligible tier (single-private)."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 30,
+              "evidence": {
+                "page": 2,
+                "section": "Endorsement 1, page 2",
+                "quote": "Clause 2.1 (Room Rent, replaced). Room rent is limited to Rs 5,000 per day. If the room rent exceeds this limit, all associated medical expenses such as nursing, doctor fees and operation theatre charges are reduced proportionately (proportionate deduction)."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Room Rent Limit (Endorsement 1). ₹5,000 per day. Room rent is limited to Rs 5,000 per day. Associated medical expenses are reduced proportionately when the room rent exceeds this limit (proportionate deduction).. Proportionate deduction clause applied if room category exceeds eligible tier (single-private).",
+            "supersedes": {
+              "versionId": "base",
+              "ruleId": "hdfc_4",
+              "ruleName": "Room Category Eligibility"
+            }
+          },
+          {
+            "rule": {
+              "id": "hdfc_6",
+              "ruleType": "SUB_LIMIT",
+              "rawCategory": "sub_limit",
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "appliesTo": [
+                "cataract"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 40000,
+                "calculationBase": "claim_amount",
+                "description": "Specific sub-limit capped at ₹40,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 40,
+              "evidence": {
+                "page": 8,
+                "section": "Section 2.4 - Specific Capping",
+                "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Cataract Surgery Sub-Limit. ₹40,000 per eye. Cataract treatment capped at Rs 40,000 per eye per policy year.. Specific sub-limit capped at ₹40,000"
+          },
+          {
+            "rule": {
+              "id": "hdfc_7",
+              "ruleType": "DEDUCTIBLE",
+              "rawCategory": "deductible",
+              "ruleName": "Zero Voluntary Deductible",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "No deductible applies to standard inpatient hospitalization claims."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 17,
+                "section": "Section 6 - Cost Sharing",
+                "quote": "Standard policy operates with Nil compulsory deductible on inpatient hospitalizations."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Zero Voluntary Deductible. ₹0. No deductible applies to standard inpatient hospitalization claims.. No deductible applies to standard inpatient hospitalization claims."
+          },
+          {
+            "rule": {
+              "id": "amd1_copay",
+              "ruleType": "COPAY",
+              "rawCategory": "co_payment",
+              "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [
+                {
+                  "type": "age",
+                  "operator": ">=",
+                  "value": 60,
+                  "description": "Co-pay applies to patients age 60 and above."
+                }
+              ],
+              "effect": {
+                "action": "deduct_percentage",
+                "percentage": 25,
+                "calculationBase": "admissible_amount",
+                "description": "25% co-payment applies on admissible claim amount."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 60,
+              "evidence": {
+                "page": 3,
+                "section": "Endorsement 1, page 3",
+                "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Senior Citizen Co-pay (Age 60+) revised. 25%. A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission.. 25% co-payment applies on admissible claim amount.",
+            "supersedes": {
+              "versionId": "base",
+              "ruleId": "hdfc_5",
+              "ruleName": "Senior Citizen Co-pay (Age 60+)"
+            }
+          },
+          {
+            "rule": {
+              "id": "hdfc_1",
+              "ruleType": "SUM_INSURED",
+              "rawCategory": "sum_insured",
+              "ruleName": "Base Sum Insured Protection",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "cap",
+                "capAmount": 500000,
+                "amount": 500000,
+                "description": "Overall policy sum insured ceiling ₹5,00,000"
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 90,
+              "evidence": {
+                "page": 3,
+                "section": "Section 1 - Schedule of Benefits",
+                "quote": "The Company maximum liability for all admissible claims during the policy year shall not exceed the Sum Insured of Rs 5,00,000 specified in the Schedule."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "origin": "base",
+            "text": "Base Sum Insured Protection. ₹5,00,000. Aggregate maximum claim indemnity of Rs 5,00,000 available across the active policy term.. Overall policy sum insured ceiling ₹5,00,000"
+          },
+          {
+            "rule": {
+              "id": "amd1_excl",
+              "ruleType": "EXCLUSION",
+              "rawCategory": "exclusion",
+              "ruleName": "Non-Payable Consumables and Disposables",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "deny",
+                "description": "Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 15,
+              "evidence": {
+                "page": 4,
+                "section": "Endorsement 1, page 4",
+                "quote": "Clause 4.9 (Non-Payable Items, added). Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "executable",
+              "affectsEstimate": true
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Non-Payable Consumables and Disposables. Not covered. Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable.. Gloves, masks, PPE kits, syringes, catheters, disposable kits and similar consumables and disposables are not payable."
+          },
+          {
+            "rule": {
+              "id": "amd1_cov",
+              "ruleType": "GENERAL_CLAUSE",
+              "rawCategory": "coverage",
+              "ruleName": "Operative Implants and Consumables Payable",
+              "appliesTo": [
+                "all"
+              ],
+              "conditions": [],
+              "effect": {
+                "action": "allow",
+                "description": "Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+              },
+              "calculationBase": "admissible_amount",
+              "precedence": 50,
+              "evidence": {
+                "page": 5,
+                "section": "Endorsement 1, page 5",
+                "quote": "Clause 4.10 (Operative Items, added). Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+              },
+              "confidence": "high",
+              "verification": "verified",
+              "usability": "explanatory_only",
+              "affectsEstimate": false
+            },
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "origin": "amendment",
+            "text": "Operative Implants and Consumables Payable. Covered. Implants and operative consumables such as sutures and staplers used during the surgery are payable.. Implants and operative consumables such as sutures and staplers used during the surgery are payable."
+          }
+        ],
+        "changes": [
+          {
+            "kind": "added",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Non-Payable Consumables and Disposables",
+            "ruleType": "EXCLUSION",
+            "newSummary": "not payable"
+          },
+          {
+            "kind": "replaced",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Room Rent Limit (Endorsement 1)",
+            "ruleType": "ROOM_LIMIT",
+            "previousName": "Room Category Eligibility",
+            "previousSummary": "Room Category Eligibility",
+            "newSummary": "₹5,000, proportionate deduction"
+          },
+          {
+            "kind": "added",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Operative Implants and Consumables Payable",
+            "ruleType": "GENERAL_CLAUSE",
+            "newSummary": "payable"
+          },
+          {
+            "kind": "replaced",
+            "amendmentId": "endorsement-1",
+            "amendmentLabel": "Endorsement 1",
+            "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+            "ruleType": "COPAY",
+            "previousName": "Senior Citizen Co-pay (Age 60+)",
+            "previousSummary": "20%",
+            "newSummary": "25%"
+          }
+        ],
+        "warnings": []
+      },
+      "items": [
+        {
+          "id": "item_101",
+          "description": "Day-care Bed Charges (1 Day)",
+          "category": "room",
+          "claimed": 1500,
+          "payable": 1125,
+          "deductions": [
+            {
+              "stage": "copay",
+              "amount": 375,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Room Rent Limit (Endorsement 1)",
+              "versionLabel": "Endorsement 1",
+              "role": "room",
+              "score": 2,
+              "terms": [
+                "room",
+                "day"
+              ]
+            },
+            {
+              "ruleName": "Initial 30-Day Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "day"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_102",
+          "description": "Phacoemulsification Cataract Surgery Procedure",
+          "category": "surgery",
+          "claimed": 38000,
+          "payable": 16474,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 16035,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 5491,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_103",
+          "description": "Intraocular Lens (IOL) Implant for Cataract",
+          "category": "implant",
+          "claimed": 22000,
+          "payable": 9538,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 9283,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 3179,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Operative Implants and Consumables Payable",
+              "versionLabel": "Endorsement 1",
+              "role": "coverage",
+              "score": 1,
+              "terms": [
+                "implant"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_104",
+          "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+          "category": "doctor",
+          "claimed": 8000,
+          "payable": 3468,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 3376,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 1156,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Specific Illness 24-Month Waiting Period",
+              "versionLabel": "Base policy",
+              "role": "waiting",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            },
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "cataract"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_105",
+          "description": "Antibiotic Eye Drops and Medicines",
+          "category": "medicines",
+          "claimed": 1200,
+          "payable": 520,
+          "deductions": [
+            {
+              "stage": "sub_limit",
+              "amount": 506,
+              "formula": "Cataract Surgery Sub-Limit: ₹69,200 of related items capped at ₹40,000",
+              "clauses": [
+                {
+                  "ruleId": "hdfc_6",
+                  "ruleName": "Cataract Surgery Sub-Limit",
+                  "versionId": "base",
+                  "versionLabel": "Base policy",
+                  "page": 8,
+                  "section": "Section 2.4 - Specific Capping",
+                  "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+                }
+              ]
+            },
+            {
+              "stage": "copay",
+              "amount": 174,
+              "formula": "25% co-payment on this item's remaining payable amount",
+              "clauses": [
+                {
+                  "ruleId": "amd1_copay",
+                  "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+                  "versionId": "endorsement-1",
+                  "versionLabel": "Endorsement 1",
+                  "page": 3,
+                  "section": "Endorsement 1, page 3",
+                  "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+                }
+              ]
+            }
+          ],
+          "status": "reduced",
+          "review": [],
+          "heldForReview": 0,
+          "matches": [
+            {
+              "ruleName": "Cataract Surgery Sub-Limit",
+              "versionLabel": "Base policy",
+              "role": "limit",
+              "score": 1,
+              "terms": [
+                "eye"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "item_106",
+          "description": "Registration Fee",
+          "category": "other",
+          "claimed": 500,
+          "payable": 0,
+          "deductions": [
+            {
+              "stage": "review_hold",
+              "amount": 500,
+              "formula": "Held for review: no clause found for this charge",
+              "clauses": []
+            }
+          ],
+          "status": "review",
+          "review": [
+            "No policy clause supports or excludes this charge. A reviewer must decide."
+          ],
+          "heldForReview": 500,
+          "matches": []
+        }
+      ],
+      "totals": {
+        "claimed": 71200,
+        "payable": 31125,
+        "patientPays": 40075,
+        "heldForReview": 500,
+        "byStage": {
+          "copay": 10375,
+          "sub_limit": 29200,
+          "review_hold": 500
+        }
+      },
+      "trace": [
+        {
+          "stage": "start",
+          "title": "Claimed amount",
+          "formula": "6 bill items add up to ₹71,200",
+          "totalBefore": 71200,
+          "deducted": 0,
+          "totalAfter": 71200
+        },
+        {
+          "stage": "version",
+          "title": "Policy documents in force",
+          "formula": "Treatment date 2026-05-20. Applied: Base policy + Endorsement 1.",
+          "totalBefore": 71200,
+          "deducted": 0,
+          "totalAfter": 71200
+        },
+        {
+          "stage": "exclusion",
+          "title": "Exclusions and unclear evidence",
+          "formula": "Items an exclusion clause covers are removed. Conflicting or missing evidence is held, not guessed.",
+          "totalBefore": 71200,
+          "deducted": 500,
+          "totalAfter": 70700,
+          "perItem": [
+            {
+              "itemId": "item_106",
+              "description": "Registration Fee",
+              "amount": 500
+            }
+          ]
+        },
+        {
+          "stage": "sub_limit",
+          "title": "Cataract Surgery Sub-Limit",
+          "formula": "4 related item(s) total ₹69,200; cap ₹40,000; ₹29,200 removed pro rata",
+          "clause": {
+            "ruleId": "hdfc_6",
+            "ruleName": "Cataract Surgery Sub-Limit",
+            "versionId": "base",
+            "versionLabel": "Base policy",
+            "page": 8,
+            "section": "Section 2.4 - Specific Capping",
+            "quote": "Coverage for cataract surgery including cost of lens is limited to Rs 40,000 per eye during each policy year."
+          },
+          "totalBefore": 70700,
+          "deducted": 29200,
+          "totalAfter": 41500,
+          "perItem": [
+            {
+              "itemId": "item_102",
+              "description": "Phacoemulsification Cataract Surgery Procedure",
+              "amount": 16035
+            },
+            {
+              "itemId": "item_103",
+              "description": "Intraocular Lens (IOL) Implant for Cataract",
+              "amount": 9283
+            },
+            {
+              "itemId": "item_104",
+              "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+              "amount": 3376
+            },
+            {
+              "itemId": "item_105",
+              "description": "Antibiotic Eye Drops and Medicines",
+              "amount": 506
+            }
+          ]
+        },
+        {
+          "stage": "copay",
+          "title": "Senior Citizen Co-pay (Age 60+) revised",
+          "formula": "25% of ₹41,500 remaining after the deductible = ₹10,375 (patient age 62 is 60 or more)",
+          "clause": {
+            "ruleId": "amd1_copay",
+            "ruleName": "Senior Citizen Co-pay (Age 60+) revised",
+            "versionId": "endorsement-1",
+            "versionLabel": "Endorsement 1",
+            "page": 3,
+            "section": "Endorsement 1, page 3",
+            "quote": "Clause 5.3 (Senior Citizen Co-pay, replaced). A 25% co-payment applies to the admissible claim amount if the patient age is 60 or above on the date of admission."
+          },
+          "totalBefore": 41500,
+          "deducted": 10375,
+          "totalAfter": 31125,
+          "perItem": [
+            {
+              "itemId": "item_101",
+              "description": "Day-care Bed Charges (1 Day)",
+              "amount": 375
+            },
+            {
+              "itemId": "item_102",
+              "description": "Phacoemulsification Cataract Surgery Procedure",
+              "amount": 5491
+            },
+            {
+              "itemId": "item_103",
+              "description": "Intraocular Lens (IOL) Implant for Cataract",
+              "amount": 3179
+            },
+            {
+              "itemId": "item_104",
+              "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+              "amount": 1156
+            },
+            {
+              "itemId": "item_105",
+              "description": "Antibiotic Eye Drops and Medicines",
+              "amount": 174
+            }
+          ]
+        },
+        {
+          "stage": "result",
+          "title": "Payable amount",
+          "formula": "₹71,200 claimed - ₹40,075 deducted = ₹31,125 payable",
+          "totalBefore": 71200,
+          "deducted": 40075,
+          "totalAfter": 31125
+        }
+      ],
+      "warnings": [],
+      "checks": {
+        "ok": true,
+        "messages": []
+      },
+      "matcher": "keyword-baseline"
+    },
+    "diff": {
+      "rows": [
+        {
+          "id": "item_101",
+          "description": "Day-care Bed Charges (1 Day)",
+          "claimed": 1500,
+          "payableBefore": 1200,
+          "payableAfter": 1125,
+          "change": -75,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_102",
+          "description": "Phacoemulsification Cataract Surgery Procedure",
+          "claimed": 38000,
+          "payableBefore": 17572,
+          "payableAfter": 16474,
+          "change": -1098,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_103",
+          "description": "Intraocular Lens (IOL) Implant for Cataract",
+          "claimed": 22000,
+          "payableBefore": 10174,
+          "payableAfter": 9538,
+          "change": -636,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_104",
+          "description": "Ophthalmologist Surgeon Fee, Cataract Surgery",
+          "claimed": 8000,
+          "payableBefore": 3699,
+          "payableAfter": 3468,
+          "change": -231,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_105",
+          "description": "Antibiotic Eye Drops and Medicines",
+          "claimed": 1200,
+          "payableBefore": 555,
+          "payableAfter": 520,
+          "change": -35,
+          "statusBefore": "reduced",
+          "statusAfter": "reduced"
+        },
+        {
+          "id": "item_106",
+          "description": "Registration Fee",
+          "claimed": 500,
+          "payableBefore": 0,
+          "payableAfter": 0,
+          "change": 0,
+          "statusBefore": "review",
+          "statusAfter": "review"
+        }
+      ],
+      "payableBefore": 33200,
+      "payableAfter": 31125,
+      "change": -2075,
+      "changedItems": 5
+    }
+  }
+}

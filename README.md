@@ -357,6 +357,17 @@ insurance_intelligence/
 
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
+## Claim ledger and policy versions
+
+The **Claim ledger** screen (`/app`, sidebar) adjudicates an itemised hospital bill against the policy documents in force on the treatment date.
+
+- **Versions** (`lib/claims/versions.ts`): a base policy plus any number of amendments. The effective date is read from the document text ("effective from", "with effect from", "on or after" and similar), never guessed. An amendment applies only when its date is known and not after the treatment date. Later amendments replace earlier rules on the same topic. Undated amendments are not applied and are flagged.
+- **Item ledger** (`lib/claims/adjudicate.ts`): for every bill item, the claimed amount, payable amount, each deduction with its formula, the clause (document, page, quote) and anything needing review. Stages run in a fixed order (waiting period, exclusions, room rent with proportionate reduction, sub-limits, deductible, co-pay, sum insured). Each stage reads the running payable amount, so nothing is deducted twice, and the ledger ends with checks that prove every item balances.
+- **Evidence you can reproduce:** `npm run test:claims` (66 checks, hand-verified arithmetic, 300 random bills against the invariants) and `npm run claims:demo`, which writes `docs/claims/EVIDENCE.md` and `evidence.json` with before and after ledgers, version selection and calculation traces.
+- **Semantic matching and its evaluation:** `lib/claims/semantic/` links bill wording to clauses with Gemini embeddings, then checks the clause's own words (support threshold, peak over other clauses, exception/condition test) before it can decide an item. `npm run eval:matcher` scores it against the keyword matcher on 43 labelled examples from the committed embedding cache, offline, and writes `docs/matching/EVALUATION.md`. The matcher is not yet wired into the ledger UI; the ledger still defaults to the keyword matcher.
+- **Data:** the endorsement and both bills are synthetic and labelled (`lib/claims/samples.ts`).
+- **Matching today** is a keyword baseline behind a `ClauseMatcher` interface. It is a known limit: a semantic matcher, and a labelled evaluation against this baseline, are not built yet.
+
 ## Saved policy analyses (Supabase)
 
 Uploads are identified by the policy's IRDAI **UIN** (which includes the product version) and a hash of the text.

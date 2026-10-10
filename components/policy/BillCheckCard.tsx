@@ -25,7 +25,7 @@ const CATEGORIES: { value: BillLineCategory; label: string }[] = [
 ]
 
 /** The bill check shown inside a chat reply: the same extraction and deterministic audit as before, in a compact card. */
-export function BillCheckCard({ check, onItemsChange }: { check: BillCheck; onItemsChange: (items: HospitalBillLineItem[]) => void }) {
+export function BillCheckCard({ check, onItemsChange, onAdjudicate }: { check: BillCheck; onItemsChange: (items: HospitalBillLineItem[]) => void; onAdjudicate?: () => void }) {
   const { data, items, audit } = check
   const findings = sortFindings(audit.findings)
   const total = data.totalBilledAmount || audit.lineItemSum
@@ -128,6 +128,12 @@ export function BillCheckCard({ check, onItemsChange }: { check: BillCheck; onIt
           ))}
         </ul>
       </details>
+
+      {onAdjudicate && (
+        <button type="button" className="db-btn db-btn-primary bc-adj" onClick={onAdjudicate}>
+          Open the claim ledger for this bill
+        </button>
+      )}
 
       <p className="bc-foot">Rule-based checks that point to what to verify. They never say a charge is fraud.</p>
     </div>

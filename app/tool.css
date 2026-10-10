@@ -1716,3 +1716,337 @@
     animation: none;
   }
 }
+
+/* ── claim ledger ────────────────────────────────────── */
+.cl-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.cl-wide {
+  grid-column: 1 / -1;
+}
+.cl-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.cl-field > span,
+.cl-date > span {
+  color: var(--subtle);
+  font-size: 13.5px;
+}
+.cl-field input,
+.cl-field select,
+.cl-date input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  background: var(--sunk);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+.cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cl-versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cl-versions li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.cl-versions li:first-child {
+  border-top: 0;
+}
+.cl-versions strong {
+  display: block;
+  font-size: 15.5px;
+}
+.cl-versions span,
+.cl-versions em {
+  display: block;
+  color: var(--subtle);
+  font-size: 13.5px;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+.cl-date {
+  display: grid;
+  gap: 4px;
+}
+.cl-reasons {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+  border-radius: 10px;
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 14px;
+}
+.cl-reasons b {
+  color: var(--text);
+}
+.cl-changes {
+  margin-top: 16px;
+}
+.cl-changes h3,
+.cl-warn h3 {
+  margin: 0 0 8px;
+  font-size: 15.5px;
+}
+.cl-changes ul,
+.cl-warn ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+.cl-changes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cl-changes b {
+  color: var(--text);
+}
+.cl-warn {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+  background: color-mix(in srgb, var(--warn) 8%, var(--card));
+}
+.cl-warn li {
+  color: var(--warn-ink);
+}
+
+.cl-table {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cl-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.7fr) 120px 110px minmax(150px, 1fr) minmax(200px, 1.2fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  font-size: 14.5px;
+}
+.cl-row-ba {
+  grid-template-columns: minmax(0, 1.8fr) 130px 150px 130px;
+}
+.cl-head {
+  background: var(--sunk);
+  color: var(--subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+.cl-total {
+  background: var(--card2);
+  border-top: 1px solid var(--border2);
+  font-weight: 600;
+}
+.cl-num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: -0.02em;
+}
+.cl-item {
+  border-top: 1px solid var(--border);
+}
+.cl-item > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.cl-item > summary::-webkit-details-marker {
+  display: none;
+}
+.cl-item > summary:hover {
+  background: var(--card2);
+}
+.cl-desc {
+  display: grid;
+  gap: 4px;
+}
+.cl-desc b {
+  font-weight: 600;
+}
+.cl-status {
+  justify-self: start;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+  color: var(--ok-ink);
+}
+.cl-status[data-status='reduced'] {
+  background: color-mix(in srgb, var(--info) 16%, transparent);
+  color: var(--info-ink);
+}
+.cl-status[data-status='excluded'] {
+  background: color-mix(in srgb, var(--deny) 14%, transparent);
+  color: var(--deny-ink);
+}
+.cl-status[data-status='review'] {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn-ink);
+}
+.cl-ded,
+.cl-clause {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.cl-amt {
+  width: 100px;
+  min-height: 34px !important;
+  padding: 0 8px !important;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 14px !important;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  border-radius: 8px;
+}
+.cl-amt:hover,
+.cl-amt:focus {
+  border-color: var(--border3);
+  background: var(--sunk);
+}
+.cl-num small {
+  display: block;
+  color: var(--warn-ink);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+}
+.cl-more {
+  display: grid;
+  gap: 8px;
+  padding: 4px 16px 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cl-more p {
+  margin: 0;
+}
+.cl-more em {
+  display: block;
+  margin-top: 2px;
+  color: var(--subtle);
+  font-size: 13px;
+}
+.cl-review {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--warn-ink);
+}
+.cl-matches {
+  color: var(--subtle);
+  font-size: 13px;
+}
+.cl-diff {
+  margin: 0 0 14px;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+.cl-neg {
+  color: var(--deny-ink);
+}
+.cl-pos {
+  color: var(--ok-ink);
+}
+.cl-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.cl-trace {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0;
+}
+.cl-trace li {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.cl-trace li:first-child {
+  border-top: 0;
+}
+.cl-trace-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cl-trace p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.cl-cite {
+  color: var(--subtle) !important;
+  font-style: italic;
+  font-size: 13px !important;
+}
+.cl-ok {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  color: var(--ok-ink);
+  font-size: 14px;
+}
+.cl-ok svg {
+  flex: none;
+  margin-top: 2px;
+}
+.bc-adj {
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .cl-versions li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cl-date {
+    grid-column: 1 / -1;
+  }
+  .cl-head {
+    display: none;
+  }
+  .cl-row,
+  .cl-row-ba {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+  .cl-row .cl-desc {
+    grid-column: 1 / -1;
+  }
+  .cl-ded,
+  .cl-clause {
+    grid-column: 1 / -1;
+  }
+}
