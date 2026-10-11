@@ -1,9 +1,8 @@
 import Link from 'next/link'
-import { FileMagnifyingGlass, Scales } from '@phosphor-icons/react/dist/ssr'
-import PolicyPreview from '@/components/landing/PolicyPreview'
 import { Brand } from '@/components/ui/Brand'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { LoginForm } from './login-form'
+import { Logo3D } from './logo-3d'
 import './login.css'
 
 export const metadata = {
@@ -22,29 +21,8 @@ export default async function LoginPage({
 
   return (
     <main className="lg">
-      <section className="lg-show" aria-label="What BimaSetu does">
-        <Brand label="BimaSetu home" />
-
-        <div className="lg-show-copy">
-          <h2 className="lg-show-title">Know what you will pay before you are admitted.</h2>
-          <p className="lg-show-sub">
-            Every deduction traced from your policy wording to the rupee. Pick a case to see the real estimate engine
-            at work.
-          </p>
-        </div>
-
-        <div className="lg-demo">
-          <PolicyPreview compact />
-        </div>
-
-        <ul className="lg-points">
-          <li>
-            <FileMagnifyingGlass size={18} weight="bold" aria-hidden /> Page-level citations from your own policy PDF
-          </li>
-          <li>
-            <Scales size={18} weight="bold" aria-hidden /> Coverage maths runs in auditable code, not a chatbot
-          </li>
-        </ul>
+      <section className="lg-show" aria-label="BimaSetu">
+        <Logo3D />
       </section>
 
       <section className="lg-panel">

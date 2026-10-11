@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-10-10T05:46:20.399Z",
         "reason": "assistant judgment: chat typing-indicator dots, literal domain motion; not user confirmed"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "app/login/login.css"
+        ],
+        "createdAt": "2026-10-11T02:51:23.905Z",
+        "reason": "Claude: 'Setu' half of the BimaSetu wordmark is gradient in the logo artwork and in the existing .pl-brand-name span (app/ledger.css); brand lockup, not decorative heading text"
       }
     ]
   }
